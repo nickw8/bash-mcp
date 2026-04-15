@@ -5,11 +5,12 @@
  * Shows function/class names, top-level comments, imports, and constants
  * without implementation bodies. Language is detected from file extension.
  *
- * Supported languages: bash, python, typescript/javascript, sql, yaml, markdown.
+ * Supported languages: bash, csharp, python, typescript/javascript, sql, yaml, markdown.
  * Unknown extensions get a generic extractor (header comments + definition patterns).
  */
 
 import { extractBash } from "./bash.js";
+import { extractCSharp } from "./csharp.js";
 import { extractGeneric } from "./generic.js";
 import { extractMarkdown } from "./markdown.js";
 import { extractPython } from "./python.js";
@@ -24,6 +25,7 @@ const EXT_MAP: Record<string, Language> = {
   sh: "bash",
   bash: "bash",
   zsh: "bash",
+  cs: "csharp",
   py: "python",
   ts: "typescript",
   tsx: "typescript",
@@ -39,6 +41,7 @@ const EXT_MAP: Record<string, Language> = {
 
 const EXTRACTORS: Record<Language, (lines: string[]) => ExtractResult> = {
   bash: extractBash,
+  csharp: extractCSharp,
   python: extractPython,
   typescript: extractTsJs,
   javascript: extractTsJs,
