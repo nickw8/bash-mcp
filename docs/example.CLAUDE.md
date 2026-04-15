@@ -5,7 +5,7 @@ This is an example of a **Tools** section you can add to your CLAUDE.md to have 
 ```markdown
 ## Tools
 **bash-mcp tools** return compact structured JSON. Prefer them over built-in equivalents:
-- **Read files**: `cat` over `Read` for files >50 lines (200-line default cap, includes size/totalLines/truncated metadata). Still use `Read` for small files or before `Edit`.
+- **Read files**: Always use `cat` (200-line default cap, includes size/totalLines/truncated metadata). Only use `Read` when you intend to `Edit` the file afterward.
 - **Search content**: `rg` over `Grep`. Use `filesOnly: true` when you only need paths.
 - **List/find files**: `ls` (with `all: true`), `glob`, `tree`, `find_files` over `Bash("ls")`, `Glob`, `Bash("find")`.
 - **Git**: `git_status`, `git_log`, `git_branches`, `git_diff`, `git_diff_content` over `Bash("git ...")`.

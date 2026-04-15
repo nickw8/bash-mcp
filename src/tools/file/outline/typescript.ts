@@ -1,0 +1,61 @@
+import type { ExtractResult } from "./types.js";
+import { truncate } from "./types.js";
+
+/** Covers both TypeScript and JavaScript. */
+export function extractTsJs(lines: string[]): ExtractResult {
+  const result: string[] = [];
+  let symbols = 0;
+  let inHeader = true;
+  let commentBuf: string[] = [];
+
+  for (const line of lines) {
+    const t = line.trim();
+    const indent = line.length - line.trimStart().length;
+
+    // Header block: comments (single-line, block-style, or JSDoc)
+    if (inHeader) {
+      if (t === "" || t.startsWith("//") || t.startsWith("/*") || t.startsWith("*")) {
+        result.push(line);
+        continue;
+      }
+      inHeader = false;
+    }
+
+    // Only show top-level declarations (indent 0)
+    if (indent > 0) { commentBuf = []; continue; }
+
+    // Closing braces / blank lines
+    if (t === "}" || t === "") { commentBuf = []; continue; }
+
+    // Buffer comments
+    if (t.startsWith("//")) { commentBuf.push(line); continue; }
+
+    // Decorators
+    if (t.startsWith("@")) { commentBuf.push(line); continue; }
+
+    // Imports
+    if (/^import\b/.test(t)) {
+      result.push(line);
+      commentBuf = [];
+      continue;
+    }
+
+    // Definitions: export, function, class, interface, type, enum, const/let/var
+    if (/^(export\s+)?(default\s+)?(async\s+)?(function|class|interface|type|enum|const|let|var)\b/.test(t)) {
+      result.push(...commentBuf);
+      // Strip body: remove everything after opening brace or arrow
+      let display = t.replace(/\s*\{[\s\S]*$/, "");
+      display = display.replace(/\s*=>\s*[\s\S]*$/, " => ...");
+      result.push(truncate(display, 100));
+      if (/^(export\s+)?(default\s+)?(async\s+)?(function|class|interface|type|enum)\b/.test(t)) {
+        symbols++;
+      }
+      commentBuf = [];
+      continue;
+    }
+
+    commentBuf = [];
+  }
+
+  return { outline: result, symbols };
+}

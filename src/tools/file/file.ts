@@ -11,7 +11,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { exec } from "#exec";
 import { ok, err } from "#response";
-import { detectLanguage, extractOutline } from "./outline.js";
+import { detectLanguage, extractOutline } from "./outline/index.js";
 
 const IS_MACOS = process.platform === "darwin";
 
