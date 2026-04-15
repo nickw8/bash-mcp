@@ -1,0 +1,63 @@
+{
+  "name": "bash-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that wraps CLI tools and returns structured JSON instead of raw text output",
+  "license": "Apache-2.0",
+  "type": "module",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "cli",
+    "kubectl",
+    "terraform",
+    "helm",
+    "argocd",
+    "git",
+    "jq",
+    "yq",
+    "structured-output"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "imports": {
+    "#exec": "./src/exec.ts",
+    "#response": "./src/response.ts",
+    "#shell": "./src/shell.ts"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "bin": {
+    "bash-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsgo -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "prepublishOnly": "npm run build",
+    "lint": "biome check .",
+    "lint:fix": "biome check --fix .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.11",
+    "@types/node": "^22.15.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260414.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.4"
+  }
+}
