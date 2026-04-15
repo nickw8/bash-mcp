@@ -4,6 +4,8 @@ An MCP server that wraps common CLI tools (kubectl, terraform, helm, git, argocd
 
 Designed for AI agents and LLM-powered workflows where parsing human-readable CLI output wastes tokens and breaks easily.
 
+Created with the help of Claude since it is the main consumer of the structured data.
+
 ## Quick Start
 
 ```bash
