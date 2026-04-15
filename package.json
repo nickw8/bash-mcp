@@ -27,6 +27,7 @@
   ],
   "imports": {
     "#exec": "./src/exec.ts",
+    "#format": "./src/format.ts",
     "#response": "./src/response.ts",
     "#shell": "./src/shell.ts"
   },

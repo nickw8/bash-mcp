@@ -8,7 +8,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { ListFormat } from "../../format.js";
+import type { ListFormat } from "#format";
 import { exec } from "#exec";
 import { err, ok, okList } from "#response";
 
