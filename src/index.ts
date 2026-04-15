@@ -10,20 +10,20 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-
-import { registerFilesystemTools } from "./tools/filesystem/filesystem.js";
-import { registerSearchTools } from "./tools/search/search.js";
-import { registerGitTools } from "./tools/git/git.js";
-import { registerKubernetesTools } from "./tools/kubernetes/kubernetes.js";
-import { registerTerraformTools } from "./tools/terraform/terraform.js";
 import { registerArgocdTools } from "./tools/argocd/argocd.js";
+import { registerBatchTools } from "./tools/batch/batch.js";
+import { registerFileTools } from "./tools/file/file.js";
+import { registerFilesystemTools } from "./tools/filesystem/filesystem.js";
+import { registerGitDiffContentTools } from "./tools/git/diff.js";
+import { registerGitTools } from "./tools/git/git.js";
 import { registerHelmTools } from "./tools/helm/helm.js";
 import { registerJsonTools } from "./tools/json/json.js";
-import { registerYamlTools } from "./tools/yaml/yaml.js";
-import { registerFileTools } from "./tools/file/file.js";
+import { registerKubernetesTools } from "./tools/kubernetes/kubernetes.js";
+import { registerNpmTools } from "./tools/npm/npm.js";
 import { registerRunTools } from "./tools/run/run.js";
-import { registerBatchTools } from "./tools/batch/batch.js";
-import { registerGitDiffContentTools } from "./tools/git/diff.js";
+import { registerSearchTools } from "./tools/search/search.js";
+import { registerTerraformTools } from "./tools/terraform/terraform.js";
+import { registerYamlTools } from "./tools/yaml/yaml.js";
 
 const server = new McpServer({
   name: "bash-mcp",
@@ -44,6 +44,7 @@ registerFileTools(server);
 registerRunTools(server);
 registerBatchTools(server);
 registerGitDiffContentTools(server);
+registerNpmTools(server);
 
 async function main() {
   const transport = new StdioServerTransport();

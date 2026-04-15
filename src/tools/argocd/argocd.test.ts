@@ -2,8 +2,8 @@
  * Tests for ArgoCD tools (argo_apps, argo_app_detail, argo_app_diff).
  */
 
-import { describe, it, expect } from "vitest";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { describe, expect, it } from "vitest";
 import { registerArgocdTools } from "./argocd.js";
 
 function createServer() {

@@ -2,8 +2,8 @@
  * Tests for search tools (rg, glob).
  */
 
-import { describe, it, expect } from "vitest";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { describe, expect, it } from "vitest";
 import { registerSearchTools } from "./search.js";
 
 function createServer() {

@@ -2,8 +2,8 @@
  * Tests for JSON tools (jq).
  */
 
-import { describe, it, expect } from "vitest";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { describe, expect, it } from "vitest";
 import { registerJsonTools } from "./json.js";
 
 function createServer() {

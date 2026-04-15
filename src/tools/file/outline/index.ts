@@ -9,25 +9,32 @@
  * Unknown extensions get a generic extractor (header comments + definition patterns).
  */
 
-import type { Language, ExtractResult } from "./types.js";
 import { extractBash } from "./bash.js";
-import { extractPython } from "./python.js";
-import { extractTsJs } from "./typescript.js";
-import { extractSql } from "./sql.js";
-import { extractYaml } from "./yaml.js";
-import { extractMarkdown } from "./markdown.js";
 import { extractGeneric } from "./generic.js";
+import { extractMarkdown } from "./markdown.js";
+import { extractPython } from "./python.js";
+import { extractSql } from "./sql.js";
+import type { ExtractResult, Language } from "./types.js";
+import { extractTsJs } from "./typescript.js";
+import { extractYaml } from "./yaml.js";
 
-export type { Language, ExtractResult };
+export type { ExtractResult, Language };
 
 const EXT_MAP: Record<string, Language> = {
-  sh: "bash", bash: "bash", zsh: "bash",
+  sh: "bash",
+  bash: "bash",
+  zsh: "bash",
   py: "python",
-  ts: "typescript", tsx: "typescript",
-  js: "javascript", jsx: "javascript", mjs: "javascript",
+  ts: "typescript",
+  tsx: "typescript",
+  js: "javascript",
+  jsx: "javascript",
+  mjs: "javascript",
   sql: "sql",
-  yml: "yaml", yaml: "yaml",
-  md: "markdown", mdx: "markdown",
+  yml: "yaml",
+  yaml: "yaml",
+  md: "markdown",
+  mdx: "markdown",
 };
 
 const EXTRACTORS: Record<Language, (lines: string[]) => ExtractResult> = {
@@ -41,11 +48,13 @@ const EXTRACTORS: Record<Language, (lines: string[]) => ExtractResult> = {
   unknown: extractGeneric,
 };
 
+/** Detect the source language from a file path's extension. */
 export function detectLanguage(filePath: string): Language {
   const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
   return EXT_MAP[ext] ?? "unknown";
 }
 
+/** Extract a structural outline from file content using a language-specific extractor. */
 export function extractOutline(
   content: string,
   language: Language,

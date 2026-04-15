@@ -5,17 +5,22 @@ import { truncate } from "./types.js";
  *  (not commented-out code). */
 function isSqlStructuralComment(trimmed: string): boolean {
   // Liquibase directives
-  if (/^--(liquibase|changeset|precondition|comment|rollback|validCheckSum|endDelimiter|context|labels)\b/i.test(trimmed)) {
+  if (
+    /^--(liquibase|changeset|precondition|comment|rollback|validCheckSum|endDelimiter|context|labels)\b/i.test(
+      trimmed,
+    )
+  ) {
     return true;
   }
   // Section separator lines (--- or ==== or #### etc.)
   if (/^--\s*[-=*#]{3,}/.test(trimmed)) return true;
   // Short comment text (likely a human note, not dead code) — up to ~60 chars after --
   const body = trimmed.replace(/^--\s*/, "");
-  if (body.length <= 60 && !/^[[\(\\w]+\.\w+/.test(body)) return true;
+  if (body.length <= 60 && !/^[[(\\w]+\.\w+/.test(body)) return true;
   return false;
 }
 
+/** Extract outline from SQL files (DDL, DML, Liquibase directives, structural comments). */
 export function extractSql(lines: string[]): ExtractResult {
   const result: string[] = [];
   let symbols = 0;
@@ -24,11 +29,16 @@ export function extractSql(lines: string[]): ExtractResult {
 
   for (const line of lines) {
     const t = line.trim();
-    const upper = t.toUpperCase();
+    const _upper = t.toUpperCase();
 
     // Header comments (Liquibase preamble, file-level comments)
     if (inHeader) {
-      if (t === "" || t.startsWith("--") || t.startsWith("/*") || t.startsWith("*")) {
+      if (
+        t === "" ||
+        t.startsWith("--") ||
+        t.startsWith("/*") ||
+        t.startsWith("*")
+      ) {
         result.push(line);
         continue;
       }
@@ -36,12 +46,17 @@ export function extractSql(lines: string[]): ExtractResult {
     }
 
     // Top-level DDL that creates a body (procedure, function, trigger, view)
-    if (!inBody && /^(CREATE|ALTER)\b/i.test(t) &&
-        /\b(PROCEDURE|FUNCTION|TRIGGER|VIEW)\b/i.test(t)) {
+    if (
+      !inBody &&
+      /^(CREATE|ALTER)\b/i.test(t) &&
+      /\b(PROCEDURE|FUNCTION|TRIGGER|VIEW)\b/i.test(t)
+    ) {
       result.push(truncate(line, 120));
       symbols++;
       // Procedures/functions/triggers have bodies — suppress internal DML
-      if (!/\bVIEW\b/i.test(t)) { inBody = true; }
+      if (!/\bVIEW\b/i.test(t)) {
+        inBody = true;
+      }
       continue;
     }
 
@@ -64,12 +79,17 @@ export function extractSql(lines: string[]): ExtractResult {
 
     // Outside a body — capture structural comments (not dead code)
     if (t.startsWith("--")) {
-      if (isSqlStructuralComment(t)) { result.push(line); }
+      if (isSqlStructuralComment(t)) {
+        result.push(line);
+      }
       continue;
     }
 
     // Block comments
-    if (t.startsWith("/*")) { result.push(truncate(line, 100)); continue; }
+    if (t.startsWith("/*")) {
+      result.push(truncate(line, 100));
+      continue;
+    }
 
     // Top-level DDL without a body (CREATE TABLE, ALTER TABLE, CREATE INDEX, DROP)
     if (/^(CREATE|ALTER|DROP)\b/i.test(t)) {
@@ -81,7 +101,6 @@ export function extractSql(lines: string[]): ExtractResult {
     // Top-level DML (only outside proc bodies)
     if (/^(INSERT|UPDATE|DELETE|MERGE|WITH|SELECT)\b/i.test(t)) {
       result.push(truncate(line, 100));
-      continue;
     }
   }
 

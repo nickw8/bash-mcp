@@ -1,6 +1,7 @@
 import type { ExtractResult } from "./types.js";
 import { truncate } from "./types.js";
 
+/** Extract outline from Python files (classes, functions, imports, constants, docstrings). */
 export function extractPython(lines: string[]): ExtractResult {
   const result: string[] = [];
   let symbols = 0;
@@ -13,11 +14,17 @@ export function extractPython(lines: string[]): ExtractResult {
     const indent = line.length - line.trimStart().length;
 
     // Shebang
-    if (i === 0 && t.startsWith("#!")) { result.push(line); continue; }
+    if (i === 0 && t.startsWith("#!")) {
+      result.push(line);
+      continue;
+    }
 
     // Header block: comments + module docstring
     if (inHeader) {
-      if (t === "" || t.startsWith("#")) { result.push(line); continue; }
+      if (t === "" || t.startsWith("#")) {
+        result.push(line);
+        continue;
+      }
       if (t.startsWith('"""') || t.startsWith("'''")) {
         i = collectDocstring(lines, i, result);
         inHeader = false;
@@ -27,8 +34,14 @@ export function extractPython(lines: string[]): ExtractResult {
     }
 
     // Buffer comments and decorators preceding definitions
-    if (t.startsWith("#") || t.startsWith("@")) { commentBuf.push(line); continue; }
-    if (t === "") { commentBuf = []; continue; }
+    if (t.startsWith("#") || t.startsWith("@")) {
+      commentBuf.push(line);
+      continue;
+    }
+    if (t === "") {
+      commentBuf = [];
+      continue;
+    }
 
     // Imports
     if (/^(import |from \S+ import )/.test(t)) {
@@ -72,7 +85,11 @@ export function extractPython(lines: string[]): ExtractResult {
 }
 
 /** Collect a docstring on the line after index i. Returns the new index. */
-function collectDocstring(lines: string[], i: number, result: string[]): number {
+function collectDocstring(
+  lines: string[],
+  i: number,
+  result: string[],
+): number {
   const nextLine = lines[i + 1];
   if (nextLine === undefined) return i;
   const next = nextLine.trim();

@@ -1,5 +1,6 @@
 import type { ExtractResult } from "./types.js";
 
+/** Extract outline from Markdown files (headings only). */
 export function extractMarkdown(lines: string[]): ExtractResult {
   const result: string[] = [];
   let symbols = 0;

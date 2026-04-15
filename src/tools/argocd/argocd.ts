@@ -6,163 +6,206 @@
  * per-resource health for detailed application inspection.
  */
 
-import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import { exec, execJson } from "#exec";
-import { ok, err } from "#response";
+import { err, ok } from "#response";
 
 /** Register all ArgoCD tools on the MCP server. */
 export function registerArgocdTools(server: McpServer) {
   // ── argocd app list ─────────────────────────────────────────────────
-  server.registerTool("argo_apps", {
-    title: "ArgoCD applications",
-    description:
-      "List ArgoCD applications with sync/health status. Structured summary instead of table output.",
-    inputSchema: {
-      project: z.string().optional().describe("Filter by ArgoCD project"),
-      selector: z.string().optional().describe("Label selector"),
+  server.registerTool(
+    "argo_apps",
+    {
+      title: "ArgoCD applications",
+      description:
+        "List ArgoCD applications with sync/health status. Structured summary instead of table output.",
+      inputSchema: {
+        project: z.string().optional().describe("Filter by ArgoCD project"),
+        selector: z.string().optional().describe("Label selector"),
+      },
+      outputSchema: {
+        apps: z.array(
+          z.object({
+            name: z.string(),
+            project: z.string(),
+            syncStatus: z.string(),
+            healthStatus: z.string(),
+            repo: z.string(),
+            path: z.string(),
+            targetRevision: z.string(),
+            namespace: z.string(),
+            cluster: z.string(),
+          }),
+        ),
+        count: z.number(),
+        summary: z.object({
+          synced: z.number(),
+          outOfSync: z.number(),
+          healthy: z.number(),
+          degraded: z.number(),
+        }),
+      },
     },
-    outputSchema: {
-      apps: z.array(z.object({
+    async ({ project, selector }) => {
+      const args = ["app", "list", "-o", "json"];
+      if (project) args.push("-p", project);
+      if (selector) args.push("-l", selector);
+
+      const result = await execJson<ArgoApp[]>("argocd", args, {
+        timeout: 15_000,
+      });
+
+      if (result.error) {
+        return err(result.error, {
+          apps: [],
+          count: 0,
+          summary: { synced: 0, outOfSync: 0, healthy: 0, degraded: 0 },
+        });
+      }
+
+      const rawApps = Array.isArray(result.data) ? result.data : [];
+      const apps = rawApps.map((app) => ({
+        name: app.metadata?.name ?? "",
+        project: app.spec?.project ?? "",
+        syncStatus: app.status?.sync?.status ?? "Unknown",
+        healthStatus: app.status?.health?.status ?? "Unknown",
+        repo: app.spec?.source?.repoURL ?? "",
+        path: app.spec?.source?.path ?? "",
+        targetRevision: app.spec?.source?.targetRevision ?? "",
+        namespace: app.spec?.destination?.namespace ?? "",
+        cluster: app.spec?.destination?.server ?? "",
+      }));
+
+      const summary = {
+        synced: apps.filter((a) => a.syncStatus === "Synced").length,
+        outOfSync: apps.filter((a) => a.syncStatus === "OutOfSync").length,
+        healthy: apps.filter((a) => a.healthStatus === "Healthy").length,
+        degraded: apps.filter((a) => a.healthStatus === "Degraded").length,
+      };
+
+      return ok({ apps, count: apps.length, summary });
+    },
+  );
+
+  // ── argocd app get ──────────────────────────────────────────────────
+  server.registerTool(
+    "argo_app_detail",
+    {
+      title: "ArgoCD app detail",
+      description:
+        "Get detailed status for a single ArgoCD application including resource health.",
+      inputSchema: {
+        name: z.string().describe("Application name"),
+      },
+      outputSchema: {
         name: z.string(),
         project: z.string(),
         syncStatus: z.string(),
         healthStatus: z.string(),
-        repo: z.string(),
-        path: z.string(),
-        targetRevision: z.string(),
-        namespace: z.string(),
-        cluster: z.string(),
-      })),
-      count: z.number(),
-      summary: z.object({
-        synced: z.number(),
-        outOfSync: z.number(),
-        healthy: z.number(),
-        degraded: z.number(),
-      }),
-    },
-  }, async ({ project, selector }) => {
-    const args = ["app", "list", "-o", "json"];
-    if (project) args.push("-p", project);
-    if (selector) args.push("-l", selector);
-
-    const result = await execJson<ArgoApp[]>("argocd", args, { timeout: 15_000 });
-
-    if (result.error) {
-      return err(result.error, {
-        apps: [], count: 0,
-        summary: { synced: 0, outOfSync: 0, healthy: 0, degraded: 0 },
-      });
-    }
-
-    const rawApps = Array.isArray(result.data) ? result.data : [];
-    const apps = rawApps.map((app) => ({
-      name: app.metadata?.name ?? "",
-      project: app.spec?.project ?? "",
-      syncStatus: app.status?.sync?.status ?? "Unknown",
-      healthStatus: app.status?.health?.status ?? "Unknown",
-      repo: app.spec?.source?.repoURL ?? "",
-      path: app.spec?.source?.path ?? "",
-      targetRevision: app.spec?.source?.targetRevision ?? "",
-      namespace: app.spec?.destination?.namespace ?? "",
-      cluster: app.spec?.destination?.server ?? "",
-    }));
-
-    const summary = {
-      synced: apps.filter((a) => a.syncStatus === "Synced").length,
-      outOfSync: apps.filter((a) => a.syncStatus === "OutOfSync").length,
-      healthy: apps.filter((a) => a.healthStatus === "Healthy").length,
-      degraded: apps.filter((a) => a.healthStatus === "Degraded").length,
-    };
-
-    return ok({ apps, count: apps.length, summary });
-  });
-
-  // ── argocd app get ──────────────────────────────────────────────────
-  server.registerTool("argo_app_detail", {
-    title: "ArgoCD app detail",
-    description:
-      "Get detailed status for a single ArgoCD application including resource health.",
-    inputSchema: {
-      name: z.string().describe("Application name"),
-    },
-    outputSchema: {
-      name: z.string(),
-      project: z.string(),
-      syncStatus: z.string(),
-      healthStatus: z.string(),
-      revision: z.string(),
-      message: z.string(),
-      resources: z.array(z.object({
-        kind: z.string(),
-        name: z.string(),
-        namespace: z.string(),
-        status: z.string(),
-        health: z.string(),
-      })),
-      conditions: z.array(z.object({
-        type: z.string(),
+        revision: z.string(),
         message: z.string(),
-      })),
+        resources: z.array(
+          z.object({
+            kind: z.string(),
+            name: z.string(),
+            namespace: z.string(),
+            status: z.string(),
+            health: z.string(),
+          }),
+        ),
+        conditions: z.array(
+          z.object({
+            type: z.string(),
+            message: z.string(),
+          }),
+        ),
+      },
     },
-  }, async ({ name }) => {
-    const result = await execJson<ArgoApp>("argocd", ["app", "get", name, "-o", "json"], { timeout: 15_000 });
+    async ({ name }) => {
+      const result = await execJson<ArgoApp>(
+        "argocd",
+        ["app", "get", name, "-o", "json"],
+        { timeout: 15_000 },
+      );
 
-    if (result.error) {
-      return err(result.error, {
-        name, project: "", syncStatus: "", healthStatus: "",
-        revision: "", message: "", resources: [], conditions: [],
+      if (result.error) {
+        return err(result.error, {
+          name,
+          project: "",
+          syncStatus: "",
+          healthStatus: "",
+          revision: "",
+          message: "",
+          resources: [],
+          conditions: [],
+        });
+      }
+
+      const app = result.data!;
+      const resources = (app.status?.resources ?? []).map((r) => ({
+        kind: r.kind ?? "",
+        name: r.name ?? "",
+        namespace: r.namespace ?? "",
+        status: r.status ?? "",
+        health: r.health?.status ?? "Unknown",
+      }));
+
+      const conditions = (app.status?.conditions ?? []).map((c) => ({
+        type: c.type ?? "",
+        message: c.message ?? "",
+      }));
+
+      return ok({
+        name: app.metadata?.name ?? name,
+        project: app.spec?.project ?? "",
+        syncStatus: app.status?.sync?.status ?? "",
+        healthStatus: app.status?.health?.status ?? "",
+        revision: app.status?.sync?.revision ?? "",
+        message: app.status?.operationState?.message ?? "",
+        resources,
+        conditions,
       });
-    }
-
-    const app = result.data!;
-    const resources = (app.status?.resources ?? []).map((r) => ({
-      kind: r.kind ?? "",
-      name: r.name ?? "",
-      namespace: r.namespace ?? "",
-      status: r.status ?? "",
-      health: r.health?.status ?? "Unknown",
-    }));
-
-    const conditions = (app.status?.conditions ?? []).map((c) => ({
-      type: c.type ?? "",
-      message: c.message ?? "",
-    }));
-
-    return ok({
-      name: app.metadata?.name ?? name,
-      project: app.spec?.project ?? "",
-      syncStatus: app.status?.sync?.status ?? "",
-      healthStatus: app.status?.health?.status ?? "",
-      revision: app.status?.sync?.revision ?? "",
-      message: app.status?.operationState?.message ?? "",
-      resources,
-      conditions,
-    });
-  });
+    },
+  );
 
   // ── argocd app diff ─────────────────────────────────────────────────
-  server.registerTool("argo_app_diff", {
-    title: "ArgoCD app diff",
-    description: "Show what's out of sync for an ArgoCD application.",
-    inputSchema: {
-      name: z.string().describe("Application name"),
+  server.registerTool(
+    "argo_app_diff",
+    {
+      title: "ArgoCD app diff",
+      description: "Show what's out of sync for an ArgoCD application.",
+      inputSchema: {
+        name: z.string().describe("Application name"),
+      },
+      outputSchema: {
+        hasDiff: z.boolean(),
+        diff: z.string(),
+      },
     },
-    outputSchema: {
-      hasDiff: z.boolean(),
-      diff: z.string(),
-    },
-  }, async ({ name }) => {
-    const result = await exec("argocd", ["app", "diff", name, "--local-repo-root", "."], { timeout: 15_000 });
+    async ({ name }) => {
+      const result = await exec(
+        "argocd",
+        ["app", "diff", name, "--local-repo-root", "."],
+        { timeout: 15_000 },
+      );
 
-    const hasDiff = result.exitCode !== 0;
-    const structuredContent = { hasDiff, diff: result.stdout || result.stderr };
-    return {
-      content: [{ type: "text" as const, text: hasDiff ? structuredContent.diff : "In sync" }],
-      structuredContent,
-    };
-  });
+      const hasDiff = result.exitCode !== 0;
+      const structuredContent = {
+        hasDiff,
+        diff: result.stdout || result.stderr,
+      };
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: hasDiff ? structuredContent.diff : "In sync",
+          },
+        ],
+        structuredContent,
+      };
+    },
+  );
 }
 
 // ── Types ───────────────────────────────────────────────────────────

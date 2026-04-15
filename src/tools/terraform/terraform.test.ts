@@ -2,8 +2,8 @@
  * Tests for Terraform tools (tf_state_list, tf_show, tf_plan_summary, tf_workspaces).
  */
 
-import { describe, it, expect } from "vitest";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { describe, expect, it } from "vitest";
 import { registerTerraformTools } from "./terraform.js";
 
 function createServer() {

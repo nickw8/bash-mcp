@@ -2,8 +2,8 @@
  * Tests for Helm tools (helm_list, helm_status, helm_values).
  */
 
-import { describe, it, expect } from "vitest";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { describe, expect, it } from "vitest";
 import { registerHelmTools } from "./helm.js";
 
 function createServer() {

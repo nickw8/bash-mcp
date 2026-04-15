@@ -17,6 +17,7 @@ export interface ExtractResult {
   symbols: number;
 }
 
+/** Truncate a string to max length, appending "..." if truncated. */
 export function truncate(s: string, max: number): string {
   return s.length > max ? `${s.substring(0, max - 3)}...` : s;
 }

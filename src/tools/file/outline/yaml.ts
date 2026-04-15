@@ -1,5 +1,6 @@
 import type { ExtractResult } from "./types.js";
 
+/** Extract outline from YAML files (top-level and second-level keys). */
 export function extractYaml(lines: string[]): ExtractResult {
   const result: string[] = [];
   let symbols = 0;
@@ -23,7 +24,6 @@ export function extractYaml(lines: string[]): ExtractResult {
     // Second-level keys (2-space indent)
     if (/^ {2}\S/.test(line) && t.includes(":")) {
       result.push(line);
-      continue;
     }
   }
 

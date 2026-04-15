@@ -2,9 +2,9 @@
  * Tests for git_diff_content tool.
  */
 
-import { describe, it, expect } from "vitest";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { registerGitDiffContentTools, parseDiff } from "./diff.js";
+import { describe, expect, it } from "vitest";
+import { parseDiff, registerGitDiffContentTools } from "./diff.js";
 
 function createServer() {
   const server = new McpServer({ name: "test", version: "0.0.1" });
@@ -34,11 +34,11 @@ index abc1234..def5678 100644
     const result = parseDiff(raw);
 
     expect(result.files).toHaveLength(1);
-    expect(result.files[0]!.path).toBe("src/app.ts");
-    expect(result.files[0]!.insertions).toBe(1);
-    expect(result.files[0]!.deletions).toBe(0);
-    expect(result.files[0]!.hunks).toHaveLength(1);
-    expect(result.files[0]!.hunks[0]!.header).toContain("@@ -1,3 +1,4 @@");
+    expect(result.files[0]?.path).toBe("src/app.ts");
+    expect(result.files[0]?.insertions).toBe(1);
+    expect(result.files[0]?.deletions).toBe(0);
+    expect(result.files[0]?.hunks).toHaveLength(1);
+    expect(result.files[0]?.hunks[0]?.header).toContain("@@ -1,3 +1,4 @@");
     expect(result.summary).toEqual({
       filesChanged: 1,
       insertions: 1,
@@ -68,12 +68,12 @@ index 3333..4444 100644
     const result = parseDiff(raw);
 
     expect(result.files).toHaveLength(2);
-    expect(result.files[0]!.path).toBe("file1.ts");
-    expect(result.files[0]!.insertions).toBe(1);
-    expect(result.files[0]!.deletions).toBe(0);
-    expect(result.files[1]!.path).toBe("file2.ts");
-    expect(result.files[1]!.insertions).toBe(0);
-    expect(result.files[1]!.deletions).toBe(1);
+    expect(result.files[0]?.path).toBe("file1.ts");
+    expect(result.files[0]?.insertions).toBe(1);
+    expect(result.files[0]?.deletions).toBe(0);
+    expect(result.files[1]?.path).toBe("file2.ts");
+    expect(result.files[1]?.insertions).toBe(0);
+    expect(result.files[1]?.deletions).toBe(1);
     expect(result.summary).toEqual({
       filesChanged: 2,
       insertions: 1,
@@ -99,11 +99,11 @@ index aaaa..bbbb 100644
     const result = parseDiff(raw);
 
     expect(result.files).toHaveLength(1);
-    expect(result.files[0]!.hunks).toHaveLength(2);
-    expect(result.files[0]!.hunks[0]!.header).toContain("-1,3 +1,4");
-    expect(result.files[0]!.hunks[1]!.header).toContain("-20,3 +21,4");
-    expect(result.files[0]!.insertions).toBe(2);
-    expect(result.files[0]!.deletions).toBe(0);
+    expect(result.files[0]?.hunks).toHaveLength(2);
+    expect(result.files[0]?.hunks[0]?.header).toContain("-1,3 +1,4");
+    expect(result.files[0]?.hunks[1]?.header).toContain("-20,3 +21,4");
+    expect(result.files[0]?.insertions).toBe(2);
+    expect(result.files[0]?.deletions).toBe(0);
   });
 
   it("handles modifications (both insertions and deletions)", () => {
@@ -120,8 +120,8 @@ index 1111..2222 100644
 
     const result = parseDiff(raw);
 
-    expect(result.files[0]!.insertions).toBe(1);
-    expect(result.files[0]!.deletions).toBe(1);
+    expect(result.files[0]?.insertions).toBe(1);
+    expect(result.files[0]?.deletions).toBe(1);
     expect(result.summary.insertions).toBe(1);
     expect(result.summary.deletions).toBe(1);
   });

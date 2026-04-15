@@ -4,8 +4,8 @@
  * Uses real filesystem commands since cat/head/sed are universally available.
  */
 
-import { describe, it, expect } from "vitest";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { describe, expect, it } from "vitest";
 import { registerFileTools } from "./file.js";
 
 /** Helper to create a server with file tools registered. */

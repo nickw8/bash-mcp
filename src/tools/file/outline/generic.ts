@@ -22,7 +22,11 @@ export function extractGeneric(lines: string[]): ExtractResult {
 
     // Top-level definition keywords (covers most C-family and scripting languages)
     if (indent === 0 && t !== "" && t !== "}") {
-      if (/^(function|class|def|sub|fn|func|proc|package|module|namespace|struct|impl|trait|enum|interface|type)\b/.test(t)) {
+      if (
+        /^(function|class|def|sub|fn|func|proc|package|module|namespace|struct|impl|trait|enum|interface|type)\b/.test(
+          t,
+        )
+      ) {
         result.push(truncate(line, 100));
         symbols++;
       }

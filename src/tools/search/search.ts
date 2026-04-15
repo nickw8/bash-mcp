@@ -6,162 +6,213 @@
  * of line-oriented text.
  */
 
-import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import { exec } from "#exec";
-import { ok, err } from "#response";
+import { err, ok } from "#response";
 
 /** Register all search tools on the MCP server. */
 export function registerSearchTools(server: McpServer) {
   // ── rg (ripgrep) ────────────────────────────────────────────────────
-  server.registerTool("rg", {
-    title: "Ripgrep search",
-    description:
-      "Search file contents with ripgrep. Returns structured matches with file, line number, and matched text. Far more compact than raw rg output.",
-    inputSchema: {
-      pattern: z.string().describe("Regex pattern to search for"),
-      path: z.string().optional().describe("Directory or file to search (default: cwd)"),
-      glob: z.string().optional().describe("File glob filter (e.g. '*.ts')"),
-      ignoreCase: z.boolean().optional().describe("Case-insensitive search"),
-      maxResults: z.number().optional().default(100).describe("Max results to return (default 100)"),
-      context: z.number().optional().describe("Lines of context around each match"),
-      filesOnly: z.boolean().optional().describe("Only return filenames, not matched lines"),
-      countPerFile: z.boolean().optional().describe("Return match counts grouped by file instead of individual matches"),
-      fixedStrings: z.boolean().optional().describe("Treat pattern as literal string"),
+  server.registerTool(
+    "rg",
+    {
+      title: "Ripgrep search",
+      description:
+        "Search file contents with ripgrep. Returns structured matches with file, line number, and matched text. Far more compact than raw rg output.",
+      inputSchema: {
+        pattern: z.string().describe("Regex pattern to search for"),
+        path: z
+          .string()
+          .optional()
+          .describe("Directory or file to search (default: cwd)"),
+        glob: z.string().optional().describe("File glob filter (e.g. '*.ts')"),
+        ignoreCase: z.boolean().optional().describe("Case-insensitive search"),
+        maxResults: z
+          .number()
+          .optional()
+          .default(100)
+          .describe("Max results to return (default 100)"),
+        context: z
+          .number()
+          .optional()
+          .describe("Lines of context around each match"),
+        filesOnly: z
+          .boolean()
+          .optional()
+          .describe("Only return filenames, not matched lines"),
+        countPerFile: z
+          .boolean()
+          .optional()
+          .describe(
+            "Return match counts grouped by file instead of individual matches",
+          ),
+        fixedStrings: z
+          .boolean()
+          .optional()
+          .describe("Treat pattern as literal string"),
+      },
+      outputSchema: {
+        matches: z.array(
+          z.object({
+            file: z.string(),
+            line: z.number(),
+            text: z.string(),
+          }),
+        ),
+        fileCount: z.number(),
+        matchCount: z.number(),
+        truncated: z.boolean(),
+        fileCounts: z
+          .array(z.object({ file: z.string(), count: z.number() }))
+          .optional(),
+      },
     },
-    outputSchema: {
-      matches: z.array(
-        z.object({
-          file: z.string(),
-          line: z.number(),
-          text: z.string(),
-        }),
-      ),
-      fileCount: z.number(),
-      matchCount: z.number(),
-      truncated: z.boolean(),
-      fileCounts: z.array(z.object({ file: z.string(), count: z.number() })).optional(),
-    },
-  }, async ({ pattern, path, glob, ignoreCase, maxResults, context, filesOnly, countPerFile, fixedStrings }) => {
-    const limit = maxResults ?? 100;
+    async ({
+      pattern,
+      path,
+      glob,
+      ignoreCase,
+      maxResults,
+      context,
+      filesOnly,
+      countPerFile,
+      fixedStrings,
+    }) => {
+      const limit = maxResults ?? 100;
 
-    if (countPerFile) {
-      const args = ["--count-matches", "--no-heading"];
-      if (ignoreCase) args.push("-i");
-      if (glob) args.push("-g", glob);
-      if (fixedStrings) args.push("-F");
-      args.push(pattern);
-      if (path) args.push(path);
+      if (countPerFile) {
+        const args = ["--count-matches", "--no-heading"];
+        if (ignoreCase) args.push("-i");
+        if (glob) args.push("-g", glob);
+        if (fixedStrings) args.push("-F");
+        args.push(pattern);
+        if (path) args.push(path);
 
-      const result = await exec("rg", args);
+        const result = await exec("rg", args);
 
-      if (result.exitCode !== 0 && result.exitCode !== 1) {
-        return err(result.stderr, { matches: [], fileCount: 0, matchCount: 0, truncated: false });
-      }
-
-      const fileCounts: { file: string; count: number }[] = [];
-      let totalMatches = 0;
-
-      for (const line of result.stdout.trim().split("\n").filter(Boolean)) {
-        const lastColon = line.lastIndexOf(":");
-        if (lastColon === -1) continue;
-        const file = line.slice(0, lastColon);
-        const count = parseInt(line.slice(lastColon + 1), 10);
-        if (Number.isNaN(count)) continue;
-        fileCounts.push({ file, count });
-        totalMatches += count;
-      }
-
-      return ok({
-        matches: [],
-        fileCount: fileCounts.length,
-        matchCount: totalMatches,
-        truncated: false,
-        fileCounts,
-      });
-    }
-
-    if (filesOnly) {
-      const args = ["--files-with-matches", "--no-heading"];
-      if (ignoreCase) args.push("-i");
-      if (glob) args.push("-g", glob);
-      if (fixedStrings) args.push("-F");
-      args.push(pattern);
-      if (path) args.push(path);
-
-      const result = await exec("rg", args);
-      const files = result.stdout.trim().split("\n").filter(Boolean);
-      return ok({
-        matches: files.map((f) => ({ file: f, line: 0, text: "" })),
-        fileCount: files.length,
-        matchCount: files.length,
-        truncated: false,
-      });
-    }
-
-    const args = ["--json", `--max-count=${Math.min(limit, 500)}`];
-    if (ignoreCase) args.push("-i");
-    if (glob) args.push("-g", glob);
-    if (context) args.push("-C", String(context));
-    if (fixedStrings) args.push("-F");
-    args.push(pattern);
-    if (path) args.push(path);
-
-    const result = await exec("rg", args);
-
-    // rg exit 1 = no matches (not an error), only fail on exit >= 2
-    if (result.exitCode !== 0 && result.exitCode !== 1) {
-      return err(result.stderr, { matches: [], fileCount: 0, matchCount: 0, truncated: false });
-    }
-
-    const matches: { file: string; line: number; text: string }[] = [];
-    const filesSeen = new Set<string>();
-
-    for (const line of result.stdout.split("\n").filter(Boolean)) {
-      try {
-        const msg = JSON.parse(line);
-        if (msg.type === "match") {
-          const file = msg.data.path.text;
-          filesSeen.add(file);
-          if (matches.length < limit) {
-            matches.push({
-              file,
-              line: msg.data.line_number,
-              text: msg.data.lines.text.trimEnd(),
-            });
-          }
+        if (result.exitCode !== 0 && result.exitCode !== 1) {
+          return err(result.stderr, {
+            matches: [],
+            fileCount: 0,
+            matchCount: 0,
+            truncated: false,
+          });
         }
-      } catch {
-        // skip malformed lines
-      }
-    }
 
-    return ok({
-      matches,
-      fileCount: filesSeen.size,
-      matchCount: matches.length,
-      truncated: matches.length >= limit,
-    });
-  });
+        const fileCounts: { file: string; count: number }[] = [];
+        let totalMatches = 0;
+
+        for (const line of result.stdout.trim().split("\n").filter(Boolean)) {
+          const lastColon = line.lastIndexOf(":");
+          if (lastColon === -1) continue;
+          const file = line.slice(0, lastColon);
+          const count = parseInt(line.slice(lastColon + 1), 10);
+          if (Number.isNaN(count)) continue;
+          fileCounts.push({ file, count });
+          totalMatches += count;
+        }
+
+        return ok({
+          matches: [],
+          fileCount: fileCounts.length,
+          matchCount: totalMatches,
+          truncated: false,
+          fileCounts,
+        });
+      }
+
+      if (filesOnly) {
+        const args = ["--files-with-matches", "--no-heading"];
+        if (ignoreCase) args.push("-i");
+        if (glob) args.push("-g", glob);
+        if (fixedStrings) args.push("-F");
+        args.push(pattern);
+        if (path) args.push(path);
+
+        const result = await exec("rg", args);
+        const files = result.stdout.trim().split("\n").filter(Boolean);
+        return ok({
+          matches: files.map((f) => ({ file: f, line: 0, text: "" })),
+          fileCount: files.length,
+          matchCount: files.length,
+          truncated: false,
+        });
+      }
+
+      const args = ["--json", `--max-count=${Math.min(limit, 500)}`];
+      if (ignoreCase) args.push("-i");
+      if (glob) args.push("-g", glob);
+      if (context) args.push("-C", String(context));
+      if (fixedStrings) args.push("-F");
+      args.push(pattern);
+      if (path) args.push(path);
+
+      const result = await exec("rg", args);
+
+      // rg exit 1 = no matches (not an error), only fail on exit >= 2
+      if (result.exitCode !== 0 && result.exitCode !== 1) {
+        return err(result.stderr, {
+          matches: [],
+          fileCount: 0,
+          matchCount: 0,
+          truncated: false,
+        });
+      }
+
+      const matches: { file: string; line: number; text: string }[] = [];
+      const filesSeen = new Set<string>();
+
+      for (const line of result.stdout.split("\n").filter(Boolean)) {
+        try {
+          const msg = JSON.parse(line);
+          if (msg.type === "match") {
+            const file = msg.data.path.text;
+            filesSeen.add(file);
+            if (matches.length < limit) {
+              matches.push({
+                file,
+                line: msg.data.line_number,
+                text: msg.data.lines.text.trimEnd(),
+              });
+            }
+          }
+        } catch {
+          // skip malformed lines
+        }
+      }
+
+      return ok({
+        matches,
+        fileCount: filesSeen.size,
+        matchCount: matches.length,
+        truncated: matches.length >= limit,
+      });
+    },
+  );
 
   // ── glob ────────────────────────────────────────────────────────────
-  server.registerTool("glob", {
-    title: "Glob file search",
-    description:
-      "Find files matching a glob pattern. Returns a compact list of paths.",
-    inputSchema: {
-      pattern: z.string().describe("Glob pattern (e.g. 'src/**/*.ts')"),
-      cwd: z.string().optional().describe("Working directory for the glob"),
+  server.registerTool(
+    "glob",
+    {
+      title: "Glob file search",
+      description:
+        "Find files matching a glob pattern. Returns a compact list of paths.",
+      inputSchema: {
+        pattern: z.string().describe("Glob pattern (e.g. 'src/**/*.ts')"),
+        cwd: z.string().optional().describe("Working directory for the glob"),
+      },
+      outputSchema: {
+        files: z.array(z.string()),
+        count: z.number(),
+      },
     },
-    outputSchema: {
-      files: z.array(z.string()),
-      count: z.number(),
-    },
-  }, async ({ pattern, cwd }) => {
-    const args = ["--files", "-g", pattern];
+    async ({ pattern, cwd }) => {
+      const args = ["--files", "-g", pattern];
 
-    const result = await exec("rg", args, cwd ? { cwd } : {});
-    const files = result.stdout.trim().split("\n").filter(Boolean);
-    return ok({ files, count: files.length });
-  });
+      const result = await exec("rg", args, cwd ? { cwd } : {});
+      const files = result.stdout.trim().split("\n").filter(Boolean);
+      return ok({ files, count: files.length });
+    },
+  );
 }

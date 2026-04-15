@@ -6,64 +6,84 @@
  * either a file path or raw YAML string as input.
  */
 
-import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import { exec } from "#exec";
-import { ok, err } from "#response";
+import { err, ok } from "#response";
 import { shellEscape } from "#shell";
 
 /** Register the yq tool on the MCP server. */
 export function registerYamlTools(server: McpServer) {
-  server.registerTool("yq", {
-    title: "yq YAML processor",
-    description:
-      "Query and transform YAML files using yq expressions (mikefarah/yq). Outputs as JSON for structured consumption. Far more compact than reading a full YAML file.",
-    inputSchema: {
-      expression: z.string().optional().default(".").describe("yq expression (default: '.')"),
-      file: z.string().optional().describe("Path to a YAML file"),
-      input: z.string().optional().describe("Raw YAML string to process (alternative to file)"),
-      outputFormat: z.enum(["json", "yaml", "props"]).optional().default("json")
-        .describe("Output format (default: 'json' for structured output)"),
+  server.registerTool(
+    "yq",
+    {
+      title: "yq YAML processor",
+      description:
+        "Query and transform YAML files using yq expressions (mikefarah/yq). Outputs as JSON for structured consumption. Far more compact than reading a full YAML file.",
+      inputSchema: {
+        expression: z
+          .string()
+          .optional()
+          .default(".")
+          .describe("yq expression (default: '.')"),
+        file: z.string().optional().describe("Path to a YAML file"),
+        input: z
+          .string()
+          .optional()
+          .describe("Raw YAML string to process (alternative to file)"),
+        outputFormat: z
+          .enum(["json", "yaml", "props"])
+          .optional()
+          .default("json")
+          .describe("Output format (default: 'json' for structured output)"),
+      },
+      outputSchema: {
+        result: z.union([
+          z.record(z.unknown()),
+          z.array(z.unknown()),
+          z.string(),
+          z.number(),
+          z.boolean(),
+          z.null(),
+        ]),
+        format: z.string(),
+      },
     },
-    outputSchema: {
-      result: z.union([
-        z.record(z.unknown()),
-        z.array(z.unknown()),
-        z.string(),
-        z.number(),
-        z.boolean(),
-        z.null(),
-      ]),
-      format: z.string(),
-    },
-  }, async ({ expression, file, input, outputFormat }) => {
-    if (!file && !input) {
-      return err("Either 'file' or 'input' must be provided", { result: null, format: "error" });
-    }
+    async ({ expression, file, input, outputFormat }) => {
+      if (!file && !input) {
+        return err("Either 'file' or 'input' must be provided", {
+          result: null,
+          format: "error",
+        });
+      }
 
-    const fmt = outputFormat ?? "json";
-    const args: string[] = ["-o", fmt, expression ?? "."];
+      const fmt = outputFormat ?? "json";
+      const args: string[] = ["-o", fmt, expression ?? "."];
 
-    if (file) {
-      args.push(file);
-      const result = await exec("yq", args);
+      if (file) {
+        args.push(file);
+        const result = await exec("yq", args);
+
+        if (result.exitCode !== 0) {
+          return err(result.stderr, { result: null, format: "error" });
+        }
+
+        return parseYqOutput(result.stdout, fmt);
+      }
+
+      // Pipe raw YAML input via stdin (input is guaranteed non-empty by the early return above)
+      const result = await exec("sh", [
+        "-c",
+        `echo ${shellEscape(input ?? "")} | yq ${args.map(shellEscape).join(" ")}`,
+      ]);
 
       if (result.exitCode !== 0) {
         return err(result.stderr, { result: null, format: "error" });
       }
 
       return parseYqOutput(result.stdout, fmt);
-    }
-
-    // Pipe raw YAML input via stdin (input is guaranteed non-empty by the early return above)
-    const result = await exec("sh", ["-c", `echo ${shellEscape(input ?? "")} | yq ${args.map(shellEscape).join(" ")}`]);
-
-    if (result.exitCode !== 0) {
-      return err(result.stderr, { result: null, format: "error" });
-    }
-
-    return parseYqOutput(result.stdout, fmt);
-  });
+    },
+  );
 }
 
 /**

@@ -6,10 +6,10 @@
  * code changes in a structured format.
  */
 
-import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import { exec } from "#exec";
-import { ok, err } from "#response";
+import { err, ok } from "#response";
 
 /** Parse unified diff output into structured per-file sections with hunks. */
 export function parseDiff(raw: string) {
@@ -39,7 +39,7 @@ export function parseDiff(raw: string) {
 
     // hunkParts alternates: [preamble, header1, body1, header2, body2, ...]
     for (let i = 1; i < hunkParts.length; i += 2) {
-      const header = hunkParts[i]!.trim();
+      const header = hunkParts[i]?.trim() ?? "";
       const body = hunkParts[i + 1] ?? "";
 
       const bodyLines = body.split("\n");
@@ -81,61 +81,84 @@ export function parseDiff(raw: string) {
 
 /** Register the git_diff_content tool on the MCP server. */
 export function registerGitDiffContentTools(server: McpServer) {
-  server.registerTool("git_diff_content", {
-    title: "Git diff with content",
-    description:
-      "Show git diff with structured patch content. Returns parsed hunks per file instead of raw unified diff text. Use this when you need to see actual code changes, not just file-level stats.",
-    inputSchema: {
-      cwd: z.string().optional().describe("Working directory (git repo)"),
-      ref: z.string().optional().describe("Diff against this ref (e.g. 'HEAD~1', 'main', a commit hash)"),
-      staged: z.boolean().optional().default(false).describe("Show staged changes (--cached)"),
-      path: z.string().optional().describe("Limit diff to a specific file or directory"),
-      context: z.number().optional().default(3).describe("Number of context lines around changes (passed as -U<n>)"),
-    },
-    outputSchema: {
-      files: z.array(
-        z.object({
-          path: z.string(),
+  server.registerTool(
+    "git_diff_content",
+    {
+      title: "Git diff with content",
+      description:
+        "Show git diff with structured patch content. Returns parsed hunks per file instead of raw unified diff text. Use this when you need to see actual code changes, not just file-level stats.",
+      inputSchema: {
+        cwd: z.string().optional().describe("Working directory (git repo)"),
+        ref: z
+          .string()
+          .optional()
+          .describe(
+            "Diff against this ref (e.g. 'HEAD~1', 'main', a commit hash)",
+          ),
+        staged: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Show staged changes (--cached)"),
+        path: z
+          .string()
+          .optional()
+          .describe("Limit diff to a specific file or directory"),
+        context: z
+          .number()
+          .optional()
+          .default(3)
+          .describe("Number of context lines around changes (passed as -U<n>)"),
+      },
+      outputSchema: {
+        files: z.array(
+          z.object({
+            path: z.string(),
+            insertions: z.number(),
+            deletions: z.number(),
+            hunks: z.array(
+              z.object({
+                header: z.string(),
+                lines: z.string(),
+              }),
+            ),
+          }),
+        ),
+        summary: z.object({
+          filesChanged: z.number(),
           insertions: z.number(),
           deletions: z.number(),
-          hunks: z.array(
-            z.object({
-              header: z.string(),
-              lines: z.string(),
-            }),
-          ),
         }),
-      ),
-      summary: z.object({
-        filesChanged: z.number(),
-        insertions: z.number(),
-        deletions: z.number(),
-      }),
+      },
     },
-  }, async ({ cwd, ref, staged, path, context }) => {
-    const args = ["diff", `-U${context ?? 3}`];
-    if (staged) args.push("--cached");
-    if (ref) args.push(ref);
-    if (path) { args.push("--"); args.push(path); }
+    async ({ cwd, ref, staged, path, context }) => {
+      const args = ["diff", `-U${context ?? 3}`];
+      if (staged) args.push("--cached");
+      if (ref) args.push(ref);
+      if (path) {
+        args.push("--");
+        args.push(path);
+      }
 
-    const result = await exec("git", args, cwd ? { cwd } : {});
+      const result = await exec("git", args, cwd ? { cwd } : {});
 
-    if (result.exitCode !== 0) {
-      return err(result.stderr || result.stdout, {
-        files: [],
-        summary: { filesChanged: 0, insertions: 0, deletions: 0 },
-      });
-    }
+      if (result.exitCode !== 0) {
+        return err(result.stderr || result.stdout, {
+          files: [],
+          summary: { filesChanged: 0, insertions: 0, deletions: 0 },
+        });
+      }
 
-    // Empty diff (no changes)
-    if (!result.stdout.trim()) {
-      return ok({
-        files: [],
-        summary: { filesChanged: 0, insertions: 0, deletions: 0 },
-      });
-    }
+      // Empty diff (no changes)
+      if (!result.stdout.trim()) {
+        return ok({
+          files: [],
+          summary: { filesChanged: 0, insertions: 0, deletions: 0 },
+        });
+      }
 
-    const parsed = parseDiff(result.stdout);
-    return ok(parsed);
-  });
+      const parsed = parseDiff(result.stdout);
+      return ok(parsed);
+    },
+  );
 }

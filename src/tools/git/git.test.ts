@@ -2,8 +2,8 @@
  * Tests for git tools (git_status, git_log, git_diff, git_branches).
  */
 
-import { describe, it, expect } from "vitest";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { describe, expect, it } from "vitest";
 import { registerGitTools } from "./git.js";
 
 function createServer() {

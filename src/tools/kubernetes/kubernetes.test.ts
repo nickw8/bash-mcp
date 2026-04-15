@@ -2,8 +2,8 @@
  * Tests for Kubernetes tools (kube_get, kube_logs, kube_contexts).
  */
 
-import { describe, it, expect } from "vitest";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { describe, expect, it } from "vitest";
 import { registerKubernetesTools } from "./kubernetes.js";
 
 function createServer() {

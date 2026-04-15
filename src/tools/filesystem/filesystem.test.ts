@@ -4,8 +4,8 @@
  * Uses real filesystem commands since ls/find/du are universally available.
  */
 
-import { describe, it, expect } from "vitest";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { describe, expect, it } from "vitest";
 import { registerFilesystemTools } from "./filesystem.js";
 
 /** Helper to create a server with filesystem tools registered. */

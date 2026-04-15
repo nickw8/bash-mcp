@@ -6,7 +6,7 @@
  * handle exit codes, stdout/stderr, timeouts, and JSON parsing.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { exec, execJson } from "./exec.js";
 
 describe("exec", () => {
@@ -53,10 +53,7 @@ describe("exec", () => {
 
 describe("execJson", () => {
   it("parses valid JSON stdout", async () => {
-    const result = await execJson<{ key: string }>(
-      "echo",
-      ['{"key":"value"}'],
-    );
+    const result = await execJson<{ key: string }>("echo", ['{"key":"value"}']);
     expect(result.error).toBeNull();
     expect(result.exitCode).toBe(0);
     expect(result.data).toEqual({ key: "value" });

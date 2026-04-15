@@ -2,8 +2,8 @@
  * Tests for run tool.
  */
 
-import { describe, it, expect } from "vitest";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { describe, expect, it } from "vitest";
 import { registerRunTools } from "./run.js";
 
 function createServer() {

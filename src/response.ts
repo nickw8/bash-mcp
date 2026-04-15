@@ -9,13 +9,18 @@
 /** Build a successful MCP tool response with structured content. */
 export function ok<T extends Record<string, unknown>>(structuredContent: T) {
   return {
-    content: [{ type: "text" as const, text: JSON.stringify(structuredContent) }],
+    content: [
+      { type: "text" as const, text: JSON.stringify(structuredContent) },
+    ],
     structuredContent,
   };
 }
 
 /** Build an error MCP tool response. */
-export function err<T extends Record<string, unknown>>(message: string, structuredContent: T) {
+export function err<T extends Record<string, unknown>>(
+  message: string,
+  structuredContent: T,
+) {
   return {
     content: [{ type: "text" as const, text: message }],
     structuredContent,

@@ -5,131 +5,183 @@
  * JSON. Uses helm's native JSON output mode for consistent parsing.
  */
 
-import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import { execJson } from "#exec";
-import { ok, err } from "#response";
+import { err, ok } from "#response";
 
 /** Register all Helm tools on the MCP server. */
 export function registerHelmTools(server: McpServer) {
   // ── helm list ───────────────────────────────────────────────────────
-  server.registerTool("helm_list", {
-    title: "Helm releases",
-    description:
-      "List Helm releases with status, chart, and app version. Structured output.",
-    inputSchema: {
-      namespace: z.string().optional().describe("Namespace (omit for all)"),
-      allNamespaces: z.boolean().optional().describe("All namespaces"),
-      filter: z.string().optional().describe("Filter by release name regex"),
-      context: z.string().optional().describe("Kubectl context"),
+  server.registerTool(
+    "helm_list",
+    {
+      title: "Helm releases",
+      description:
+        "List Helm releases with status, chart, and app version. Structured output.",
+      inputSchema: {
+        namespace: z.string().optional().describe("Namespace (omit for all)"),
+        allNamespaces: z.boolean().optional().describe("All namespaces"),
+        filter: z.string().optional().describe("Filter by release name regex"),
+        context: z.string().optional().describe("Kubectl context"),
+      },
+      outputSchema: {
+        releases: z.array(
+          z.object({
+            name: z.string(),
+            namespace: z.string(),
+            revision: z.number(),
+            status: z.string(),
+            chart: z.string(),
+            appVersion: z.string(),
+            updated: z.string(),
+          }),
+        ),
+        count: z.number(),
+      },
     },
-    outputSchema: {
-      releases: z.array(z.object({
+    async ({ namespace, allNamespaces, filter, context }) => {
+      const args = ["list", "-o", "json"];
+      if (namespace) args.push("-n", namespace);
+      if (allNamespaces) args.push("--all-namespaces");
+      if (filter) args.push("--filter", filter);
+      if (context) args.push("--kube-context", context);
+
+      const result = await execJson<HelmRelease[]>("helm", args, {
+        timeout: 15_000,
+      });
+
+      if (result.error) {
+        return err(result.error, { releases: [], count: 0 });
+      }
+
+      const releases = (result.data ?? []).map((r) => ({
+        name: r.name ?? "",
+        namespace: r.namespace ?? "",
+        revision: parseInt(r.revision ?? "0", 10),
+        status: r.status ?? "",
+        chart: r.chart ?? "",
+        appVersion: r.app_version ?? "",
+        updated: r.updated ?? "",
+      }));
+
+      return ok({ releases, count: releases.length });
+    },
+  );
+
+  // ── helm status ─────────────────────────────────────────────────────
+  server.registerTool(
+    "helm_status",
+    {
+      title: "Helm release status",
+      description: "Get detailed status of a Helm release.",
+      inputSchema: {
+        release: z.string().describe("Release name"),
+        namespace: z
+          .string()
+          .optional()
+          .default("default")
+          .describe("Namespace"),
+        context: z.string().optional().describe("Kubectl context"),
+      },
+      outputSchema: {
         name: z.string(),
         namespace: z.string(),
         revision: z.number(),
         status: z.string(),
-        chart: z.string(),
-        appVersion: z.string(),
-        updated: z.string(),
-      })),
-      count: z.number(),
+        description: z.string(),
+        lastDeployed: z.string(),
+        notes: z.string(),
+      },
     },
-  }, async ({ namespace, allNamespaces, filter, context }) => {
-    const args = ["list", "-o", "json"];
-    if (namespace) args.push("-n", namespace);
-    if (allNamespaces) args.push("--all-namespaces");
-    if (filter) args.push("--filter", filter);
-    if (context) args.push("--kube-context", context);
+    async ({ release, namespace, context }) => {
+      const args = [
+        "status",
+        release,
+        "-n",
+        namespace ?? "default",
+        "-o",
+        "json",
+      ];
+      if (context) args.push("--kube-context", context);
 
-    const result = await execJson<HelmRelease[]>("helm", args, { timeout: 15_000 });
-
-    if (result.error) {
-      return err(result.error, { releases: [], count: 0 });
-    }
-
-    const releases = (result.data ?? []).map((r) => ({
-      name: r.name ?? "",
-      namespace: r.namespace ?? "",
-      revision: parseInt(r.revision ?? "0", 10),
-      status: r.status ?? "",
-      chart: r.chart ?? "",
-      appVersion: r.app_version ?? "",
-      updated: r.updated ?? "",
-    }));
-
-    return ok({ releases, count: releases.length });
-  });
-
-  // ── helm status ─────────────────────────────────────────────────────
-  server.registerTool("helm_status", {
-    title: "Helm release status",
-    description: "Get detailed status of a Helm release.",
-    inputSchema: {
-      release: z.string().describe("Release name"),
-      namespace: z.string().optional().default("default").describe("Namespace"),
-      context: z.string().optional().describe("Kubectl context"),
-    },
-    outputSchema: {
-      name: z.string(),
-      namespace: z.string(),
-      revision: z.number(),
-      status: z.string(),
-      description: z.string(),
-      lastDeployed: z.string(),
-      notes: z.string(),
-    },
-  }, async ({ release, namespace, context }) => {
-    const args = ["status", release, "-n", namespace ?? "default", "-o", "json"];
-    if (context) args.push("--kube-context", context);
-
-    const result = await execJson<HelmStatus>("helm", args, { timeout: 15_000 });
-
-    if (result.error) {
-      return err(result.error, {
-        name: release, namespace: namespace ?? "default",
-        revision: 0, status: "error", description: result.error, lastDeployed: "", notes: "",
+      const result = await execJson<HelmStatus>("helm", args, {
+        timeout: 15_000,
       });
-    }
 
-    const d = result.data!;
-    return ok({
-      name: d.name ?? release,
-      namespace: d.namespace ?? namespace ?? "default",
-      revision: d.version ?? 0,
-      status: d.info?.status ?? "",
-      description: d.info?.description ?? "",
-      lastDeployed: d.info?.last_deployed ?? "",
-      notes: (d.info?.notes ?? "").slice(0, 500),
-    });
-  });
+      if (result.error) {
+        return err(result.error, {
+          name: release,
+          namespace: namespace ?? "default",
+          revision: 0,
+          status: "error",
+          description: result.error,
+          lastDeployed: "",
+          notes: "",
+        });
+      }
+
+      const d = result.data!;
+      return ok({
+        name: d.name ?? release,
+        namespace: d.namespace ?? namespace ?? "default",
+        revision: d.version ?? 0,
+        status: d.info?.status ?? "",
+        description: d.info?.description ?? "",
+        lastDeployed: d.info?.last_deployed ?? "",
+        notes: (d.info?.notes ?? "").slice(0, 500),
+      });
+    },
+  );
 
   // ── helm values ─────────────────────────────────────────────────────
-  server.registerTool("helm_values", {
-    title: "Helm release values",
-    description: "Get the computed values for a Helm release as structured data.",
-    inputSchema: {
-      release: z.string().describe("Release name"),
-      namespace: z.string().optional().default("default").describe("Namespace"),
-      allValues: z.boolean().optional().describe("Include chart defaults (not just user-supplied)"),
-      context: z.string().optional().describe("Kubectl context"),
+  server.registerTool(
+    "helm_values",
+    {
+      title: "Helm release values",
+      description:
+        "Get the computed values for a Helm release as structured data.",
+      inputSchema: {
+        release: z.string().describe("Release name"),
+        namespace: z
+          .string()
+          .optional()
+          .default("default")
+          .describe("Namespace"),
+        allValues: z
+          .boolean()
+          .optional()
+          .describe("Include chart defaults (not just user-supplied)"),
+        context: z.string().optional().describe("Kubectl context"),
+      },
+      outputSchema: {
+        values: z.record(z.unknown()),
+      },
     },
-    outputSchema: {
-      values: z.record(z.unknown()),
+    async ({ release, namespace, allValues, context }) => {
+      const args = [
+        "get",
+        "values",
+        release,
+        "-n",
+        namespace ?? "default",
+        "-o",
+        "json",
+      ];
+      if (allValues) args.push("--all");
+      if (context) args.push("--kube-context", context);
+
+      const result = await execJson<Record<string, unknown>>("helm", args, {
+        timeout: 15_000,
+      });
+
+      if (result.error) {
+        return err(result.error, { values: {} });
+      }
+
+      return ok({ values: result.data ?? {} });
     },
-  }, async ({ release, namespace, allValues, context }) => {
-    const args = ["get", "values", release, "-n", namespace ?? "default", "-o", "json"];
-    if (allValues) args.push("--all");
-    if (context) args.push("--kube-context", context);
-
-    const result = await execJson<Record<string, unknown>>("helm", args, { timeout: 15_000 });
-
-    if (result.error) {
-      return err(result.error, { values: {} });
-    }
-
-    return ok({ values: result.data ?? {} });
-  });
+  );
 }
 
 // ── Types ───────────────────────────────────────────────────────────

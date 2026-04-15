@@ -72,8 +72,7 @@ export function exec(
         resolve({
           stdout: stdout?.toString() ?? "",
           stderr: stderr?.toString() ?? "",
-          exitCode:
-            error && "code" in error ? Number(error.code) || 1 : 0,
+          exitCode: error && "code" in error ? Number(error.code) || 1 : 0,
         });
       },
     );
@@ -99,12 +98,20 @@ export function execJson<T>(
 ): Promise<{ data: T | null; error: string | null; exitCode: number }> {
   return exec(command, args, options).then((result) => {
     if (result.exitCode !== 0) {
-      return { data: null, error: result.stderr || result.stdout, exitCode: result.exitCode };
+      return {
+        data: null,
+        error: result.stderr || result.stdout,
+        exitCode: result.exitCode,
+      };
     }
     try {
       return { data: JSON.parse(result.stdout) as T, error: null, exitCode: 0 };
     } catch {
-      return { data: null, error: `Failed to parse JSON: ${result.stdout.slice(0, 200)}`, exitCode: result.exitCode };
+      return {
+        data: null,
+        error: `Failed to parse JSON: ${result.stdout.slice(0, 200)}`,
+        exitCode: result.exitCode,
+      };
     }
   });
 }
