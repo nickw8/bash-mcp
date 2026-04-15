@@ -1,7 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import type { ListFormat } from "../../format.js";
 import { exec } from "#exec";
-import { err, ok } from "#response";
+import { err, ok, okList } from "#response";
 
 const IS_MACOS = process.platform === "darwin";
 
@@ -42,6 +43,10 @@ export function registerLsTool(server: McpServer) {
           .describe(
             "Only return names and types (omit size, permissions, modified)",
           ),
+        format: z
+          .enum(["json", "tsv", "columnar"])
+          .optional()
+          .describe("Output format (default: tsv)"),
       },
       outputSchema: {
         entries: z.array(
@@ -57,7 +62,8 @@ export function registerLsTool(server: McpServer) {
         path: z.string(),
       },
     },
-    async ({ path, all, recursive, nameOnly }) => {
+    async ({ path, all, recursive, nameOnly, format }) => {
+      const fmt = (format ?? "tsv") as ListFormat;
       const args = IS_MACOS ? ["-lh"] : ["-lh", "--time-style=iso"];
       if (all) args.push("-A");
       if (recursive) args.push("-R");
@@ -102,7 +108,8 @@ export function registerLsTool(server: McpServer) {
         })
         .filter((e) => e.name.length > 0);
 
-      return ok({ entries, total: entries.length, path });
+      const structured = { entries, total: entries.length, path };
+      return okList(structured, entries, { total: entries.length, path }, fmt);
     },
   );
 }

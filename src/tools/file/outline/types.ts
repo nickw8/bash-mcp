@@ -11,6 +11,7 @@ export type Language =
   | "sql"
   | "yaml"
   | "markdown"
+  | "xml"
   | "unknown";
 
 export interface ExtractResult {

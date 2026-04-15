@@ -1,7 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import type { ListFormat } from "../../format.js";
 import { exec } from "#exec";
-import { err, ok } from "#response";
+import { err, ok, okList } from "#response";
 
 const IS_MACOS = process.platform === "darwin";
 
@@ -55,6 +56,10 @@ export function registerFindTool(server: McpServer) {
           .describe(
             "Include size (bytes) and mtime (unix timestamp) for each file",
           ),
+        format: z
+          .enum(["json", "tsv", "columnar"])
+          .optional()
+          .describe("Output format (default: tsv)"),
       },
       outputSchema: {
         files: z.array(z.string()),
@@ -78,7 +83,9 @@ export function registerFindTool(server: McpServer) {
       maxDepth,
       modifiedWithin,
       withMetadata,
+      format,
     }) => {
+      const fmt = (format ?? "tsv") as ListFormat;
       const allNames = names ?? (name ? [name] : []);
       const args = [path];
       if (maxDepth !== undefined) args.push("-maxdepth", String(maxDepth));
@@ -143,10 +150,13 @@ export function registerFindTool(server: McpServer) {
             return { file, size, mtime };
           });
 
-        return ok({ files, count: files.length, metadata });
+        const structured = { files, count: files.length, metadata };
+        return okList(structured, metadata, { count: files.length }, fmt);
       }
 
-      return ok({ files, count: files.length });
+      const structured = { files, count: files.length };
+      const fileRows = files.map((f) => ({ file: f }));
+      return okList(structured, fileRows, { count: files.length }, fmt);
     },
   );
 }

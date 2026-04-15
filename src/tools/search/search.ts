@@ -8,8 +8,9 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import type { ListFormat } from "../../format.js";
 import { exec } from "#exec";
-import { err, ok } from "#response";
+import { err, ok, okList } from "#response";
 
 /** Register all search tools on the MCP server. */
 export function registerSearchTools(server: McpServer) {
@@ -51,6 +52,12 @@ export function registerSearchTools(server: McpServer) {
           .boolean()
           .optional()
           .describe("Treat pattern as literal string"),
+        format: z
+          .enum(["json", "tsv", "columnar"])
+          .optional()
+          .describe(
+            "Output format: json (default), tsv (tab-separated, most compact), columnar (keys once)",
+          ),
       },
       outputSchema: {
         matches: z.array(
@@ -78,7 +85,9 @@ export function registerSearchTools(server: McpServer) {
       filesOnly,
       countPerFile,
       fixedStrings,
+      format,
     }) => {
+      const fmt = (format ?? "tsv") as ListFormat;
       const limit = maxResults ?? 100;
 
       if (countPerFile) {
@@ -113,13 +122,19 @@ export function registerSearchTools(server: McpServer) {
           totalMatches += count;
         }
 
-        return ok({
-          matches: [],
+        const structured = {
+          matches: [] as { file: string; line: number; text: string }[],
           fileCount: fileCounts.length,
           matchCount: totalMatches,
           truncated: false,
           fileCounts,
-        });
+        };
+        return okList(
+          structured,
+          fileCounts,
+          { fileCount: fileCounts.length, matchCount: totalMatches },
+          fmt,
+        );
       }
 
       if (filesOnly) {
@@ -132,12 +147,19 @@ export function registerSearchTools(server: McpServer) {
 
         const result = await exec("rg", args);
         const files = result.stdout.trim().split("\n").filter(Boolean);
-        return ok({
+        const fileRows = files.map((f) => ({ file: f }));
+        const structured = {
           matches: files.map((f) => ({ file: f, line: 0, text: "" })),
           fileCount: files.length,
           matchCount: files.length,
           truncated: false,
-        });
+        };
+        return okList(
+          structured,
+          fileRows,
+          { fileCount: files.length, matchCount: files.length },
+          fmt,
+        );
       }
 
       const args = ["--json", `--max-count=${Math.min(limit, 500)}`];
@@ -182,12 +204,22 @@ export function registerSearchTools(server: McpServer) {
         }
       }
 
-      return ok({
+      const structured = {
         matches,
         fileCount: filesSeen.size,
         matchCount: matches.length,
         truncated: matches.length >= limit,
-      });
+      };
+      return okList(
+        structured,
+        matches,
+        {
+          fileCount: filesSeen.size,
+          matchCount: matches.length,
+          truncated: matches.length >= limit,
+        },
+        fmt,
+      );
     },
   );
 
@@ -201,18 +233,25 @@ export function registerSearchTools(server: McpServer) {
       inputSchema: {
         pattern: z.string().describe("Glob pattern (e.g. 'src/**/*.ts')"),
         cwd: z.string().optional().describe("Working directory for the glob"),
+        format: z
+          .enum(["json", "tsv", "columnar"])
+          .optional()
+          .describe("Output format (default: tsv)"),
       },
       outputSchema: {
         files: z.array(z.string()),
         count: z.number(),
       },
     },
-    async ({ pattern, cwd }) => {
+    async ({ pattern, cwd, format }) => {
+      const fmt = (format ?? "tsv") as ListFormat;
       const args = ["--files", "-g", pattern];
 
       const result = await exec("rg", args, cwd ? { cwd } : {});
       const files = result.stdout.trim().split("\n").filter(Boolean);
-      return ok({ files, count: files.length });
+      const structured = { files, count: files.length };
+      const fileRows = files.map((f) => ({ file: f }));
+      return okList(structured, fileRows, { count: files.length }, fmt);
     },
   );
 }
