@@ -15,6 +15,54 @@ import { detectLanguage, extractOutline } from "./outline/index.js";
 
 const IS_MACOS = process.platform === "darwin";
 
+/** Find the git repo root for a file path. Returns null if not in a git repo. */
+async function findGitRoot(filePath: string): Promise<string | null> {
+  const dir = filePath.replace(/\/[^/]*$/, "") || ".";
+  const result = await exec("git", [
+    "-C",
+    dir,
+    "rev-parse",
+    "--show-toplevel",
+  ]);
+  if (result.exitCode !== 0) return null;
+  return result.stdout.trim();
+}
+
+/** Get git branch and last commit hash for a file. Returns nulls if not in a git repo. */
+async function getGitMeta(
+  filePath: string,
+  ref?: string,
+): Promise<{ branch: string | null; commit: string | null }> {
+  const gitRoot = await findGitRoot(filePath);
+  if (!gitRoot) return { branch: null, commit: null };
+
+  const relPath = filePath.startsWith(gitRoot)
+    ? filePath.slice(gitRoot.length + 1)
+    : filePath;
+
+  // Run branch and commit lookups in parallel
+  const [branchResult, commitResult] = await Promise.all([
+    exec("git", ["-C", gitRoot, "rev-parse", "--abbrev-ref", "HEAD"]),
+    exec("git", [
+      "-C",
+      gitRoot,
+      "log",
+      "-1",
+      "--format=%H",
+      ref ?? "HEAD",
+      "--",
+      relPath,
+    ]),
+  ]);
+
+  return {
+    branch:
+      branchResult.exitCode === 0 ? branchResult.stdout.trim() || null : null,
+    commit:
+      commitResult.exitCode === 0 ? commitResult.stdout.trim() || null : null,
+  };
+}
+
 /** Register all file tools on the MCP server. */
 export function registerFileTools(server: McpServer) {
   server.registerTool(
@@ -185,9 +233,17 @@ export function registerFileTools(server: McpServer) {
       description:
         "Show the structural outline of a file — function/class names, top-level comments, imports. " +
         "Returns a compact view without implementation bodies. " +
+        "Includes git metadata (branch, commit) when the file is in a git repo. " +
         "Use instead of cat when reviewing file structure or auditing many files at once.",
       inputSchema: {
         path: z.string().describe("Path to the file"),
+        ref: z
+          .string()
+          .optional()
+          .describe(
+            "Git ref to outline (e.g. 'main', 'HEAD~1', a commit hash). " +
+              "When set, reads file content from git (git show ref:path) instead of disk.",
+          ),
       },
       outputSchema: {
         path: z.string(),
@@ -195,31 +251,96 @@ export function registerFileTools(server: McpServer) {
         totalLines: z.number(),
         outlineLines: z.number(),
         symbols: z.number(),
+        mtime: z.number().describe("File modification time (unix timestamp). 0 if using ref."),
+        branch: z
+          .string()
+          .nullable()
+          .describe("Current git branch, or null if not in a git repo"),
+        commit: z
+          .string()
+          .nullable()
+          .describe(
+            "Last commit hash that touched this file, or null if not in a git repo",
+          ),
         outline: z.string(),
       },
     },
-    async ({ path }) => {
+    async ({ path, ref }) => {
       const empty = {
         path,
-        language: "unknown",
+        language: "unknown" as string,
         totalLines: 0,
         outlineLines: 0,
         symbols: 0,
+        mtime: 0,
+        branch: null as string | null,
+        commit: null as string | null,
         outline: "",
       };
 
-      const catResult = await exec("cat", [path]);
-      if (catResult.exitCode !== 0) {
-        return err(catResult.stderr || `Cannot read file: ${path}`, empty);
+      let content: string;
+      let mtime = 0;
+
+      if (ref) {
+        // Read file content from a git ref instead of disk
+        const gitDir = await findGitRoot(path);
+        if (!gitDir) {
+          return err(`Not in a git repo: ${path}`, empty);
+        }
+        // Resolve path relative to git root for git show
+        const relPath = path.startsWith(gitDir)
+          ? path.slice(gitDir.length + 1)
+          : path;
+        const showResult = await exec("git", [
+          "-C",
+          gitDir,
+          "show",
+          `${ref}:${relPath}`,
+        ]);
+        if (showResult.exitCode !== 0) {
+          return err(
+            showResult.stderr || `Cannot read ${ref}:${relPath}`,
+            empty,
+          );
+        }
+        content = showResult.stdout;
+      } else {
+        // Read from disk
+        const catResult = await exec("cat", [path]);
+        if (catResult.exitCode !== 0) {
+          return err(catResult.stderr || `Cannot read file: ${path}`, empty);
+        }
+        content = catResult.stdout;
+
+        // Get mtime
+        const statResult = await exec(
+          "stat",
+          IS_MACOS ? ["-f", "%m", path] : ["--format=%Y", path],
+        );
+        if (statResult.exitCode === 0) {
+          mtime = parseInt(statResult.stdout.trim(), 10) || 0;
+        }
       }
 
-      const content = catResult.stdout;
       const totalLines = content.split("\n").length;
       const language = detectLanguage(path);
       const { outline, symbols } = extractOutline(content, language);
       const outlineLines = outline ? outline.split("\n").length : 0;
 
-      return ok({ path, language, totalLines, outlineLines, symbols, outline });
+      // Gather git metadata (branch + last commit for this file)
+      const git = await getGitMeta(path, ref);
+
+      return ok({
+        path,
+        language,
+        totalLines,
+        outlineLines,
+        symbols,
+        mtime,
+        branch: git.branch,
+        commit: git.commit,
+        outline,
+      });
     },
   );
 }
