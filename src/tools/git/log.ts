@@ -21,6 +21,18 @@ export function registerGitLogTool(server: McpServer) {
         author: z.string().optional().describe("Filter by author"),
         since: z.string().optional().describe("Since date (e.g. '2024-01-01')"),
         path: z.string().optional().describe("Filter by file path"),
+        range: z
+          .string()
+          .optional()
+          .describe(
+            "Git ref range (e.g. 'main..feature', 'HEAD~5..HEAD')",
+          ),
+        exclude: z
+          .string()
+          .optional()
+          .describe(
+            "Exclude commits matching this grep pattern (uses --invert-grep)",
+          ),
         withFiles: z
           .boolean()
           .optional()
@@ -40,7 +52,7 @@ export function registerGitLogTool(server: McpServer) {
         count: z.number(),
       },
     },
-    async ({ cwd, count, author, since, path, withFiles }) => {
+    async ({ cwd, count, author, since, path, range, exclude, withFiles }) => {
       // Unicode separator avoids collisions with commit message content
       const sep = "\u2016";
       const args = [
@@ -52,6 +64,8 @@ export function registerGitLogTool(server: McpServer) {
       if (withFiles) args.push("--name-only");
       if (author) args.push(`--author=${author}`);
       if (since) args.push(`--since=${since}`);
+      if (exclude) args.push("--invert-grep", `--grep=${exclude}`);
+      if (range) args.push(range);
       if (path) {
         args.push("--");
         args.push(path);

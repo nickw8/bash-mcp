@@ -66,6 +66,13 @@ export function registerFileTools(server: McpServer) {
         "Read file contents with line numbers and smart truncation. Returns structured output with metadata. For large files, use startLine/endLine or maxLines to limit output.",
       inputSchema: {
         path: z.string().describe("Path to the file"),
+        ref: z
+          .string()
+          .optional()
+          .describe(
+            "Git ref to read from (e.g. 'main', 'HEAD~1', a commit hash). " +
+              "When set, reads file content from git (git show ref:path) instead of disk.",
+          ),
         startLine: z
           .number()
           .optional()
@@ -96,7 +103,7 @@ export function registerFileTools(server: McpServer) {
         truncated: z.boolean(),
       },
     },
-    async ({ path, startLine, endLine, maxLines, lineNumbers }) => {
+    async ({ path, ref, startLine, endLine, maxLines, lineNumbers }) => {
       const empty: {
         path: string;
         totalLines: number;
@@ -114,6 +121,68 @@ export function registerFileTools(server: McpServer) {
         range: [0, 0],
         truncated: false,
       };
+
+      // When ref is provided, read from git and apply line range/truncation
+      if (ref) {
+        const gitDir = await findGitRoot(path);
+        if (!gitDir) {
+          return err(`Not in a git repo: ${path}`, empty);
+        }
+        const relPath = path.startsWith(gitDir)
+          ? path.slice(gitDir.length + 1)
+          : path;
+        const showResult = await exec("git", [
+          "-C",
+          gitDir,
+          "show",
+          `${ref}:${relPath}`,
+        ]);
+        if (showResult.exitCode !== 0) {
+          return err(
+            showResult.stderr || `Cannot read ${ref}:${relPath}`,
+            empty,
+          );
+        }
+
+        let allLines = showResult.stdout;
+        if (allLines.endsWith("\n")) allLines = allLines.slice(0, -1);
+        const lines = allLines.split("\n");
+        const totalLines = lines.length;
+        const limit = maxLines === 0 ? totalLines : (maxLines ?? 200);
+        const rangeStart = Math.max(1, startLine ?? 1);
+        let rangeEnd =
+          endLine !== undefined
+            ? Math.min(endLine, totalLines)
+            : Math.min(rangeStart + limit - 1, totalLines);
+        let truncated = false;
+        if (limit > 0 && rangeEnd - rangeStart + 1 > limit) {
+          rangeEnd = rangeStart + limit - 1;
+          truncated = true;
+        } else {
+          truncated = rangeEnd < totalLines && endLine === undefined;
+        }
+
+        let content = lines.slice(rangeStart - 1, rangeEnd).join("\n");
+        if (lineNumbers) {
+          content = content
+            .split("\n")
+            .map(
+              (line, i) =>
+                `${String(rangeStart + i).padStart(6)}\t${line}`,
+            )
+            .join("\n");
+        }
+
+        return ok({
+          path,
+          totalLines,
+          size: showResult.stdout.length,
+          mtime: 0,
+          content,
+          range: [rangeStart, rangeEnd] satisfies [number, number],
+          truncated,
+        });
+      }
 
       // Get file size and mtime in one stat call
       const statResult = await exec(

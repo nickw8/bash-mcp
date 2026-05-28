@@ -95,6 +95,12 @@ export function registerGitDiffContentTools(server: McpServer) {
           .describe(
             "Diff against this ref (e.g. 'HEAD~1', 'main', a commit hash)",
           ),
+        base: z
+          .string()
+          .optional()
+          .describe(
+            "Base ref for two-ref comparison. When both ref and base are set, runs git diff <base> <ref>",
+          ),
         staged: z
           .boolean()
           .optional()
@@ -131,10 +137,14 @@ export function registerGitDiffContentTools(server: McpServer) {
         }),
       },
     },
-    async ({ cwd, ref, staged, path, context }) => {
+    async ({ cwd, ref, base, staged, path, context }) => {
       const args = ["diff", `-U${context ?? 3}`];
       if (staged) args.push("--cached");
-      if (ref) args.push(ref);
+      if (base && ref) {
+        args.push(base, ref);
+      } else if (ref) {
+        args.push(ref);
+      }
       if (path) {
         args.push("--");
         args.push(path);

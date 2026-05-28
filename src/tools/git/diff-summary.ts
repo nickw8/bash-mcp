@@ -17,7 +17,17 @@ export function registerGitDiffSummaryTool(server: McpServer) {
           .string()
           .optional()
           .describe("Ref to diff against (e.g. 'main', 'HEAD~3')"),
+        base: z
+          .string()
+          .optional()
+          .describe(
+            "Base ref for two-ref comparison. When both ref and base are set, runs git diff <base> <ref>",
+          ),
         staged: z.boolean().optional().describe("Show staged changes"),
+        path: z
+          .string()
+          .optional()
+          .describe("Limit diff to a specific file or directory"),
       },
       outputSchema: {
         files: z.array(
@@ -32,10 +42,18 @@ export function registerGitDiffSummaryTool(server: McpServer) {
         fileCount: z.number(),
       },
     },
-    async ({ cwd, ref, staged }) => {
+    async ({ cwd, ref, base, staged, path }) => {
       const args = ["diff", "--numstat"];
       if (staged) args.push("--cached");
-      if (ref) args.push(ref);
+      if (base && ref) {
+        args.push(base, ref);
+      } else if (ref) {
+        args.push(ref);
+      }
+      if (path) {
+        args.push("--");
+        args.push(path);
+      }
 
       const result = await exec("git", args, cwd ? { cwd } : {});
 
