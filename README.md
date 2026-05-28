@@ -8,18 +8,43 @@ Created with the help of Claude since it is the main consumer of the structured 
 
 ## Quick Start
 
-```bash
-# Install globally
-npm install -g bash-mcp
+### Option 1: Zero-install with npx
 
-# Or install from source
+No installation needed — just add the MCP config and `npx` will fetch it on first use.
+
+### Option 2: Global install
+
+```bash
+npm install -g bash-mcp
+```
+
+### Option 3: Install from source
+
+```bash
 git clone https://github.com/nickw8/bash-mcp.git
 cd bash-mcp
 npm install && npm run build
 npm link
 ```
 
-Add to your MCP client configuration:
+## Claude Code Setup
+
+Add bash-mcp to your Claude Code settings. For **all projects** (recommended), edit `~/.claude/settings.json`. For a **single project**, edit `.claude/settings.json` in the project root.
+
+**With npx** (no install required):
+
+```json
+{
+  "mcpServers": {
+    "bash-mcp": {
+      "command": "npx",
+      "args": ["-y", "bash-mcp"]
+    }
+  }
+}
+```
+
+**With global install**:
 
 ```json
 {
@@ -30,6 +55,8 @@ Add to your MCP client configuration:
   }
 }
 ```
+
+To verify it's working, start Claude Code and check that bash-mcp tools (like `cat`, `rg`, `git_status`) appear in the tool list.
 
 ## Why Structured Output?
 
