@@ -6,7 +6,7 @@
  * helpers eliminate the boilerplate of assembling that shape.
  */
 
-import { type ListFormat, formatList } from "#format";
+import { formatList, type ListFormat } from "#format";
 
 /** Build a successful MCP tool response with structured content. */
 export function ok<T extends Record<string, unknown>>(structuredContent: T) {

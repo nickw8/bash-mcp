@@ -28,3 +28,24 @@ npm-debug.log*
 # Personal / internal files
 entities.json
 mempalace.yaml
+
+# AI tooling
+.serena/
+
+### AI agent files
+# mempalace
+**/entities.json
+**/mempalace.yaml
+
+# serena
+**/.serena
+**/.serena/
+
+# claude
+**/.claude*
+**/CLAUDE.md
+
+# codex
+**/.codex
+
+# Misc AI tooling

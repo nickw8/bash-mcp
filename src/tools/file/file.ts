@@ -18,12 +18,7 @@ const IS_MACOS = process.platform === "darwin";
 /** Find the git repo root for a file path. Returns null if not in a git repo. */
 async function findGitRoot(filePath: string): Promise<string | null> {
   const dir = filePath.replace(/\/[^/]*$/, "") || ".";
-  const result = await exec("git", [
-    "-C",
-    dir,
-    "rev-parse",
-    "--show-toplevel",
-  ]);
+  const result = await exec("git", ["-C", dir, "rev-parse", "--show-toplevel"]);
   if (result.exitCode !== 0) return null;
   return result.stdout.trim();
 }
@@ -251,7 +246,9 @@ export function registerFileTools(server: McpServer) {
         totalLines: z.number(),
         outlineLines: z.number(),
         symbols: z.number(),
-        mtime: z.number().describe("File modification time (unix timestamp). 0 if using ref."),
+        mtime: z
+          .number()
+          .describe("File modification time (unix timestamp). 0 if using ref."),
         branch: z
           .string()
           .nullable()

@@ -9,8 +9,14 @@ Created with the help of Claude since it is the main consumer of the structured 
 ## Quick Start
 
 ```bash
-npm install
-npm run build
+# Install globally
+npm install -g bash-mcp
+
+# Or install from source
+git clone https://github.com/nickw8/bash-mcp.git
+cd bash-mcp
+npm install && npm run build
+npm link
 ```
 
 Add to your MCP client configuration:
@@ -19,8 +25,7 @@ Add to your MCP client configuration:
 {
   "mcpServers": {
     "bash-mcp": {
-      "command": "node",
-      "args": ["/path/to/bash-mcp/dist/index.js"]
+      "command": "bash-mcp"
     }
   }
 }
@@ -114,6 +119,21 @@ nginx-7c5b8d6c88-abc12  1/1     Running   0          3d
 | `jq` | Query/transform JSON files or strings with jq expressions |
 | `yq` | Query/transform YAML files or strings with yq expressions |
 
+### .NET
+
+| Tool | Description |
+|------|-------------|
+| `dotnet_build` | Structured MSBuild diagnostics with file, line, column, error code |
+| `dotnet_test` | Structured test results via TRX parsing — only failures listed |
+
+### Node.js
+
+| Tool | Description |
+|------|-------------|
+| `npm_lint` | Structured Biome lint diagnostics |
+| `npm_test` | Structured Vitest results with pass/fail counts |
+| `npm_typecheck` | Structured tsc/tsgo type errors |
+
 ### Execution
 
 | Tool | Description |
@@ -131,6 +151,7 @@ Each tool group uses appropriate default timeouts:
 - **Kubernetes/Helm/ArgoCD**: 15 seconds
 - **Terraform state**: 30 seconds
 - **Terraform plan**: 120 seconds
+- **.NET build/test**: 120 seconds
 
 ### Command Buffer
 
@@ -165,14 +186,20 @@ npm run format
 src/
   index.ts              # Server entry point — registers tools and starts stdio transport
   exec.ts               # Command execution layer — runs CLI tools via execFile
-  response.ts           # MCP response helpers (ok, err)
+  format.ts             # Multi-format list output (TSV, columnar, JSON)
+  response.ts           # MCP response helpers (ok, okList, err)
   shell.ts              # Shell escaping utilities
+  parsers/
+    types.ts            # Shared interfaces: Diagnostic, TestResult, TestSuite
   tools/
     argocd/argocd.ts    # argo_apps, argo_app_detail, argo_app_diff
     batch/batch.ts      # batch (parallel command execution)
+    dotnet/
+      dotnet.ts         # dotnet_build, dotnet_test
+      parsers/          # MSBuild and TRX output parsers
     file/
       file.ts           # cat (file reading with metadata), outline (structural file outline)
-      outline.ts        # Outline extraction logic for bash, python, ts/js, sql, yaml, markdown
+      outline/          # Language-specific outline extractors
     filesystem/
       filesystem.ts     # ls, tree, du, find_files
     git/
@@ -182,6 +209,9 @@ src/
     json/json.ts        # jq
     kubernetes/
       kubernetes.ts     # kube_get, kube_logs, kube_contexts
+    npm/
+      npm.ts            # npm_lint, npm_test, npm_typecheck
+      parsers/          # Biome, Vitest, tsc output parsers
     run/run.ts          # run (command execution with smart truncation)
     search/search.ts    # rg, glob
     terraform/
@@ -240,6 +270,7 @@ The following CLI tools must be installed for their respective tool groups to wo
 - **ArgoCD**: `argocd`
 - **JSON**: `jq`
 - **YAML**: `yq` (mikefarah/yq)
+- **.NET**: `dotnet` (.NET SDK)
 
 Tools gracefully return errors if their underlying CLI is not installed.
 

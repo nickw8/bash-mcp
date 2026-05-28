@@ -57,10 +57,7 @@ function formatTsv(rows: Row[], meta?: Record<string, unknown>): string {
   return parts.join("\n");
 }
 
-function formatColumnar(
-  rows: Row[],
-  meta?: Record<string, unknown>,
-): string {
+function formatColumnar(rows: Row[], meta?: Record<string, unknown>): string {
   if (rows.length === 0) {
     return JSON.stringify(meta ?? {});
   }

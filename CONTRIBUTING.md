@@ -47,13 +47,19 @@ src/
   index.ts              # Server entry point
   exec.ts               # Command execution layer
   exec.test.ts          # Tests for exec
-  response.ts           # MCP response helpers (ok, err)
+  format.ts             # Multi-format list output (TSV, columnar, JSON)
+  response.ts           # MCP response helpers (ok, okList, err)
   shell.ts              # Shell escaping utilities
+  parsers/
+    types.ts            # Shared interfaces: Diagnostic, TestResult, TestSuite
   tools/
     <group>/
-      <group>.ts        # Tool implementations
+      <group>.ts        # Tool implementations (barrel export)
       <group>.test.ts   # Co-located tests
+      parsers/          # Output parsers (if the tool parses CLI output)
 ```
+
+Shared parser types live in `src/parsers/types.ts` (importable as `#parsers`). Tool-specific parsers live under their tool group's `parsers/` directory and import shared types from there.
 
 ## License
 

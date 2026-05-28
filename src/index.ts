@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 /**
  * bash-mcp — MCP Server Entry Point
  *
@@ -12,6 +10,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerArgocdTools } from "./tools/argocd/argocd.js";
 import { registerBatchTools } from "./tools/batch/batch.js";
+import { registerDotnetTools } from "./tools/dotnet/dotnet.js";
 import { registerFileTools } from "./tools/file/file.js";
 import { registerFilesystemTools } from "./tools/filesystem/filesystem.js";
 import { registerGitDiffContentTools } from "./tools/git/diff.js";
@@ -45,6 +44,7 @@ registerRunTools(server);
 registerBatchTools(server);
 registerGitDiffContentTools(server);
 registerNpmTools(server);
+registerDotnetTools(server);
 
 async function main() {
   const transport = new StdioServerTransport();

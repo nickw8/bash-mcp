@@ -19,17 +19,18 @@ src/tools/<cat>/
   <cat>.test.ts     — tests
 ```
 
-**Shared parsing logic**: use a `parsers/` subdirectory (like `npm/parsers/` or `file/outline/`):
+**Shared parsing logic**: use a `parsers/` subdirectory (like `npm/parsers/` or `dotnet/parsers/`):
 ```
 src/tools/<cat>/
   parsers/
-    types.ts        — shared interfaces
-    <format>.ts     — parser for a specific output format
+    <format>.ts     — parser for a specific output format (imports types from #parsers)
 ```
+
+Shared parser interfaces (`Diagnostic`, `TestResult`, `TestSuite`) live in `src/parsers/types.ts`, importable as `#parsers`. New parser types that could be reused across tool groups should be added there, not in tool-specific `parsers/` directories.
 
 ## Conventions
 
 - Each tool file exports a single `register<ToolName>Tool(server)` function
 - Barrel files call all sub-registrations so `index.ts` imports stay unchanged
-- Helpers and types stay co-located with the tool that uses them
+- Use `#parsers` for shared types, tool-local `parsers/` for format-specific logic
 - Run `npx biome check --fix .` before committing
