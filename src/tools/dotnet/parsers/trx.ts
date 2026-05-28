@@ -8,6 +8,7 @@
  */
 
 import type { TestResult } from "#parsers";
+import { stripCommonPrefix } from "../../../parsers/strip-prefix.js";
 
 /** Regex capturing UnitTestResult elements with their attributes and body. */
 const RESULT_PATTERN =
@@ -89,8 +90,15 @@ export function parseTrxResults(trxContent: string): {
 
   const total = passed + failed + skipped;
 
-  // Strip common namespace prefix from test names
-  stripNamespacePrefix(results);
+  // Strip common namespace prefix from test names (keep ClassName.Method)
+  const stripped = stripCommonPrefix(
+    results.map((r) => r.name),
+    ".",
+    2,
+  );
+  for (let i = 0; i < results.length; i++) {
+    results[i]!.name = stripped[i]!;
+  }
 
   return { results, passed, failed, skipped, total };
 }
@@ -126,33 +134,4 @@ function unescapeXml(text: string): string {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'");
-}
-
-/**
- * Strip the longest common dotted namespace prefix from test names in-place.
- * E.g. `MyApp.Tests.Services.AuthTests.ShouldWork` → `AuthTests.ShouldWork`
- * when all tests share `MyApp.Tests.Services`.
- */
-function stripNamespacePrefix(results: TestResult[]): void {
-  if (results.length === 0) return;
-
-  const names = results.map((r) => r.name);
-  const segments = names[0]!.split(".");
-  let prefixLen = 0;
-
-  // Keep at least the last 2 segments (ClassName.MethodName)
-  for (let i = 0; i < segments.length - 2; i++) {
-    const candidate = `${segments.slice(0, i + 1).join(".")}.`;
-    if (names.every((n) => n.startsWith(candidate))) {
-      prefixLen = candidate.length;
-    } else {
-      break;
-    }
-  }
-
-  if (prefixLen > 0) {
-    for (const r of results) {
-      r.name = r.name.slice(prefixLen);
-    }
-  }
 }

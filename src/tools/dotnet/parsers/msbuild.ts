@@ -11,6 +11,7 @@
  */
 
 import type { Diagnostic } from "#parsers";
+import { stripCommonPrefix } from "../../../parsers/strip-prefix.js";
 
 /** Regex matching MSBuild diagnostic lines: path(line,col): severity code: message */
 const DIAG_PATTERN =
@@ -44,7 +45,13 @@ export function parseMSBuildOutput(text: string): Diagnostic[] {
     });
   }
 
-  stripCommonPrefix(diagnostics);
+  const stripped = stripCommonPrefix(
+    diagnostics.map((d) => d.file),
+    "/",
+  );
+  for (let i = 0; i < diagnostics.length; i++) {
+    diagnostics[i]!.file = stripped[i]!;
+  }
   return diagnostics;
 }
 
@@ -52,31 +59,4 @@ export function parseMSBuildOutput(text: string): Diagnostic[] {
 function truncateMessage(msg: string): string {
   if (msg.length <= MAX_MESSAGE_LENGTH) return msg;
   return `${msg.slice(0, MAX_MESSAGE_LENGTH)}…`;
-}
-
-/**
- * Strip the longest common directory prefix from all file paths in-place.
- * Turns absolute paths into relative ones for compact output.
- */
-function stripCommonPrefix(diagnostics: Diagnostic[]): void {
-  if (diagnostics.length === 0) return;
-
-  const paths = diagnostics.map((d) => d.file);
-  const segments = paths[0]!.split("/");
-  let prefixLen = 0;
-
-  for (let i = 0; i < segments.length - 1; i++) {
-    const candidate = `${segments.slice(0, i + 1).join("/")}/`;
-    if (paths.every((p) => p.startsWith(candidate))) {
-      prefixLen = candidate.length;
-    } else {
-      break;
-    }
-  }
-
-  if (prefixLen > 0) {
-    for (const d of diagnostics) {
-      d.file = d.file.slice(prefixLen);
-    }
-  }
 }
