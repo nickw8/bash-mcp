@@ -20,7 +20,9 @@ export function registerSearchTools(server: McpServer) {
     {
       title: "Ripgrep search",
       description:
-        "Search file contents with ripgrep. Returns structured matches with file, line number, and matched text. Far more compact than raw rg output.",
+        "Search file contents with ripgrep. Returns structured matches with file, line number, and matched text. Far more compact than raw rg output. " +
+        "Use glob to filter by file type (e.g. '*.ts'), ignoreCase for case-insensitive search, " +
+        "filesOnly for just filenames, or countPerFile for match counts per file.",
       inputSchema: {
         pattern: z.string().describe("Regex pattern to search for"),
         path: z

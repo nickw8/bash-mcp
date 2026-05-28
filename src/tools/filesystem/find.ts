@@ -26,7 +26,8 @@ export function registerFindTool(server: McpServer) {
     {
       title: "Find files",
       description:
-        "Find files by name pattern, type, or modification time. Returns structured list of paths.",
+        "Find files by name pattern, type, or modification time. Returns structured list of paths. " +
+        "Use names for multiple glob patterns (OR logic), modifiedWithin for recent files (e.g. '7d', '1h').",
       inputSchema: {
         path: z.string().describe("Root directory to search"),
         name: z

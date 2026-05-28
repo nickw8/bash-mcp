@@ -63,7 +63,9 @@ export function registerFileTools(server: McpServer) {
     {
       title: "Read file contents",
       description:
-        "Read file contents with line numbers and smart truncation. Returns structured output with metadata. For large files, use startLine/endLine or maxLines to limit output.",
+        "Read file contents with line numbers and smart truncation. Returns structured output with metadata. " +
+        "For large files, use startLine/endLine or maxLines to limit output. " +
+        "Use ref to read from a git branch/commit instead of disk (e.g. ref='main').",
       inputSchema: {
         path: z.string().describe("Path to the file"),
         ref: z

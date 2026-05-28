@@ -27,7 +27,8 @@ export function registerLsTool(server: McpServer) {
     {
       title: "List directory",
       description:
-        "List files in a directory. Returns structured entries with name, type, size, and permissions. Much more compact than raw ls output.",
+        "List files in a directory. Returns structured entries with name, type, size, and permissions. Much more compact than raw ls output. " +
+        "Use recursive for one level of subdirectories. Use all to include hidden files.",
       inputSchema: {
         path: z.string().describe("Directory path to list"),
         all: z.boolean().optional().describe("Include hidden files"),

@@ -86,7 +86,9 @@ export function registerGitDiffContentTools(server: McpServer) {
     {
       title: "Git diff with content",
       description:
-        "Show git diff with structured patch content. Returns parsed hunks per file instead of raw unified diff text. Use this when you need to see actual code changes, not just file-level stats.",
+        "Show git diff with structured patch content. Returns parsed hunks per file instead of raw unified diff text. " +
+        "Use this when you need to see actual code changes, not just file-level stats. " +
+        "Use base+ref for two-ref comparison (e.g. base='main', ref='feature').",
       inputSchema: {
         cwd: z.string().optional().describe("Working directory (git repo)"),
         ref: z

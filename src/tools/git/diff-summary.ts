@@ -10,7 +10,9 @@ export function registerGitDiffSummaryTool(server: McpServer) {
     {
       title: "Git diff",
       description:
-        "Structured git diff: files changed with insertions/deletions counts.",
+        "Structured git diff: files changed with insertions/deletions counts. " +
+        "Use base+ref for two-ref comparison (e.g. base='main', ref='feature'). " +
+        "Use path to scope to a specific file or directory.",
       inputSchema: {
         cwd: z.string().optional().describe("Repository path"),
         ref: z

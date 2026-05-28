@@ -10,7 +10,9 @@ export function registerGitLogTool(server: McpServer) {
     {
       title: "Git log",
       description:
-        "Structured git log: commit hash, author, date, message. Compact and parseable.",
+        "Structured git log: commit hash, author, date, message. Compact and parseable. " +
+        "Use range for ref comparisons (e.g. 'main..feature'). " +
+        "Use exclude to filter out commits matching a pattern (e.g. 'ci:').",
       inputSchema: {
         cwd: z.string().optional().describe("Repository path"),
         count: z
