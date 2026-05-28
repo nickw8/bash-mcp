@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { TIMEOUT, exec } from "#exec";
+import { diagnosticSchema } from "../../parsers/schemas.js";
 import { ok } from "#response";
 import { parseTscOutput } from "./parsers/tsc.js";
 
@@ -21,16 +22,7 @@ export function registerNpmTypecheckTool(server: McpServer) {
           .describe("Path to tsconfig.json (default: auto-detected by tsc)"),
       },
       outputSchema: {
-        errors: z.array(
-          z.object({
-            file: z.string(),
-            line: z.number(),
-            column: z.number(),
-            message: z.string(),
-            severity: z.enum(["error", "warning", "info"]),
-            rule: z.string().optional(),
-          }),
-        ),
+        errors: z.array(diagnosticSchema),
         errorCount: z.number(),
         success: z.boolean(),
       },

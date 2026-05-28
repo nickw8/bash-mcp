@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
+import { countBySeverity, diagnosticSchema } from "../../parsers/schemas.js";
 import { err, ok } from "#response";
 import { parseBiomeDiagnostics } from "./parsers/biome.js";
 
@@ -25,16 +26,7 @@ export function registerNpmLintTool(server: McpServer) {
           .describe("Specific paths to lint (default: '.')"),
       },
       outputSchema: {
-        errors: z.array(
-          z.object({
-            file: z.string(),
-            line: z.number(),
-            column: z.number(),
-            message: z.string(),
-            severity: z.enum(["error", "warning", "info"]),
-            rule: z.string().optional(),
-          }),
-        ),
+        errors: z.array(diagnosticSchema),
         errorCount: z.number(),
         warningCount: z.number(),
         fixedCount: z.number(),
@@ -60,12 +52,7 @@ export function registerNpmLintTool(server: McpServer) {
 
       try {
         const diagnostics = parseBiomeDiagnostics(output);
-        const errorCount = diagnostics.filter(
-          (d) => d.severity === "error",
-        ).length;
-        const warningCount = diagnostics.filter(
-          (d) => d.severity === "warning",
-        ).length;
+        const { errorCount, warningCount } = countBySeverity(diagnostics);
 
         // Parse fixed count from biome's output if available
         const fixedMatch = output.match(/Fixed (\d+) file/);

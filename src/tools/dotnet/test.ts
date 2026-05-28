@@ -16,6 +16,7 @@ import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { TIMEOUT, exec } from "#exec";
+import { testResultSchema } from "../../parsers/schemas.js";
 import { err, ok } from "#response";
 import { parseTrxResults } from "./parsers/trx.js";
 
@@ -49,14 +50,7 @@ export function registerDotnetTestTool(server: McpServer) {
         failed: z.number(),
         skipped: z.number(),
         total: z.number(),
-        failures: z.array(
-          z.object({
-            name: z.string(),
-            status: z.enum(["passed", "failed", "skipped"]),
-            duration: z.number(),
-            failureMessage: z.string().optional(),
-          }),
-        ),
+        failures: z.array(testResultSchema),
         summary: z.string(),
       },
     },

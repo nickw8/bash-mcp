@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { TIMEOUT, exec } from "#exec";
+import { testResultSchema } from "../../parsers/schemas.js";
 import { err, ok } from "#response";
 import { parseVitestResults } from "./parsers/vitest.js";
 
@@ -29,14 +30,7 @@ export function registerNpmTestTool(server: McpServer) {
             failed: z.number(),
             skipped: z.number(),
             duration: z.number(),
-            tests: z.array(
-              z.object({
-                name: z.string(),
-                status: z.enum(["passed", "failed", "skipped"]),
-                duration: z.number(),
-                failureMessage: z.string().optional(),
-              }),
-            ),
+            tests: z.array(testResultSchema),
           }),
         ),
         summary: z.object({

@@ -13,6 +13,7 @@ import { readdirSync } from "node:fs";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { TIMEOUT, exec } from "#exec";
+import { countBySeverity, diagnosticSchema } from "../../parsers/schemas.js";
 import { err, ok } from "#response";
 import { parseMSBuildOutput } from "./parsers/msbuild.js";
 
@@ -39,16 +40,7 @@ export function registerDotnetBuildTool(server: McpServer) {
           .describe("Build configuration (e.g. Debug, Release)"),
       },
       outputSchema: {
-        diagnostics: z.array(
-          z.object({
-            file: z.string(),
-            line: z.number(),
-            column: z.number(),
-            message: z.string(),
-            severity: z.enum(["error", "warning", "info"]),
-            rule: z.string().optional(),
-          }),
-        ),
+        diagnostics: z.array(diagnosticSchema),
         exitCode: z.number(),
         errorCount: z.number(),
         warningCount: z.number(),
@@ -74,12 +66,7 @@ export function registerDotnetBuildTool(server: McpServer) {
       const output = `${result.stdout}\n${result.stderr}`;
       const allDiagnostics = parseMSBuildOutput(output);
 
-      const errorCount = allDiagnostics.filter(
-        (d) => d.severity === "error",
-      ).length;
-      const warningCount = allDiagnostics.filter(
-        (d) => d.severity === "warning",
-      ).length;
+      const { errorCount, warningCount } = countBySeverity(allDiagnostics);
 
       // When errors exist, omit warnings — they're noise when the build is broken
       const diagnostics =
