@@ -9,12 +9,12 @@
  * response — they're noise when the developer needs to focus on errors.
  */
 
-import { readdirSync } from "node:fs";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { TIMEOUT, exec } from "#exec";
 import { countBySeverity, diagnosticSchema } from "../../parsers/schemas.js";
 import { err, ok } from "#response";
+import { detectSolution } from "./detect.js";
 import { parseMSBuildOutput } from "./parsers/msbuild.js";
 
 /** Register the dotnet_build tool for structured build diagnostics. */
@@ -94,18 +94,4 @@ export function registerDotnetBuildTool(server: McpServer) {
       return ok(structured);
     },
   );
-}
-
-/**
- * Auto-detect a .sln file in the given directory.
- * Returns the filename if exactly one .sln is found, undefined otherwise.
- */
-function detectSolution(cwd: string): string | undefined {
-  try {
-    const entries = readdirSync(cwd);
-    const slnFiles = entries.filter((e) => e.endsWith(".sln"));
-    return slnFiles.length === 1 ? slnFiles[0] : undefined;
-  } catch {
-    return undefined;
-  }
 }
