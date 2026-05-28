@@ -6,11 +6,15 @@ TypeScript, Node.js >= 20 (ESM), MCP SDK, Zod schemas, Vitest, Biome (lint/forma
 
 ## Key Paths
 - src/index.ts — server entry, registers all tool groups via stdio transport
-- src/exec.ts — command execution (exec, execJson), timeout/buffer defaults
+- src/exec.ts — command execution (exec, execJson, execWithStdin), IS_MACOS, TIMEOUT constants
 - src/response.ts — MCP response helpers (ok, okList, err)
 - src/format.ts — multi-format list output (TSV, columnar, JSON)
 - src/shell.ts — shell escaping (shellEscape)
 - src/parsers/types.ts — shared interfaces (Diagnostic, TestResult, TestSuite)
+- src/parsers/schemas.ts — shared Zod schemas (diagnosticSchema, testResultSchema, countBySeverity)
+- src/parsers/strip-prefix.ts — generic prefix stripping (paths, namespaces)
+- src/parsers/diagnostic-line.ts — generic path(line,col): severity code: msg parser
+- src/parsers/json-output.ts — JSON-ish output parser (jq/yq parse cascade)
 - src/tools/&lt;category&gt;/&lt;category&gt;.ts — tool implementations, each exports registerXTools(server)
 
 ## Tool Inventory
@@ -26,9 +30,11 @@ See docs/adding-tools.md
 - Co-located tests: &lt;name&gt;.test.ts next to &lt;name&gt;.ts
 - Build with tsup (single-file bundle with shebang), dev with tsx (fast reload)
 - Shared parser types in src/parsers/types.ts — reuse Diagnostic/TestResult/TestSuite across tool groups
+- Shared Zod schemas in src/parsers/schemas.ts — use diagnosticSchema/testResultSchema in outputSchema
+- Timeouts use TIMEOUT constants from src/exec.ts (DEFAULT, INFRA, BUILD, TYPECHECK)
 
-## Timeouts
-Filesystem/search/git: 30s | Kubernetes/Helm/ArgoCD: 15s | Terraform state: 30s | Terraform plan: 120s | dotnet build/test: 120s | All: 10 MB maxBuffer
+## Timeouts (TIMEOUT constants in src/exec.ts)
+DEFAULT: 30s (filesystem/search/git) | INFRA: 15s (kube/helm/argocd) | TYPECHECK: 60s (tsc, tf show) | BUILD: 120s (dotnet, npm test, tf plan) | All: 10 MB maxBuffer
 
 ## Commands
 Build: npm run build | Dev: npm run dev | Test: npm test | Lint: npm run lint | Typecheck: npm run typecheck
