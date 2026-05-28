@@ -7,7 +7,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { execJson } from "#exec";
+import { TIMEOUT, execJson } from "#exec";
 import { err, ok } from "#response";
 
 /** Register all Helm tools on the MCP server. */
@@ -48,7 +48,7 @@ export function registerHelmTools(server: McpServer) {
       if (context) args.push("--kube-context", context);
 
       const result = await execJson<HelmRelease[]>("helm", args, {
-        timeout: 15_000,
+        timeout: TIMEOUT.INFRA,
       });
 
       if (result.error) {
@@ -106,7 +106,7 @@ export function registerHelmTools(server: McpServer) {
       if (context) args.push("--kube-context", context);
 
       const result = await execJson<HelmStatus>("helm", args, {
-        timeout: 15_000,
+        timeout: TIMEOUT.INFRA,
       });
 
       if (result.error) {
@@ -172,7 +172,7 @@ export function registerHelmTools(server: McpServer) {
       if (context) args.push("--kube-context", context);
 
       const result = await execJson<Record<string, unknown>>("helm", args, {
-        timeout: 15_000,
+        timeout: TIMEOUT.INFRA,
       });
 
       if (result.error) {

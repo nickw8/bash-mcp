@@ -8,7 +8,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec, execJson } from "#exec";
+import { TIMEOUT, exec, execJson } from "#exec";
 import { err, ok } from "#response";
 
 /** Register all Kubernetes tools on the MCP server. */
@@ -60,7 +60,7 @@ export function registerKubernetesTools(server: McpServer) {
       if (context) args.push("--context", context);
 
       const result = await execJson<KubeList>("kubectl", args, {
-        timeout: 15_000,
+        timeout: TIMEOUT.INFRA,
       });
 
       if (result.error) {

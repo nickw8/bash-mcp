@@ -8,7 +8,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec, execJson } from "#exec";
+import { TIMEOUT, exec, execJson } from "#exec";
 import { err, ok } from "#response";
 
 /** Register all ArgoCD tools on the MCP server. */
@@ -53,7 +53,7 @@ export function registerArgocdTools(server: McpServer) {
       if (selector) args.push("-l", selector);
 
       const result = await execJson<ArgoApp[]>("argocd", args, {
-        timeout: 15_000,
+        timeout: TIMEOUT.INFRA,
       });
 
       if (result.error) {
@@ -126,7 +126,7 @@ export function registerArgocdTools(server: McpServer) {
       const result = await execJson<ArgoApp>(
         "argocd",
         ["app", "get", name, "-o", "json"],
-        { timeout: 15_000 },
+        { timeout: TIMEOUT.INFRA },
       );
 
       if (result.error) {
@@ -187,7 +187,7 @@ export function registerArgocdTools(server: McpServer) {
       const result = await exec(
         "argocd",
         ["app", "diff", name, "--local-repo-root", "."],
-        { timeout: 15_000 },
+        { timeout: TIMEOUT.INFRA },
       );
 
       const hasDiff = result.exitCode !== 0;

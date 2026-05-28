@@ -12,7 +12,7 @@
 import { readdirSync } from "node:fs";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec } from "#exec";
+import { TIMEOUT, exec } from "#exec";
 import { err, ok } from "#response";
 import { parseMSBuildOutput } from "./parsers/msbuild.js";
 
@@ -69,7 +69,7 @@ export function registerDotnetBuildTool(server: McpServer) {
         "-consoleloggerparameters:NoSummary;NoItemAndPropertyList",
       );
 
-      const result = await exec("dotnet", args, { cwd, timeout: 120_000 });
+      const result = await exec("dotnet", args, { cwd, timeout: TIMEOUT.BUILD });
 
       const output = `${result.stdout}\n${result.stderr}`;
       const allDiagnostics = parseMSBuildOutput(output);

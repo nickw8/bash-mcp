@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec } from "#exec";
+import { TIMEOUT, exec } from "#exec";
 import { err, ok } from "#response";
 import { parseVitestResults } from "./parsers/vitest.js";
 
@@ -53,7 +53,7 @@ export function registerNpmTestTool(server: McpServer) {
       if (pattern) args.push(pattern);
       if (coverage) args.push("--coverage");
 
-      const result = await exec("npx", args, { cwd, timeout: 120_000 });
+      const result = await exec("npx", args, { cwd, timeout: TIMEOUT.BUILD });
 
       // vitest exits non-zero on test failures but still outputs JSON
       const output = result.stdout || result.stderr;

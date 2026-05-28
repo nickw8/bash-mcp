@@ -1,9 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec } from "#exec";
+import { IS_MACOS, exec } from "#exec";
 import { err, ok } from "#response";
-
-const IS_MACOS = process.platform === "darwin";
 
 /** Format bytes into a human-readable size string (e.g. 1024 -> "1.0KB"). */
 function humanSize(bytes: number): string {

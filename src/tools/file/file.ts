@@ -9,11 +9,9 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec } from "#exec";
+import { IS_MACOS, exec } from "#exec";
 import { err, ok } from "#response";
 import { detectLanguage, extractOutline } from "./outline/index.js";
-
-const IS_MACOS = process.platform === "darwin";
 
 /** Find the git repo root for a file path. Returns null if not in a git repo. */
 async function findGitRoot(filePath: string): Promise<string | null> {

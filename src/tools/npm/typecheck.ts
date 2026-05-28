@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec } from "#exec";
+import { TIMEOUT, exec } from "#exec";
 import { ok } from "#response";
 import { parseTscOutput } from "./parsers/tsc.js";
 
@@ -41,7 +41,7 @@ export function registerNpmTypecheckTool(server: McpServer) {
       const args = [compiler, "--noEmit", "--pretty", "false"];
       if (project) args.push("-p", project);
 
-      const result = await exec("npx", args, { cwd, timeout: 60_000 });
+      const result = await exec("npx", args, { cwd, timeout: TIMEOUT.TYPECHECK });
 
       const output = result.stdout || result.stderr;
       const errors = parseTscOutput(output);

@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec } from "#exec";
+import { TIMEOUT, exec } from "#exec";
 import { err, ok } from "#response";
 import { parseTrxResults } from "./parsers/trx.js";
 
@@ -73,7 +73,7 @@ export function registerDotnetTestTool(server: McpServer) {
 
       args.push("--logger:trx", `--results-directory:${resultsDir}`);
 
-      const result = await exec("dotnet", args, { cwd, timeout: 120_000 });
+      const result = await exec("dotnet", args, { cwd, timeout: TIMEOUT.BUILD });
 
       // Find and parse the TRX file
       let trxContent: string | undefined;

@@ -11,6 +11,7 @@
  */
 
 import { execFile } from "node:child_process";
+import { shellEscape } from "#shell";
 
 /** Raw output from a command execution. */
 export interface ExecResult {
@@ -34,11 +35,19 @@ export interface ExecOptions {
   maxBuffer?: number;
 }
 
-/** Default timeout for all commands (30 seconds). */
-const DEFAULT_TIMEOUT = 30_000;
-
 /** Default max buffer for stdout/stderr (10 MB). */
 const DEFAULT_MAX_BUFFER = 10 * 1024 * 1024;
+
+export const IS_MACOS = process.platform === "darwin";
+
+// ── Timeout Constants ──
+
+export const TIMEOUT = {
+  DEFAULT: 30_000,
+  INFRA: 15_000,
+  BUILD: 120_000,
+  TYPECHECK: 60_000,
+} as const;
 
 /**
  * Execute a command and return raw output.
@@ -65,7 +74,7 @@ export function exec(
       {
         cwd: options.cwd,
         env: options.env ? { ...process.env, ...options.env } : undefined,
-        timeout: options.timeout ?? DEFAULT_TIMEOUT,
+        timeout: options.timeout ?? TIMEOUT.DEFAULT,
         maxBuffer: options.maxBuffer ?? DEFAULT_MAX_BUFFER,
       },
       (error, stdout, stderr) => {
@@ -114,4 +123,18 @@ export function execJson<T>(
       };
     }
   });
+}
+
+export function execWithStdin(
+  command: string,
+  args: string[],
+  stdin: string,
+  options: ExecOptions = {},
+): Promise<ExecResult> {
+  const escapedArgs = args.map(shellEscape).join(" ");
+  return exec(
+    "sh",
+    ["-c", `echo ${shellEscape(stdin)} | ${command} ${escapedArgs}`],
+    options,
+  );
 }
