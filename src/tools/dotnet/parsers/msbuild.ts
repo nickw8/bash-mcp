@@ -10,7 +10,7 @@
  * then strips the common path prefix so file paths are relative and compact.
  */
 
-import type { Diagnostic } from "#parsers";
+import { parseDiagnosticLines } from "../../../parsers/diagnostic-line.js";
 import { stripCommonPrefix } from "../../../parsers/strip-prefix.js";
 
 /** Regex matching MSBuild diagnostic lines: path(line,col): severity code: message */
@@ -23,26 +23,14 @@ const MAX_MESSAGE_LENGTH = 200;
 /**
  * Parse MSBuild console output into structured diagnostics.
  *
- * Strips the longest common path prefix from file paths so output uses
- * relative paths (e.g. `src/Foo.cs` instead of `/home/user/project/src/Foo.cs`).
- * Messages longer than 200 chars are truncated — MSBuild sometimes embeds
- * full type signatures in error messages.
+ * Strips the longest common path prefix from file paths and truncates
+ * long messages (MSBuild sometimes embeds full type signatures).
  */
-export function parseMSBuildOutput(text: string): Diagnostic[] {
-  const diagnostics: Diagnostic[] = [];
+export function parseMSBuildOutput(text: string) {
+  const diagnostics = parseDiagnosticLines(text, DIAG_PATTERN);
 
-  for (const line of text.split("\n")) {
-    const match = line.match(DIAG_PATTERN);
-    if (!match) continue;
-
-    diagnostics.push({
-      file: match[1] ?? "",
-      line: parseInt(match[2] ?? "0", 10),
-      column: parseInt(match[3] ?? "0", 10),
-      severity: (match[4] as "error" | "warning") ?? "error",
-      rule: match[5],
-      message: truncateMessage(match[6] ?? ""),
-    });
+  for (const d of diagnostics) {
+    d.message = truncateMessage(d.message);
   }
 
   const stripped = stripCommonPrefix(
