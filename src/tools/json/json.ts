@@ -8,9 +8,9 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec } from "#exec";
+import { exec, execWithStdin } from "#exec";
+import { parseJsonishOutput } from "../../parsers/json-output.js";
 import { err, ok } from "#response";
-import { shellEscape } from "#shell";
 
 /** Register the jq tool on the MCP server. */
 export function registerJsonTools(server: McpServer) {
@@ -75,58 +75,31 @@ export function registerJsonTools(server: McpServer) {
           return err(result.stderr, { result: null, multiline: false });
         }
 
-        return parseJqOutput(result.stdout, rawOutput);
+        return toJqResult(result.stdout);
       }
 
-      // Pipe raw JSON input via stdin (input is guaranteed non-empty by the early return above)
-      const result = await exec("sh", [
-        "-c",
-        `echo ${shellEscape(input ?? "")} | jq ${args.map(shellEscape).join(" ")}`,
-      ]);
+      const result = await execWithStdin("jq", args, input ?? "");
 
       if (result.exitCode !== 0) {
         return err(result.stderr, { result: null, multiline: false });
       }
 
-      return parseJqOutput(result.stdout, rawOutput);
+      return toJqResult(result.stdout);
     },
   );
 }
 
-/**
- * Parse jq output into structured data.
- * Handles three cases: single JSON value, multiple JSON values
- * (one per line), and raw string output (jq -r).
- */
-function parseJqOutput(stdout: string, _rawOutput?: boolean) {
-  const trimmed = stdout.trim();
-
-  // Try parsing as a single JSON value first
-  try {
-    const parsed = JSON.parse(trimmed);
-    return ok({ result: parsed, multiline: false });
-  } catch {
-    // jq can output multiple JSON values (one per line)
+function toJqResult(stdout: string) {
+  const parsed = parseJsonishOutput(stdout);
+  switch (parsed.kind) {
+    case "single":
+      return ok({ result: parsed.value, multiline: false });
+    case "multi":
+      return ok({ result: parsed.values, multiline: true });
+    case "raw":
+      return ok({
+        result: parsed.text,
+        multiline: parsed.text.includes("\n"),
+      });
   }
-
-  // Try parsing each line as a separate JSON value
-  const lines = trimmed.split("\n").filter(Boolean);
-  const values: unknown[] = [];
-  let allParsed = true;
-
-  for (const line of lines) {
-    try {
-      values.push(JSON.parse(line));
-    } catch {
-      allParsed = false;
-      break;
-    }
-  }
-
-  if (allParsed && values.length > 0) {
-    return ok({ result: values, multiline: true });
-  }
-
-  // Raw string output (e.g. jq -r)
-  return ok({ result: trimmed, multiline: lines.length > 1 });
 }

@@ -8,9 +8,9 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec } from "#exec";
+import { exec, execWithStdin } from "#exec";
+import { parseJsonishOutput } from "../../parsers/json-output.js";
 import { err, ok } from "#response";
-import { shellEscape } from "#shell";
 
 /** Register the yq tool on the MCP server. */
 export function registerYamlTools(server: McpServer) {
@@ -68,59 +68,32 @@ export function registerYamlTools(server: McpServer) {
           return err(result.stderr, { result: null, format: "error" });
         }
 
-        return parseYqOutput(result.stdout, fmt);
+        return toYqResult(result.stdout, fmt);
       }
 
-      // Pipe raw YAML input via stdin (input is guaranteed non-empty by the early return above)
-      const result = await exec("sh", [
-        "-c",
-        `echo ${shellEscape(input ?? "")} | yq ${args.map(shellEscape).join(" ")}`,
-      ]);
+      const result = await execWithStdin("yq", args, input ?? "");
 
       if (result.exitCode !== 0) {
         return err(result.stderr, { result: null, format: "error" });
       }
 
-      return parseYqOutput(result.stdout, fmt);
+      return toYqResult(result.stdout, fmt);
     },
   );
 }
 
-/**
- * Parse yq output into structured data.
- * When format is JSON, parses into objects. Multi-document YAML
- * produces multiple JSON objects (one per line). YAML/props
- * output is returned as a raw string.
- */
-function parseYqOutput(stdout: string, format: string) {
-  const trimmed = stdout.trim();
-
-  // When output is JSON, parse into structured data
-  if (format === "json") {
-    try {
-      const parsed = JSON.parse(trimmed);
-      return ok({ result: parsed, format });
-    } catch {
-      // Multi-document YAML outputs multiple JSON objects, one per line
-      const lines = trimmed.split("\n").filter(Boolean);
-      const values: unknown[] = [];
-      let allParsed = true;
-
-      for (const line of lines) {
-        try {
-          values.push(JSON.parse(line));
-        } catch {
-          allParsed = false;
-          break;
-        }
-      }
-
-      if (allParsed && values.length > 0) {
-        return ok({ result: values, format });
-      }
-    }
+function toYqResult(stdout: string, format: string) {
+  if (format !== "json") {
+    return ok({ result: stdout.trim(), format });
   }
 
-  // YAML or props output — return as string
-  return ok({ result: trimmed, format });
+  const parsed = parseJsonishOutput(stdout);
+  switch (parsed.kind) {
+    case "single":
+      return ok({ result: parsed.value, format });
+    case "multi":
+      return ok({ result: parsed.values, format });
+    case "raw":
+      return ok({ result: parsed.text, format });
+  }
 }
