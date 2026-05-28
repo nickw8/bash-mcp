@@ -85,7 +85,8 @@ export function registerKubernetesTools(server: McpServer) {
     {
       title: "Kubectl logs",
       description:
-        "Get pod logs. Returns structured log lines with timestamps when available.",
+        "Get pod logs. Returns structured log lines with timestamps when available. " +
+        "Use grep to filter lines by regex pattern (e.g. 'ERROR|WARN') instead of piping through shell commands.",
       inputSchema: {
         pod: z.string().describe("Pod name (or deployment/xxx)"),
         namespace: z
@@ -100,6 +101,16 @@ export function registerKubernetesTools(server: McpServer) {
           .default(100)
           .describe("Number of lines (default 100)"),
         since: z.string().optional().describe("Duration like '1h', '30m'"),
+        grep: z
+          .string()
+          .optional()
+          .describe(
+            "Regex pattern to filter log lines (e.g. 'ERROR|WARN', 'timeout'). Only matching lines are returned.",
+          ),
+        ignoreCase: z
+          .boolean()
+          .optional()
+          .describe("Case-insensitive grep matching (default: false)"),
         context: z.string().optional().describe("Kubectl context"),
       },
       outputSchema: {
@@ -113,7 +124,7 @@ export function registerKubernetesTools(server: McpServer) {
         pod: z.string(),
       },
     },
-    async ({ pod, namespace, container, tail, since, context }) => {
+    async ({ pod, namespace, container, tail, since, grep, ignoreCase, context }) => {
       const args = [
         "logs",
         pod,
@@ -126,13 +137,13 @@ export function registerKubernetesTools(server: McpServer) {
       if (since) args.push(`--since=${since}`);
       if (context) args.push("--context", context);
 
-      const result = await exec("kubectl", args, { timeout: 15_000 });
+      const result = await exec("kubectl", args, { timeout: TIMEOUT.INFRA });
 
       if (result.exitCode !== 0) {
         return err(result.stderr, { lines: [], count: 0, pod });
       }
 
-      const lines = result.stdout
+      let lines = result.stdout
         .trim()
         .split("\n")
         .filter(Boolean)
@@ -146,6 +157,11 @@ export function registerKubernetesTools(server: McpServer) {
           }
           return { timestamp: "", message: line };
         });
+
+      if (grep) {
+        const re = new RegExp(grep, ignoreCase ? "i" : undefined);
+        lines = lines.filter((l) => re.test(l.message));
+      }
 
       return ok({ lines, count: lines.length, pod });
     },
