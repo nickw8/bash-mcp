@@ -13,7 +13,7 @@ export function registerNpmLintTool(server: McpServer) {
       title: "Lint (structured)",
       description:
         "Run biome check and return structured diagnostics with file, line, column, message, and rule. " +
-        "Far more compact and parseable than raw lint output.",
+        "Far more compact and parseable than raw lint output. Use minSeverity to filter by severity level.",
       inputSchema: {
         cwd: z.string().describe("Project root directory"),
         fix: z
@@ -24,6 +24,12 @@ export function registerNpmLintTool(server: McpServer) {
           .array(z.string())
           .optional()
           .describe("Specific paths to lint (default: '.')"),
+        minSeverity: z
+          .enum(["error", "warning", "info"])
+          .optional()
+          .describe(
+            "Minimum severity to include (e.g. 'error' drops warnings and info)",
+          ),
       },
       outputSchema: {
         errors: z.array(diagnosticSchema),
@@ -32,7 +38,7 @@ export function registerNpmLintTool(server: McpServer) {
         fixedCount: z.number(),
       },
     },
-    async ({ cwd, fix, paths }) => {
+    async ({ cwd, fix, paths, minSeverity }) => {
       const args = ["biome", "check", "--reporter=json"];
       if (fix) args.push("--fix");
       args.push(...(paths ?? ["."]));
@@ -51,8 +57,16 @@ export function registerNpmLintTool(server: McpServer) {
       }
 
       try {
-        const diagnostics = parseBiomeDiagnostics(output);
+        let diagnostics = parseBiomeDiagnostics(output);
         const { errorCount, warningCount } = countBySeverity(diagnostics);
+
+        if (minSeverity) {
+          const severityRank = { error: 3, warning: 2, info: 1 } as const;
+          const minRank = severityRank[minSeverity];
+          diagnostics = diagnostics.filter(
+            (d) => severityRank[d.severity] >= minRank,
+          );
+        }
 
         // Parse fixed count from biome's output if available
         const fixedMatch = output.match(/Fixed (\d+) file/);

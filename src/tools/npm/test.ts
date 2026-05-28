@@ -13,7 +13,7 @@ export function registerNpmTestTool(server: McpServer) {
       title: "Test (structured)",
       description:
         "Run vitest and return structured test results: suites, pass/fail counts, failure messages. " +
-        "Much more compact than raw test output.",
+        "Much more compact than raw test output. Only failures are listed by default; use verbose=true for all tests.",
       inputSchema: {
         cwd: z.string().describe("Project root directory"),
         pattern: z
@@ -21,6 +21,10 @@ export function registerNpmTestTool(server: McpServer) {
           .optional()
           .describe("Filter tests by filename pattern"),
         coverage: z.boolean().optional().describe("Enable coverage reporting"),
+        verbose: z
+          .boolean()
+          .optional()
+          .describe("Include all tests in output (default: only failures)"),
       },
       outputSchema: {
         suites: z.array(
@@ -42,7 +46,7 @@ export function registerNpmTestTool(server: McpServer) {
         }),
       },
     },
-    async ({ cwd, pattern, coverage }) => {
+    async ({ cwd, pattern, coverage, verbose }) => {
       const args = ["vitest", "run", "--reporter=json"];
       if (pattern) args.push(pattern);
       if (coverage) args.push("--coverage");
@@ -72,6 +76,13 @@ export function registerNpmTestTool(server: McpServer) {
         const jsonStr = output.slice(jsonStart);
 
         const { suites, summary } = parseVitestResults(jsonStr);
+
+        if (!verbose) {
+          for (const suite of suites) {
+            suite.tests = suite.tests.filter((t) => t.status === "failed");
+          }
+        }
+
         return ok({ suites, summary });
       } catch {
         return err("Failed to parse vitest JSON output", {
