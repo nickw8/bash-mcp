@@ -161,6 +161,14 @@ nginx-7c5b8d6c88-abc12  1/1     Running   0          3d
 | `npm_test` | Structured Vitest results with pass/fail counts |
 | `npm_typecheck` | Structured tsc/tsgo type errors |
 
+### Python
+
+| Tool | Description |
+|------|-------------|
+| `python_lint` | Structured ruff lint diagnostics with file, line, column, rule |
+| `python_test` | Structured pytest results via JUnit XML — pass/fail counts, failure messages |
+| `python_typecheck` | Structured mypy type errors with file, line, column, error code |
+
 ### Execution
 
 | Tool | Description |
@@ -179,6 +187,9 @@ Each tool group uses appropriate default timeouts:
 - **Terraform state**: 30 seconds
 - **Terraform plan**: 120 seconds
 - **.NET build/test**: 120 seconds
+- **Python lint**: 30 seconds
+- **Python test**: 120 seconds
+- **Python typecheck**: 60 seconds
 
 ### Command Buffer
 

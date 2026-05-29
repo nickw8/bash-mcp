@@ -19,6 +19,7 @@ import { registerHelmTools } from "./tools/helm/helm.js";
 import { registerJsonTools } from "./tools/json/json.js";
 import { registerKubernetesTools } from "./tools/kubernetes/kubernetes.js";
 import { registerNpmTools } from "./tools/npm/npm.js";
+import { registerPythonTools } from "./tools/python/python.js";
 import { registerRunTools } from "./tools/run/run.js";
 import { registerSearchTools } from "./tools/search/search.js";
 import { registerTerraformTools } from "./tools/terraform/terraform.js";
@@ -36,7 +37,7 @@ const server = new McpServer(
       "file search (rg/ripgrep, glob), git operations (status, log, diff, branches, diff_content),",
       "running shell commands (run), parallel tool execution (batch),",
       "JSON/YAML processing (jq, yq), npm tasks (test, lint, typecheck),",
-      "dotnet builds (build, test),",
+      "dotnet builds (build, test), Python tasks (lint, test, typecheck),",
       "and infrastructure: Kubernetes (kubectl get, logs, contexts),",
       "Terraform (state list, show, plan summary, workspaces),",
       "Helm (list releases, status, values), ArgoCD (apps, app detail, app diff).",
@@ -61,6 +62,7 @@ registerBatchTools(server);
 registerGitDiffContentTools(server);
 registerNpmTools(server);
 registerDotnetTools(server);
+registerPythonTools(server);
 
 async function main() {
   const transport = new StdioServerTransport();

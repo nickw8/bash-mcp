@@ -18,7 +18,7 @@ TypeScript, Node.js >= 20 (ESM), MCP SDK, Zod schemas, Vitest, Biome (lint/forma
 - src/tools/&lt;category&gt;/&lt;category&gt;.ts — tool implementations, each exports registerXTools(server)
 
 ## Tool Inventory
-**Filesystem**: ls, tree, du, find_files | **Search**: rg, glob | **Git**: git_status, git_log, git_diff, git_branches, git_diff_content | **Kubernetes**: kube_get, kube_logs, kube_contexts | **Terraform**: tf_state_list, tf_show, tf_plan_summary, tf_workspaces | **Helm**: helm_list, helm_status, helm_values | **ArgoCD**: argo_apps, argo_app_detail, argo_app_diff | **JSON/YAML**: jq, yq | **File**: cat, outline | **Run**: run | **Batch**: batch | **npm**: npm_lint, npm_test, npm_typecheck | **dotnet**: dotnet_build, dotnet_test
+**Filesystem**: ls, tree, du, find_files | **Search**: rg, glob | **Git**: git_status, git_log, git_diff, git_branches, git_diff_content | **Kubernetes**: kube_get, kube_logs, kube_contexts | **Terraform**: tf_state_list, tf_show, tf_plan_summary, tf_workspaces | **Helm**: helm_list, helm_status, helm_values | **ArgoCD**: argo_apps, argo_app_detail, argo_app_diff | **JSON/YAML**: jq, yq | **File**: cat, outline | **Run**: run | **Batch**: batch | **npm**: npm_lint, npm_test, npm_typecheck | **dotnet**: dotnet_build, dotnet_test | **Python**: python_lint, python_test, python_typecheck
 
 ## Adding a New Tool
 See docs/adding-tools.md
@@ -40,4 +40,4 @@ DEFAULT: 30s (filesystem/search/git) | INFRA: 15s (kube/helm/argocd) | TYPECHECK
 Build: npm run build | Dev: npm run dev | Test: npm test | Lint: npm run lint | Typecheck: npm run typecheck
 
 ## Prerequisites
-Node.js >= 20 always required. Per-category: rg (ripgrep), git, kubectl, terraform, helm, argocd, jq, yq (mikefarah), dotnet. Tools error gracefully if CLI missing.
+Node.js >= 20 always required. Per-category: rg (ripgrep), git, kubectl, terraform, helm, argocd, jq, yq (mikefarah), dotnet, ruff, mypy, pytest. Tools error gracefully if CLI missing.
