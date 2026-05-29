@@ -8,8 +8,9 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { TIMEOUT, exec, execJson } from "#exec";
+import { exec, execJson, execWithStdin, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
+import { parseJsonishOutput } from "../../parsers/json-output.js";
 
 /** Register all Kubernetes tools on the MCP server. */
 export function registerKubernetesTools(server: McpServer) {
@@ -19,7 +20,8 @@ export function registerKubernetesTools(server: McpServer) {
     {
       title: "Kubectl get resources",
       description:
-        "Get Kubernetes resources as structured data. Wraps kubectl get -o json and returns a compact summary instead of raw JSON.",
+        "Get Kubernetes resources as structured data. Wraps kubectl get -o json and returns a compact summary by default. " +
+        "Use the jq param to extract specific fields from the raw JSON (e.g. '.spec.template.spec.containers[].env') instead of the summary.",
       inputSchema: {
         resource: z
           .string()
@@ -35,29 +37,58 @@ export function registerKubernetesTools(server: McpServer) {
           .describe("Label selector (e.g. 'app=nginx')"),
         name: z.string().optional().describe("Specific resource name"),
         context: z.string().optional().describe("Kubectl context to use"),
-      },
-      outputSchema: {
-        items: z.array(
-          z.object({
-            name: z.string(),
-            namespace: z.string(),
-            status: z.string(),
-            age: z.string(),
-            labels: z.record(z.string()),
-            extra: z.record(z.string()),
-          }),
-        ),
-        count: z.number(),
-        resource: z.string(),
+        jq: z
+          .string()
+          .optional()
+          .describe(
+            "jq filter applied to raw kubectl JSON. Skips the default summary and returns the jq result instead. " +
+              "Example: '.spec.template.spec.containers[].env'",
+          ),
       },
     },
-    async ({ resource, namespace, allNamespaces, selector, name, context }) => {
+    async ({
+      resource,
+      namespace,
+      allNamespaces,
+      selector,
+      name,
+      context,
+      jq: jqFilter,
+    }) => {
       const args = ["get", resource, "-o", "json"];
       if (name) args.splice(2, 0, name);
       if (namespace) args.push("-n", namespace);
       if (allNamespaces) args.push("--all-namespaces");
       if (selector) args.push("-l", selector);
       if (context) args.push("--context", context);
+
+      if (jqFilter) {
+        const kubectlResult = await exec("kubectl", args, {
+          timeout: TIMEOUT.INFRA,
+        });
+        if (kubectlResult.exitCode !== 0) {
+          return err(kubectlResult.stderr || kubectlResult.stdout, {
+            result: null,
+          });
+        }
+        const jqResult = await execWithStdin(
+          "jq",
+          [jqFilter],
+          kubectlResult.stdout,
+        );
+        if (jqResult.exitCode !== 0) {
+          return err(jqResult.stderr, { result: null });
+        }
+        const parsed = parseJsonishOutput(jqResult.stdout);
+        switch (parsed.kind) {
+          case "single":
+            return ok({ result: parsed.value });
+          case "multi":
+            return ok({ result: parsed.values });
+          case "raw":
+            return ok({ result: parsed.text });
+        }
+      }
 
       const result = await execJson<KubeList>("kubectl", args, {
         timeout: TIMEOUT.INFRA,
@@ -124,7 +155,16 @@ export function registerKubernetesTools(server: McpServer) {
         pod: z.string(),
       },
     },
-    async ({ pod, namespace, container, tail, since, grep, ignoreCase, context }) => {
+    async ({
+      pod,
+      namespace,
+      container,
+      tail,
+      since,
+      grep,
+      ignoreCase,
+      context,
+    }) => {
       const args = [
         "logs",
         pod,
