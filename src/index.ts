@@ -24,10 +24,26 @@ import { registerSearchTools } from "./tools/search/search.js";
 import { registerTerraformTools } from "./tools/terraform/terraform.js";
 import { registerYamlTools } from "./tools/yaml/yaml.js";
 
-const server = new McpServer({
-  name: "bash-mcp",
-  version: "0.1.0",
-});
+const server = new McpServer(
+  {
+    name: "bash-mcp",
+    version: "0.1.0",
+  },
+  {
+    instructions: [
+      "Structured CLI wrappers that return JSON instead of raw text.",
+      "Use for: reading files (cat, outline), filesystem listing (ls, tree, du, find_files),",
+      "file search (rg/ripgrep, glob), git operations (status, log, diff, branches, diff_content),",
+      "running shell commands (run), parallel tool execution (batch),",
+      "JSON/YAML processing (jq, yq), npm tasks (test, lint, typecheck),",
+      "dotnet builds (build, test),",
+      "and infrastructure: Kubernetes (kubectl get, logs, contexts),",
+      "Terraform (state list, show, plan summary, workspaces),",
+      "Helm (list releases, status, values), ArgoCD (apps, app detail, app diff).",
+      "Prefer these over raw Bash for structured output and lower token usage.",
+    ].join(" "),
+  },
+);
 
 // ── Register all tool groups ──────────────────────────────────────────
 registerFilesystemTools(server);
