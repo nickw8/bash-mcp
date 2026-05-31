@@ -105,9 +105,21 @@ command -v jq >/dev/null 2>&1 || exit 0   # no jq → fail open
 cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)"
 [[ -z "$cmd" ]] && exit 0
 
-# Normalize: strip a leading "sudo " and leading whitespace.
-cmd="${cmd#sudo }"
-cmd="${cmd#"${cmd%%[![:space:]]*}"}"
+# Normalize: trim whitespace, then peel off leading `sudo`/`env` wrappers and
+# `VAR=value` assignments so the real command is what we match against
+# (e.g. "env FOO=bar kubectl get" → "kubectl get"). A bare `make TARGET=x`
+# is left alone: only the FIRST token is considered, and only if it is an
+# assignment or a known wrapper.
+trim_leading() { cmd="${cmd#"${cmd%%[![:space:]]*}"}"; }
+trim_leading
+while true; do
+  first="${cmd%%[[:space:]]*}"
+  case "$first" in
+    sudo | env) cmd="${cmd#"$first"}"; trim_leading ;;
+    [A-Za-z_]*=*) cmd="${cmd#"$first"}"; trim_leading ;;
+    *) break ;;
+  esac
+done
 
 # Detect compound commands (pipes, chaining, subshells, redirects).
 compound=0
@@ -123,6 +135,19 @@ emit_warn() {
   printf '{"systemMessage":"%s"}\n' "$1"
   exit 0
 }
+
+# ── Targeted overrides (more specific than the generic RULES below) ─────────
+# A `kubectl get` filtered to failed pods is a triage intent better served by
+# the (roadmap) kube_pod_failure_summary than by generic kube_get.
+case "$cmd" in
+  "kubectl get "*)
+    case "$cmd" in
+      *"status.phase=Failed"*)
+        emit_warn "bash-mcp: prefer mcp__bash-mcp__kube_pod_failure_summary (roadmap) over 'kubectl get … --field-selector=status.phase=Failed'"
+        ;;
+    esac
+    ;;
+esac
 
 # ── Match ─────────────────────────────────────────────────────────────────
 for rule in "${RULES[@]}"; do
