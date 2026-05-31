@@ -1,0 +1,15 @@
+{
+  "kind": "Pod",
+  "metadata": { "name": "pend-1", "namespace": "default" },
+  "status": {
+    "phase": "Pending",
+    "conditions": [
+      {
+        "type": "PodScheduled",
+        "status": "False",
+        "reason": "Unschedulable",
+        "message": "0/3 nodes are available: 3 Insufficient cpu."
+      }
+    ]
+  }
+}

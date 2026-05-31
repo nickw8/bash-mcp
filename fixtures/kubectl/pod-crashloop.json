@@ -1,0 +1,21 @@
+{
+  "kind": "Pod",
+  "metadata": { "name": "crash-1", "namespace": "default" },
+  "status": {
+    "phase": "Running",
+    "containerStatuses": [
+      {
+        "name": "app",
+        "ready": false,
+        "restartCount": 7,
+        "state": {
+          "waiting": {
+            "reason": "CrashLoopBackOff",
+            "message": "back-off 5m0s restarting failed container=app"
+          }
+        },
+        "lastState": { "terminated": { "reason": "Error", "exitCode": 1 } }
+      }
+    ]
+  }
+}
