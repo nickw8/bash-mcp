@@ -1,0 +1,9 @@
+{
+  "vpc_id": { "value": "vpc-0abc123", "type": "string", "sensitive": false },
+  "db_password": { "value": "s3cr3t", "type": "string", "sensitive": true },
+  "subnet_ids": {
+    "value": ["subnet-1", "subnet-2"],
+    "type": ["list", "string"],
+    "sensitive": false
+  }
+}

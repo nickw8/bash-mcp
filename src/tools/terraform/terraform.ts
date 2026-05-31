@@ -11,6 +11,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execJson, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
+import { defineTool } from "#tool";
+import { parseOutputs, parseProviders, parseValidate } from "./parse.js";
 
 /**
  * Resolve which Terraform-compatible binary to invoke.
@@ -266,6 +268,132 @@ export function registerTerraformTools(server: McpServer) {
       });
 
       return ok({ current, workspaces });
+    },
+  );
+
+  // ── terraform output ────────────────────────────────────────────────
+  defineTool(
+    server,
+    "tf_outputs",
+    {
+      title: "Terraform outputs",
+      description:
+        "List Terraform/OpenTofu outputs (name, type, value) with sensitive values redacted.",
+      inputSchema: {
+        cwd: z.string().describe("Terraform project directory"),
+        binary: binarySchema,
+      },
+      outputSchema: {
+        outputs: z.array(
+          z.object({
+            name: z.string(),
+            type: z.string(),
+            sensitive: z.boolean(),
+            value: z.string().optional(),
+          }),
+        ),
+        count: z.number(),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ cwd, binary }) => {
+      const res = await execJson<
+        Record<string, { value?: unknown; type?: unknown; sensitive?: boolean }>
+      >(resolveTfBinary(binary), ["output", "-json"], {
+        cwd,
+        timeout: TIMEOUT.INFRA,
+      });
+      if (res.error) return err(res.error, { outputs: [], count: 0 });
+      const outputs = parseOutputs(res.data ?? {});
+      return ok({ outputs, count: outputs.length });
+    },
+  );
+
+  // ── terraform providers (via version -json) ─────────────────────────
+  defineTool(
+    server,
+    "tf_providers",
+    {
+      title: "Terraform providers",
+      description:
+        "List the Terraform/OpenTofu version and selected provider versions for the project.",
+      inputSchema: {
+        cwd: z.string().describe("Terraform project directory"),
+        binary: binarySchema,
+      },
+      outputSchema: {
+        version: z.string(),
+        providers: z.array(
+          z.object({
+            name: z.string(),
+            source: z.string(),
+            version: z.string(),
+          }),
+        ),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ cwd, binary }) => {
+      const res = await execJson<{
+        terraform_version?: string;
+        provider_selections?: Record<string, string>;
+      }>(resolveTfBinary(binary), ["version", "-json"], {
+        cwd,
+        timeout: TIMEOUT.INFRA,
+      });
+      if (res.error) return err(res.error, { version: "", providers: [] });
+      return ok(parseProviders(res.data ?? {}));
+    },
+  );
+
+  // ── terraform validate ──────────────────────────────────────────────
+  defineTool(
+    server,
+    "tf_validate_summary",
+    {
+      title: "Terraform validate summary",
+      description:
+        "Validate the Terraform/OpenTofu config and return a compact pass/fail summary with diagnostics.",
+      inputSchema: {
+        cwd: z.string().describe("Terraform project directory"),
+        binary: binarySchema,
+      },
+      outputSchema: {
+        valid: z.boolean(),
+        errorCount: z.number(),
+        warningCount: z.number(),
+        diagnostics: z.array(
+          z.object({
+            severity: z.string(),
+            summary: z.string(),
+            file: z.string().optional(),
+            line: z.number().optional(),
+          }),
+        ),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ cwd, binary }) => {
+      // validate -json exits non-zero on invalid config but still prints JSON,
+      // so parse stdout directly rather than using execJson's exit-code gate.
+      const result = await exec(
+        resolveTfBinary(binary),
+        ["validate", "-json"],
+        {
+          cwd,
+          timeout: TIMEOUT.TYPECHECK,
+        },
+      );
+      try {
+        return ok(parseValidate(JSON.parse(result.stdout)));
+      } catch {
+        return err(result.stderr || "terraform validate failed", {
+          valid: false,
+          errorCount: 0,
+          warningCount: 0,
+          diagnostics: [],
+        });
+      }
     },
   );
 }

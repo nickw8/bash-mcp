@@ -1,0 +1,18 @@
+{
+  "valid": false,
+  "error_count": 1,
+  "warning_count": 1,
+  "diagnostics": [
+    {
+      "severity": "error",
+      "summary": "Reference to undeclared resource",
+      "detail": "A managed resource \"aws_instance\" \"web\" has not been declared.",
+      "range": { "filename": "main.tf", "start": { "line": 12 } }
+    },
+    {
+      "severity": "warning",
+      "summary": "Deprecated attribute",
+      "range": { "filename": "variables.tf", "start": { "line": 3 } }
+    }
+  ]
+}
