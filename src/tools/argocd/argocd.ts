@@ -132,8 +132,8 @@ export function registerArgocdTools(server: McpServer) {
         { timeout: TIMEOUT.INFRA },
       );
 
-      if (result.error) {
-        return err(result.error, {
+      if (result.error || !result.data) {
+        return err(result.error ?? "argocd app get: no data", {
           name,
           project: "",
           syncStatus: "",
@@ -145,7 +145,7 @@ export function registerArgocdTools(server: McpServer) {
         });
       }
 
-      const app = result.data!;
+      const app = result.data;
       const resources = (app.status?.resources ?? []).map((r) => ({
         kind: r.kind ?? "",
         name: r.name ?? "",

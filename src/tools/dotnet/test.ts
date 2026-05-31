@@ -78,9 +78,9 @@ export function registerDotnetTestTool(server: McpServer) {
       // Find and parse the TRX file
       let trxContent: string | undefined;
       try {
-        const files = findTrxFiles(resultsDir);
-        if (files.length > 0) {
-          trxContent = readFileSync(files[0]!, "utf8");
+        const [firstTrx] = findTrxFiles(resultsDir);
+        if (firstTrx) {
+          trxContent = readFileSync(firstTrx, "utf8");
         }
       } catch {
         // TRX dir may not exist if dotnet test failed before producing output

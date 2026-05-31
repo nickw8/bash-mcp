@@ -37,9 +37,9 @@ export function parseMSBuildOutput(text: string) {
     diagnostics.map((d) => d.file),
     "/",
   );
-  for (let i = 0; i < diagnostics.length; i++) {
-    diagnostics[i]!.file = stripped[i]!;
-  }
+  diagnostics.forEach((d, i) => {
+    d.file = stripped[i] ?? d.file;
+  });
   return diagnostics;
 }
 

@@ -47,7 +47,7 @@ function formatTsv(rows: Row[], meta?: Record<string, unknown>): string {
   }
 
   if (rows.length > 0) {
-    const keys = Object.keys(rows[0]!);
+    const keys = Object.keys(rows[0] ?? {});
     parts.push(keys.join("\t"));
     for (const row of rows) {
       parts.push(keys.map((k) => escapeCell(row[k])).join("\t"));
@@ -61,7 +61,7 @@ function formatColumnar(rows: Row[], meta?: Record<string, unknown>): string {
   if (rows.length === 0) {
     return JSON.stringify(meta ?? {});
   }
-  const cols = Object.keys(rows[0]!);
+  const cols = Object.keys(rows[0] ?? {});
   const data = rows.map((r) => cols.map((k) => r[k]));
   return JSON.stringify({ ...(meta ?? {}), cols, data });
 }

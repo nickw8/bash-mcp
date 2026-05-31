@@ -117,8 +117,8 @@ export function registerKubernetesTools(server: McpServer) {
           : [result.data];
 
       const allItems = rawItems
-        .filter(Boolean)
-        .map((item) => summarizeResource(item!));
+        .filter((item): item is NonNullable<typeof item> => item != null)
+        .map((item) => summarizeResource(item));
 
       const hasBudget = detailLevel !== undefined || maxItems !== undefined;
       const { items, truncated, total } = applyBudget(allItems, {

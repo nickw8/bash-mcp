@@ -79,8 +79,8 @@ export function parseTrxResults(trxContent: string): {
       const truncated = truncateStackTrace(
         unescapeXml(stackMatch[1] ?? "").trim(),
       );
-      if (truncated && results.length > 0) {
-        const last = results[results.length - 1]!;
+      const last = results[results.length - 1];
+      if (truncated && last) {
         last.failureMessage = last.failureMessage
           ? `${last.failureMessage}\n${truncated}`
           : truncated;
@@ -96,9 +96,9 @@ export function parseTrxResults(trxContent: string): {
     ".",
     2,
   );
-  for (let i = 0; i < results.length; i++) {
-    results[i]!.name = stripped[i]!;
-  }
+  results.forEach((r, i) => {
+    r.name = stripped[i] ?? r.name;
+  });
 
   return { results, passed, failed, skipped, total };
 }

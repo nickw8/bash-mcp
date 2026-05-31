@@ -227,9 +227,9 @@ export function registerTerraformTools(server: McpServer) {
           /(\d+) to add, (\d+) to change, (\d+) to destroy/,
         );
         if (match) {
-          add = parseInt(match[1]!, 10);
-          change = parseInt(match[2]!, 10);
-          destroy = parseInt(match[3]!, 10);
+          add = parseInt(match[1] ?? "0", 10);
+          change = parseInt(match[2] ?? "0", 10);
+          destroy = parseInt(match[3] ?? "0", 10);
         }
       }
 

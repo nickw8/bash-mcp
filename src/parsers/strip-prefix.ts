@@ -17,7 +17,7 @@ export function stripCommonPrefix(
 ): string[] {
   if (values.length === 0) return values;
 
-  const segments = values[0]!.split(separator);
+  const segments = (values[0] ?? "").split(separator);
   let prefixLen = 0;
 
   for (let i = 0; i < segments.length - minKeepSegments; i++) {

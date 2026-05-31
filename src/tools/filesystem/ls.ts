@@ -9,7 +9,7 @@ import { defineTool } from "#tool";
 function parseSize(s: string): number {
   const match = s.match(/^([\d.]+)([KMGTP]?)$/i);
   if (!match) return 0;
-  const num = parseFloat(match[1]!);
+  const num = parseFloat(match[1] ?? "0");
   const unit = (match[2] ?? "").toUpperCase();
   const multipliers: Record<string, number> = {
     "": 1,

@@ -9,8 +9,8 @@ import { defineTool } from "#tool";
 function parseTimespan(s: string): number {
   const match = s.match(/^(\d+)([mhdw])$/);
   if (!match) return 0;
-  const num = parseInt(match[1]!, 10);
-  const unit = match[2]!;
+  const num = parseInt(match[1] ?? "0", 10);
+  const unit = match[2] ?? "";
   const multipliers: Record<string, number> = {
     m: 1,
     h: 60,
@@ -98,13 +98,13 @@ export function registerFindTool(server: McpServer) {
         args.push("-type", "f");
       }
       if (allNames.length === 1) {
-        args.push("-name", allNames[0]!);
+        args.push("-name", allNames[0] ?? "");
       } else if (allNames.length > 1) {
         args.push("(");
-        for (let i = 0; i < allNames.length; i++) {
+        allNames.forEach((n, i) => {
           if (i > 0) args.push("-o");
-          args.push("-name", allNames[i]!);
-        }
+          args.push("-name", n);
+        });
         args.push(")");
       }
       if (modifiedWithin) {

@@ -9,7 +9,7 @@ export function extractPython(lines: string[]): ExtractResult {
   let commentBuf: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!;
+    const line = lines[i] ?? "";
     const t = line.trim();
     const indent = line.length - line.trimStart().length;
 
@@ -104,7 +104,7 @@ function collectDocstring(
 
   // Multi-line: find closing delimiter
   while (++i < lines.length) {
-    const l = lines[i]!;
+    const l = lines[i] ?? "";
     result.push(l);
     if (l.trim().endsWith(q)) break;
   }

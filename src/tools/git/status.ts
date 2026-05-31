@@ -57,17 +57,17 @@ export function registerGitStatusTool(server: McpServer) {
         } else if (line.startsWith("# branch.ab ")) {
           const match = line.match(/\+(\d+) -(\d+)/);
           if (match) {
-            ahead = parseInt(match[1]!, 10);
-            behind = parseInt(match[2]!, 10);
+            ahead = parseInt(match[1] ?? "0", 10);
+            behind = parseInt(match[2] ?? "0", 10);
           }
         } else if (line.startsWith("1 ") || line.startsWith("2 ")) {
           const parts = line.split(" ");
           const xy = parts[1] ?? "..";
           const file = parts.at(-1) ?? "";
-          if (xy[0] !== ".")
-            staged.push({ file, status: statusMap[xy[0]!] ?? xy[0]! });
-          if (xy[1] !== ".")
-            unstaged.push({ file, status: statusMap[xy[1]!] ?? xy[1]! });
+          const [x, y] = xy;
+          if (x && x !== ".") staged.push({ file, status: statusMap[x] ?? x });
+          if (y && y !== ".")
+            unstaged.push({ file, status: statusMap[y] ?? y });
         } else if (line.startsWith("? ")) {
           untracked.push(line.slice(2));
         }

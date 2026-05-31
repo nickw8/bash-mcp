@@ -112,19 +112,19 @@ export function registerHelmTools(server: McpServer) {
         timeout: TIMEOUT.INFRA,
       });
 
-      if (result.error) {
-        return err(result.error, {
+      if (result.error || !result.data) {
+        return err(result.error ?? "helm status: no data", {
           name: release,
           namespace: namespace ?? "default",
           revision: 0,
           status: "error",
-          description: result.error,
+          description: result.error ?? "",
           lastDeployed: "",
           notes: "",
         });
       }
 
-      const d = result.data!;
+      const d = result.data;
       return ok({
         name: d.name ?? release,
         namespace: d.namespace ?? namespace ?? "default",
