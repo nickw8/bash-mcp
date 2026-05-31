@@ -2,10 +2,12 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
 import { ok } from "#response";
+import { defineTool } from "#tool";
 
 /** Register the git_log tool for structured commit history. */
 export function registerGitLogTool(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "git_log",
     {
       title: "Git log",

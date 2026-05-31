@@ -39,7 +39,8 @@ const binarySchema = z
 /** Register all Terraform tools on the MCP server. */
 export function registerTerraformTools(server: McpServer) {
   // ── terraform state list ────────────────────────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "tf_state_list",
     {
       title: "Terraform state list",
@@ -99,7 +100,8 @@ export function registerTerraformTools(server: McpServer) {
   );
 
   // ── terraform show (current state summary) ──────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "tf_show",
     {
       title: "Terraform show",
@@ -152,7 +154,8 @@ export function registerTerraformTools(server: McpServer) {
   );
 
   // ── terraform plan summary ──────────────────────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "tf_plan_summary",
     {
       title: "Terraform plan summary",
@@ -236,7 +239,8 @@ export function registerTerraformTools(server: McpServer) {
   );
 
   // ── terraform workspace ─────────────────────────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "tf_workspaces",
     {
       title: "Terraform workspaces",

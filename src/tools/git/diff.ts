@@ -10,6 +10,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
 import { err, ok } from "#response";
+import { defineTool } from "#tool";
 
 /** Parse unified diff output into structured per-file sections with hunks. */
 export function parseDiff(raw: string) {
@@ -81,7 +82,8 @@ export function parseDiff(raw: string) {
 
 /** Register the git_diff_content tool on the MCP server. */
 export function registerGitDiffContentTools(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "git_diff_content",
     {
       title: "Git diff with content",

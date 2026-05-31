@@ -11,6 +11,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, IS_MACOS } from "#exec";
 import { err, ok } from "#response";
+import { defineTool } from "#tool";
 import { detectLanguage, extractOutline } from "./outline/index.js";
 
 /** Find the git repo root for a file path. Returns null if not in a git repo. */
@@ -58,7 +59,8 @@ async function getGitMeta(
 
 /** Register all file tools on the MCP server. */
 export function registerFileTools(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "cat",
     {
       title: "Read file contents",
@@ -287,7 +289,8 @@ export function registerFileTools(server: McpServer) {
     },
   );
 
-  server.registerTool(
+  defineTool(
+    server,
     "outline",
     {
       title: "File structure outline",

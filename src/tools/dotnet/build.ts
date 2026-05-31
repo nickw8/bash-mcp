@@ -13,13 +13,15 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
+import { defineTool } from "#tool";
 import { countBySeverity, diagnosticSchema } from "../../parsers/schemas.js";
 import { detectSolution } from "./detect.js";
 import { parseMSBuildOutput } from "./parsers/msbuild.js";
 
 /** Register the dotnet_build tool for structured build diagnostics. */
 export function registerDotnetBuildTool(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "dotnet_build",
     {
       title: "Build (structured)",

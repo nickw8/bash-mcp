@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, IS_MACOS } from "#exec";
 import { err, ok } from "#response";
+import { defineTool } from "#tool";
 
 /** Format bytes into a human-readable size string (e.g. 1024 -> "1.0KB"). */
 function humanSize(bytes: number): string {
@@ -17,7 +18,8 @@ function humanSize(bytes: number): string {
 
 /** Register the du tool for structured disk usage output. */
 export function registerDuTool(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "du",
     {
       title: "Disk usage",

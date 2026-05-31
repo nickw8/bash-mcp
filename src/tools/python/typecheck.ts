@@ -2,11 +2,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, TIMEOUT } from "#exec";
 import { ok } from "#response";
+import { defineTool } from "#tool";
 import { diagnosticSchema } from "../../parsers/schemas.js";
 import { parseMypyOutput } from "./parsers/mypy.js";
 
 export function registerPythonTypecheckTool(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "python_typecheck",
     {
       title: "Python type check (structured)",

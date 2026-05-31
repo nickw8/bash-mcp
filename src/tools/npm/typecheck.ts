@@ -2,12 +2,14 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, TIMEOUT } from "#exec";
 import { ok } from "#response";
+import { defineTool } from "#tool";
 import { diagnosticSchema } from "../../parsers/schemas.js";
 import { parseTscOutput } from "./parsers/tsc.js";
 
 /** Register the npm_typecheck tool for structured tsc/tsgo type errors. */
 export function registerNpmTypecheckTool(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "npm_typecheck",
     {
       title: "Type check (structured)",

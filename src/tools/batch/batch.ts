@@ -10,10 +10,12 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
 import { ok } from "#response";
+import { defineTool } from "#tool";
 
 /** Register the batch tool on the MCP server. */
 export function registerBatchTools(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "batch",
     {
       title: "Run commands in parallel",

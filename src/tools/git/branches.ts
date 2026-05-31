@@ -2,10 +2,12 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
 import { ok } from "#response";
+import { defineTool } from "#tool";
 
 /** Register the git_branches tool for structured branch listing. */
 export function registerGitBranchesTool(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "git_branches",
     {
       title: "Git branches",

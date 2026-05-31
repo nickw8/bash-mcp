@@ -11,11 +11,13 @@ import { z } from "zod";
 import { exec } from "#exec";
 import type { ListFormat } from "#format";
 import { err, okList } from "#response";
+import { defineTool } from "#tool";
 
 /** Register all search tools on the MCP server. */
 export function registerSearchTools(server: McpServer) {
   // ── rg (ripgrep) ────────────────────────────────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "rg",
     {
       title: "Ripgrep search",
@@ -226,7 +228,8 @@ export function registerSearchTools(server: McpServer) {
   );
 
   // ── glob ────────────────────────────────────────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "glob",
     {
       title: "Glob file search",

@@ -17,13 +17,15 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
+import { defineTool } from "#tool";
 import { testResultSchema } from "../../parsers/schemas.js";
 import { detectSolution } from "./detect.js";
 import { parseTrxResults } from "./parsers/trx.js";
 
 /** Register the dotnet_test tool for structured test results. */
 export function registerDotnetTestTool(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "dotnet_test",
     {
       title: "Test (structured)",

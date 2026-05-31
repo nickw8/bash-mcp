@@ -5,11 +5,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
+import { defineTool } from "#tool";
 import { testResultSchema } from "../../parsers/schemas.js";
 import { parsePytestResults } from "./parsers/pytest.js";
 
 export function registerPythonTestTool(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "python_test",
     {
       title: "Python test (structured)",

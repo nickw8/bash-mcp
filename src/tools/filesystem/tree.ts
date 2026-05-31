@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
 import { ok } from "#response";
+import { defineTool } from "#tool";
 
 /** Node from tree's JSON output (-J flag). */
 interface TreeNode {
@@ -48,7 +49,8 @@ async function treeFallback(path: string, maxDepth: number, dirsOnly: boolean) {
 
 /** Register the tree tool for structured directory tree output. */
 export function registerTreeTool(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "tree",
     {
       title: "Directory tree",

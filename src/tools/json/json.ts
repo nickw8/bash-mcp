@@ -10,11 +10,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execWithStdin } from "#exec";
 import { err, ok } from "#response";
+import { defineTool } from "#tool";
 import { parseJsonishOutput } from "../../parsers/json-output.js";
 
 /** Register the jq tool on the MCP server. */
 export function registerJsonTools(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "jq",
     {
       title: "jq JSON processor",

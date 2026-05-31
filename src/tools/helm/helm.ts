@@ -9,11 +9,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
+import { defineTool } from "#tool";
 
 /** Register all Helm tools on the MCP server. */
 export function registerHelmTools(server: McpServer) {
   // ── helm list ───────────────────────────────────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "helm_list",
     {
       title: "Helm releases",
@@ -70,7 +72,8 @@ export function registerHelmTools(server: McpServer) {
   );
 
   // ── helm status ─────────────────────────────────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "helm_status",
     {
       title: "Helm release status",
@@ -135,7 +138,8 @@ export function registerHelmTools(server: McpServer) {
   );
 
   // ── helm values ─────────────────────────────────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "helm_values",
     {
       title: "Helm release values",

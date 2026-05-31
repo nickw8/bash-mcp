@@ -3,6 +3,7 @@ import { z } from "zod";
 import { exec, IS_MACOS } from "#exec";
 import type { ListFormat } from "#format";
 import { err, okList } from "#response";
+import { defineTool } from "#tool";
 
 /** Parse a human-readable size string (e.g. "4.2K", "10M") into bytes. */
 function parseSize(s: string): number {
@@ -22,7 +23,8 @@ function parseSize(s: string): number {
 
 /** Register the ls tool for structured directory listings. */
 export function registerLsTool(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "ls",
     {
       title: "List directory",

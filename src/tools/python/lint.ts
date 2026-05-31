@@ -2,11 +2,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
 import { err, ok } from "#response";
+import { defineTool } from "#tool";
 import { countBySeverity, diagnosticSchema } from "../../parsers/schemas.js";
 import { parseRuffDiagnostics } from "./parsers/ruff.js";
 
 export function registerPythonLintTool(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "python_lint",
     {
       title: "Python lint (structured)",

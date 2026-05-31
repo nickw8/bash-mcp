@@ -11,10 +11,12 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
 import { ok } from "#response";
+import { defineTool } from "#tool";
 
 /** Register the run tool on the MCP server. */
 export function registerRunTools(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "run",
     {
       title: "Run a command",

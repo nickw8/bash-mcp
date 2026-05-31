@@ -3,6 +3,7 @@ import { z } from "zod";
 import { exec, IS_MACOS } from "#exec";
 import type { ListFormat } from "#format";
 import { err, okList } from "#response";
+import { defineTool } from "#tool";
 
 /** Parse a timespan string (e.g. "7d", "1h", "30m") into minutes for find -mmin. */
 function parseTimespan(s: string): number {
@@ -21,7 +22,8 @@ function parseTimespan(s: string): number {
 
 /** Register the find_files tool for structured file search results. */
 export function registerFindTool(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "find_files",
     {
       title: "Find files",

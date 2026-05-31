@@ -9,7 +9,9 @@
         "ready": false,
         "restartCount": 4,
         "state": { "running": { "startedAt": "2024-01-01T00:00:00Z" } },
-        "lastState": { "terminated": { "reason": "OOMKilled", "exitCode": 137 } }
+        "lastState": {
+          "terminated": { "reason": "OOMKilled", "exitCode": 137 }
+        }
       }
     ]
   }

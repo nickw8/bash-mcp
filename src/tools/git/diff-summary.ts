@@ -2,10 +2,12 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
 import { ok } from "#response";
+import { defineTool } from "#tool";
 
 /** Register the git_diff tool for structured file-level diff statistics. */
 export function registerGitDiffSummaryTool(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "git_diff",
     {
       title: "Git diff",

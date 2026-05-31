@@ -10,11 +10,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execJson, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
+import { defineTool } from "#tool";
 
 /** Register all ArgoCD tools on the MCP server. */
 export function registerArgocdTools(server: McpServer) {
   // ── argocd app list ─────────────────────────────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "argo_apps",
     {
       title: "ArgoCD applications",
@@ -89,7 +91,8 @@ export function registerArgocdTools(server: McpServer) {
   );
 
   // ── argocd app get ──────────────────────────────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "argo_app_detail",
     {
       title: "ArgoCD app detail",
@@ -170,7 +173,8 @@ export function registerArgocdTools(server: McpServer) {
   );
 
   // ── argocd app diff ─────────────────────────────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "argo_app_diff",
     {
       title: "ArgoCD app diff",

@@ -2,10 +2,12 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
 import { ok } from "#response";
+import { defineTool } from "#tool";
 
 /** Register the git_status tool for structured working tree status. */
 export function registerGitStatusTool(server: McpServer) {
-  server.registerTool(
+  defineTool(
+    server,
     "git_status",
     {
       title: "Git status",
