@@ -309,6 +309,552 @@ index 1111111..2222222 100644
       fileCount: 2,
     }),
   },
+  {
+    tool: "ls -lh (→ ls)",
+    raw: `total 24K
+-rw-r--r-- 1 nick nick 1.6K 2026-05-31 12:00 package.json
+-rw-r--r-- 1 nick nick 8.2K 2026-05-30 09:14 README.md
+drwxr-xr-x 5 nick nick 4.0K 2026-05-31 14:00 src
+drwxr-xr-x 2 nick nick 4.0K 2026-05-31 13:54 fixtures
+-rw-r--r-- 1 nick nick  220 2026-05-12 08:44 tsconfig.json`,
+    // ls defaults to TSV output (okList) — its real, compact default representation.
+    structured: `total\t5
+path\t.
+---
+name\ttype\tsize\tpermissions\tmodified
+package.json\tfile\t1638\t-rw-r--r--\t2026-05-31
+README.md\tfile\t8396\t-rw-r--r--\t2026-05-30
+src\tdir\t4096\tdrwxr-xr-x\t2026-05-31
+fixtures\tdir\t4096\tdrwxr-xr-x\t2026-05-31
+tsconfig.json\tfile\t220\t-rw-r--r--\t2026-05-12`,
+  },
+  {
+    tool: "tree (→ tree)",
+    raw: `src
+├── index.ts
+├── exec.ts
+├── tools
+│   ├── git
+│   │   ├── status.ts
+│   │   └── log.ts
+│   └── kubernetes
+│       └── kubernetes.ts
+└── parsers
+    └── types.ts
+
+5 directories, 6 files`,
+    structured: JSON.stringify({
+      dirs: 5,
+      files: 6,
+      tree: [
+        { path: "src/index.ts", type: "file", depth: 1 },
+        { path: "src/exec.ts", type: "file", depth: 1 },
+        { path: "src/tools", type: "dir", depth: 1 },
+        { path: "src/tools/git", type: "dir", depth: 2 },
+        { path: "src/tools/git/status.ts", type: "file", depth: 3 },
+        { path: "src/tools/git/log.ts", type: "file", depth: 3 },
+        { path: "src/tools/kubernetes", type: "dir", depth: 2 },
+        { path: "src/tools/kubernetes/kubernetes.ts", type: "file", depth: 3 },
+        { path: "src/parsers", type: "dir", depth: 1 },
+        { path: "src/parsers/types.ts", type: "file", depth: 2 },
+      ],
+    }),
+  },
+  {
+    tool: "du (→ du)",
+    raw: `4.0K\t./src/parsers
+24K\t./src/tools
+40K\t./src
+8.0K\t./fixtures
+60K\t.`,
+    structured: JSON.stringify({
+      entries: [
+        { path: "./src/parsers", sizeBytes: 4096, sizeHuman: "4.0KB" },
+        { path: "./src/tools", sizeBytes: 24576, sizeHuman: "24.0KB" },
+        { path: "./src", sizeBytes: 40960, sizeHuman: "40.0KB" },
+        { path: "./fixtures", sizeBytes: 8192, sizeHuman: "8.0KB" },
+        { path: ".", sizeBytes: 61440, sizeHuman: "60.0KB" },
+      ],
+    }),
+  },
+  {
+    tool: "ripgrep (→ rg)",
+    raw: `src/auth.ts
+12:  if (!token) throw new Error("missing token");
+45:  const token = req.headers.authorization;
+
+src/server.ts
+88:  validateToken(token);`,
+    // rg defaults to TSV output (okList) — its real, compact default representation.
+    structured: `fileCount\t2
+matchCount\t3
+truncated\tfalse
+---
+file\tline\ttext
+src/auth.ts\t12\t  if (!token) throw new Error("missing token");
+src/auth.ts\t45\t  const token = req.headers.authorization;
+src/server.ts\t88\t  validateToken(token);`,
+  },
+  {
+    tool: "cat full file (→ outline)",
+    raw: `import { z } from "zod";
+import { db } from "./db";
+
+export interface User {
+  id: string;
+  email: string;
+}
+
+export class UserService {
+  constructor(private cache: Cache) {}
+
+  async getUser(id: string): Promise<User | null> {
+    const cached = this.cache.get(id);
+    if (cached) return cached;
+    const row = await db.query("SELECT * FROM users WHERE id = $1", [id]);
+    if (!row) return null;
+    const user = { id: row.id, email: row.email };
+    this.cache.set(id, user);
+    return user;
+  }
+
+  async createUser(email: string): Promise<User> {
+    const id = crypto.randomUUID();
+    await db.insert("users", { id, email });
+    return { id, email };
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete("users", id);
+    this.cache.evict(id);
+  }
+}
+
+export function validateEmail(email: string): boolean {
+  return /^[^@]+@[^@]+$/.test(email);
+}`,
+    structured: JSON.stringify({
+      path: "src/user-service.ts",
+      language: "typescript",
+      totalLines: 38,
+      symbols: 6,
+      outline: [
+        'import { z } from "zod"',
+        'import { db } from "./db"',
+        "interface User",
+        "class UserService",
+        "  getUser(id: string): Promise<User | null>",
+        "  createUser(email: string): Promise<User>",
+        "  deleteUser(id: string): Promise<void>",
+        "function validateEmail(email: string): boolean",
+      ].join("\n"),
+    }),
+  },
+  {
+    tool: "git status (→ git_status)",
+    raw: `On branch main
+Your branch is ahead of 'origin/main' by 2 commits.
+  (use "git push" to publish your local commits)
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+        modified:   src/auth.ts
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+        modified:   README.md
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        notes.txt`,
+    structured: JSON.stringify({
+      branch: "main",
+      ahead: 2,
+      behind: 0,
+      staged: [{ file: "src/auth.ts", status: "modified" }],
+      unstaged: [{ file: "README.md", status: "modified" }],
+      untracked: ["notes.txt"],
+      clean: false,
+    }),
+  },
+  {
+    tool: "git log (→ git_log)",
+    raw: `commit a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 (HEAD -> main)
+Author: Nick <nick@example.com>
+Date:   Fri May 30 22:11:04 2026 +0000
+
+    feat: add retry logic
+
+commit 9f8e7d6c5b4a3210fedcba9876543210fedcba98
+Author: Nick <nick@example.com>
+Date:   Thu May 29 10:02:55 2026 +0000
+
+    fix: handle null token`,
+    structured: JSON.stringify({
+      commits: [
+        {
+          hash: "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
+          shortHash: "a1b2c3d",
+          author: "Nick",
+          date: "2026-05-30T22:11:04+00:00",
+          message: "feat: add retry logic",
+        },
+        {
+          hash: "9f8e7d6c5b4a3210fedcba9876543210fedcba98",
+          shortHash: "9f8e7d6",
+          author: "Nick",
+          date: "2026-05-29T10:02:55+00:00",
+          message: "fix: handle null token",
+        },
+      ],
+      count: 2,
+    }),
+  },
+  {
+    tool: "git branch -v (→ git_branches)",
+    raw: `* main                a1b2c3d feat: add retry logic
+  feature/auth        9f8e7d6 wip: oauth flow
+  bugfix/null-token   5d4c3b2 fix: handle null token`,
+    structured: JSON.stringify({
+      current: "main",
+      branches: [
+        {
+          name: "main",
+          current: true,
+          lastCommit: "a1b2c3d feat: add retry logic",
+          remote: false,
+        },
+        {
+          name: "feature/auth",
+          current: false,
+          lastCommit: "9f8e7d6 wip: oauth flow",
+          remote: false,
+        },
+        {
+          name: "bugfix/null-token",
+          current: false,
+          lastCommit: "5d4c3b2 fix: handle null token",
+          remote: false,
+        },
+      ],
+    }),
+  },
+  {
+    tool: "kubectl config get-contexts (→ kube_contexts)",
+    raw: `CURRENT   NAME      CLUSTER   AUTHINFO     NAMESPACE
+*         prod      prod      prod-admin   payments
+          staging   staging   stg-admin    default
+          dev       dev       dev-admin    default`,
+    structured: JSON.stringify({
+      current: "prod",
+      contexts: [
+        { name: "prod", cluster: "prod", namespace: "payments", current: true },
+        {
+          name: "staging",
+          cluster: "staging",
+          namespace: "default",
+          current: false,
+        },
+        { name: "dev", cluster: "dev", namespace: "default", current: false },
+      ],
+    }),
+  },
+  {
+    tool: "kubectl get events (→ kube_events_summary)",
+    raw: `LAST SEEN   TYPE      REASON             OBJECT                       MESSAGE
+2m          Warning   BackOff            pod/worker-5d9f7b6c-ghi56    Back-off restarting failed container worker
+5m          Warning   FailedScheduling   pod/api-6f8c9d7b5-new        0/3 nodes available: insufficient memory
+8m          Normal    Scheduled          pod/web-7c5b8d6c88-abc12     Successfully assigned default/web to node-1
+10m         Warning   Unhealthy          pod/web-7c5b8d6c88-def34     Readiness probe failed: HTTP probe returned 503`,
+    structured: JSON.stringify({
+      status: "3 warning events",
+      likelyCauses: [
+        "worker-5d9f7b6c-ghi56: container crash-looping (BackOff)",
+        "api-6f8c9d7b5-new: unschedulable — insufficient memory on all nodes",
+        "web-7c5b8d6c88-def34: readiness probe failing (HTTP 503)",
+      ],
+      suggestedNextCommands: ["kube_diagnose_pod(pod='worker-5d9f7b6c-ghi56')"],
+      evidence: [
+        "Warning BackOff x? on worker",
+        "Warning FailedScheduling on api",
+        "Warning Unhealthy on web",
+      ],
+    }),
+  },
+  {
+    tool: "terraform state list (→ tf_state_list)",
+    raw: `module.network.aws_vpc.main
+module.network.aws_subnet.public[0]
+module.network.aws_subnet.public[1]
+aws_instance.web
+aws_s3_bucket.logs`,
+    structured: JSON.stringify({
+      resources: [
+        {
+          address: "module.network.aws_vpc.main",
+          type: "aws_vpc",
+          name: "main",
+          module: "module.network",
+        },
+        {
+          address: "module.network.aws_subnet.public[0]",
+          type: "aws_subnet",
+          name: "public[0]",
+          module: "module.network",
+        },
+        {
+          address: "module.network.aws_subnet.public[1]",
+          type: "aws_subnet",
+          name: "public[1]",
+          module: "module.network",
+        },
+        {
+          address: "aws_instance.web",
+          type: "aws_instance",
+          name: "web",
+          module: "",
+        },
+        {
+          address: "aws_s3_bucket.logs",
+          type: "aws_s3_bucket",
+          name: "logs",
+          module: "",
+        },
+      ],
+      count: 5,
+      byType: { aws_vpc: 1, aws_subnet: 2, aws_instance: 1, aws_s3_bucket: 1 },
+    }),
+  },
+  {
+    tool: "terraform output (→ tf_outputs)",
+    raw: `vpc_id = "vpc-0abc123"
+public_subnets = [
+  "subnet-01",
+  "subnet-02",
+]
+db_endpoint = "app-db.xyz.rds.amazonaws.com:5432"
+api_key = <sensitive>`,
+    structured: JSON.stringify({
+      outputs: [
+        { name: "vpc_id", value: "vpc-0abc123", sensitive: false },
+        {
+          name: "public_subnets",
+          value: ["subnet-01", "subnet-02"],
+          sensitive: false,
+        },
+        {
+          name: "db_endpoint",
+          value: "app-db.xyz.rds.amazonaws.com:5432",
+          sensitive: false,
+        },
+        { name: "api_key", value: null, sensitive: true },
+      ],
+      count: 4,
+    }),
+  },
+  {
+    tool: "helm status (→ helm_status)",
+    raw: `NAME: api
+LAST DEPLOYED: Fri May 30 22:11:04 2026
+NAMESPACE: payments
+STATUS: deployed
+REVISION: 7
+TEST SUITE: None
+NOTES:
+1. Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods -n payments -l app=api -o jsonpath="{.items[0].metadata.name}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl port-forward $POD_NAME 8080:80`,
+    structured: JSON.stringify({
+      name: "api",
+      namespace: "payments",
+      revision: 7,
+      status: "deployed",
+      description: "Upgrade complete",
+      lastDeployed: "2026-05-30T22:11:04Z",
+      notes: "1. Get the application URL by running these commands: ...",
+    }),
+  },
+  {
+    tool: "argocd app get (→ argo_app_detail)",
+    raw: `Name:               web
+Project:            prod
+Server:             https://kubernetes.default.svc
+Namespace:          default
+URL:                https://argocd.example.com/applications/web
+Repo:               git@github.com:org/infra.git
+Target:             main
+Path:               apps/web
+SyncWindow:         Sync Allowed
+Sync Policy:        Automated
+Sync Status:        OutOfSync from main (a1b2c3d)
+Health Status:      Degraded
+
+GROUP  KIND        NAMESPACE  NAME  STATUS     HEALTH    HOOK  MESSAGE
+       Service     default    web   Synced     Healthy
+apps   Deployment  default    web   OutOfSync  Degraded        replica set "web-7c5" failed progressing`,
+    structured: JSON.stringify({
+      name: "web",
+      project: "prod",
+      syncStatus: "OutOfSync",
+      healthStatus: "Degraded",
+      revision: "a1b2c3d",
+      message: 'replica set "web-7c5" failed progressing',
+      resources: [
+        {
+          kind: "Service",
+          name: "web",
+          namespace: "default",
+          status: "Synced",
+          health: "Healthy",
+        },
+        {
+          kind: "Deployment",
+          name: "web",
+          namespace: "default",
+          status: "OutOfSync",
+          health: "Degraded",
+        },
+      ],
+      conditions: [],
+    }),
+  },
+  {
+    tool: "tsc --noEmit (→ npm_typecheck)",
+    raw: `src/auth.ts:12:9 - error TS2304: Cannot find name 'tokenn'.
+
+12   return tokenn;
+             ~~~~~~
+
+src/server.ts:45:3 - error TS2554: Expected 2 arguments, but got 1.
+
+45   validate(token);
+     ~~~~~~~~~~~~~~~~
+
+Found 2 errors in 2 files.`,
+    structured: JSON.stringify({
+      errors: [
+        {
+          file: "src/auth.ts",
+          line: 12,
+          column: 9,
+          severity: "error",
+          rule: "TS2304",
+          message: "Cannot find name 'tokenn'.",
+        },
+        {
+          file: "src/server.ts",
+          line: 45,
+          column: 3,
+          severity: "error",
+          rule: "TS2554",
+          message: "Expected 2 arguments, but got 1.",
+        },
+      ],
+      errorCount: 2,
+      success: false,
+    }),
+  },
+  {
+    tool: "pytest (→ python_test)",
+    raw: `============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-8.0.0, pluggy-1.4.0
+rootdir: /proj
+collected 14 items
+
+tests/test_auth.py ....F....                                            [ 64%]
+tests/test_db.py .....                                                  [100%]
+
+=================================== FAILURES ===================================
+______________________________ test_expired_token _____________________________
+
+    def test_expired_token():
+>       assert verify(expired) is None
+E       AssertionError: assert <User id=1> is None
+
+tests/test_auth.py:42: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_auth.py::test_expired_token - AssertionError: assert <User...
+========================= 1 failed, 13 passed in 1.23s =========================`,
+    structured: JSON.stringify({
+      total: 14,
+      passed: 13,
+      failed: 1,
+      failures: [
+        {
+          name: "tests/test_auth.py::test_expired_token",
+          message: "AssertionError: assert <User id=1> is None",
+        },
+      ],
+    }),
+  },
+  {
+    tool: "dotnet build (→ dotnet_build)",
+    raw: `Microsoft (R) Build Engine version 17.8.0+abc for .NET
+  Determining projects to restore...
+  Restored /proj/App.csproj (in 412 ms).
+  App -> /proj/bin/Debug/net8.0/App.dll
+/proj/Services/UserService.cs(28,17): error CS0103: The name 'cach' does not exist in the current context [/proj/App.csproj]
+/proj/Services/UserService.cs(40,9): warning CS0168: The variable 'ex' is declared but never used [/proj/App.csproj]
+
+Build FAILED.
+
+    1 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:03.45`,
+    structured: JSON.stringify({
+      errors: [
+        {
+          file: "/proj/Services/UserService.cs",
+          line: 28,
+          column: 17,
+          severity: "error",
+          rule: "CS0103",
+          message: "The name 'cach' does not exist in the current context",
+        },
+        {
+          file: "/proj/Services/UserService.cs",
+          line: 40,
+          column: 9,
+          severity: "warning",
+          rule: "CS0168",
+          message: "The variable 'ex' is declared but never used",
+        },
+      ],
+      errorCount: 1,
+      warningCount: 1,
+      success: false,
+    }),
+  },
+  {
+    tool: "which + version probes (→ check_environment)",
+    raw: `$ which kubectl terraform helm jq node argocd
+/usr/local/bin/kubectl
+/usr/local/bin/terraform
+/usr/local/bin/helm
+/usr/bin/jq
+/usr/local/bin/node
+argocd not found
+$ kubectl version --client -o json | jq -r .clientVersion.gitVersion
+v1.31.2
+$ terraform version
+Terraform v1.9.5
+$ helm version --short
+v3.16.1
+$ node --version
+v20.18.0
+$ kubectl config current-context
+prod`,
+    structured: JSON.stringify({
+      node: { installed: true, version: "20.18.0" },
+      kubectl: { installed: true, version: "1.31.2", context: "prod" },
+      terraform: { installed: true, version: "1.9.5" },
+      helm: { installed: true, version: "3.16.1" },
+      jq: { installed: true, version: "1.7" },
+      argocd: { installed: false },
+    }),
+  },
 ];
 
 const rows = SAMPLES.map(({ tool, raw, structured }) => {
