@@ -10,7 +10,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
-import { ok } from "#response";
+import { err, ok } from "#response";
+import { checkCommandAllowed } from "#safety";
 import { defineTool } from "#tool";
 
 /** Register the run tool on the MCP server. */
@@ -50,6 +51,26 @@ export function registerRunTools(server: McpServer) {
     },
     async ({ command, args, cwd, timeout, maxLines }) => {
       const start = Date.now();
+
+      // Safety profile (default OFF): block mutating commands when BASH_MCP_MODE
+      // opts in. Unset → no enforcement, identical to prior behavior.
+      const gate = checkCommandAllowed(command, args ?? []);
+      if (!gate.allowed) {
+        const reason = gate.reason ?? "blocked by BASH_MCP_MODE";
+        return err(
+          reason,
+          {
+            exitCode: 126,
+            stdout: "",
+            stderr: reason,
+            stdoutLines: 0,
+            truncated: false,
+            elapsed: 0,
+          },
+          { kind: "permission_denied", message: reason, command },
+        );
+      }
+
       const result = await exec(command, args, { cwd, timeout });
 
       const lines = result.stdout.split("\n");

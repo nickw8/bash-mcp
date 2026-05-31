@@ -10,6 +10,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
 import { ok } from "#response";
+import { checkCommandAllowed } from "#safety";
 import { defineTool } from "#tool";
 
 /** Register the batch tool on the MCP server. */
@@ -56,6 +57,16 @@ export function registerBatchTools(server: McpServer) {
 
       const results = await Promise.all(
         commands.map(async (cmd) => {
+          // Safety profile (default OFF): block mutating commands per BASH_MCP_MODE.
+          const gate = checkCommandAllowed(cmd.command, cmd.args ?? []);
+          if (!gate.allowed) {
+            return {
+              label: cmd.label ?? cmd.command,
+              exitCode: 126,
+              stdout: "",
+              stderr: gate.reason ?? "blocked by BASH_MCP_MODE",
+            };
+          }
           const result = await exec(cmd.command, cmd.args ?? [], {
             cwd: cmd.cwd,
             timeout: cmd.timeout ?? 30_000,

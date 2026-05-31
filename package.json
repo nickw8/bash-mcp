@@ -31,6 +31,7 @@
     "#format": "./src/format.ts",
     "#logger": "./src/logger.ts",
     "#response": "./src/response.ts",
+    "#safety": "./src/safety.ts",
     "#tool": "./src/tool.ts",
     "#parsers": "./src/parsers/types.ts",
     "#shell": "./src/shell.ts"
