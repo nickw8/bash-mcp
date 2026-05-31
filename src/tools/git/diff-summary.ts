@@ -45,6 +45,7 @@ export function registerGitDiffSummaryTool(server: McpServer) {
         totalDeletions: z.number(),
         fileCount: z.number(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ cwd, ref, base, staged, path }) => {
       const args = ["diff", "--numstat"];

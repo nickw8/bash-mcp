@@ -106,6 +106,7 @@ export function registerFileTools(server: McpServer) {
         range: z.tuple([z.number(), z.number()]),
         truncated: z.boolean(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ path, ref, startLine, endLine, maxLines, lineNumbers }) => {
       const empty: {
@@ -330,6 +331,7 @@ export function registerFileTools(server: McpServer) {
           ),
         outline: z.string(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ path, ref }) => {
       const empty = {

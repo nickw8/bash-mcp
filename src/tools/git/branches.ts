@@ -28,6 +28,7 @@ export function registerGitBranchesTool(server: McpServer) {
           }),
         ),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ cwd, remote }) => {
       const args = ["branch", "-v", "--no-color"];

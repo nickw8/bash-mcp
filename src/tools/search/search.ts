@@ -78,6 +78,7 @@ export function registerSearchTools(server: McpServer) {
           .array(z.object({ file: z.string(), count: z.number() }))
           .optional(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({
       pattern,
@@ -247,6 +248,7 @@ export function registerSearchTools(server: McpServer) {
         files: z.array(z.string()),
         count: z.number(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ pattern, cwd, format }) => {
       const fmt = (format ?? "tsv") as ListFormat;

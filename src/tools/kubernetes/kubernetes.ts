@@ -56,6 +56,7 @@ export function registerKubernetesTools(server: McpServer) {
           ),
         ...budgetSchema,
       },
+      annotations: { readOnlyHint: true },
     },
     async ({
       resource,
@@ -181,6 +182,7 @@ export function registerKubernetesTools(server: McpServer) {
         total: z.number().optional(),
         truncated: z.boolean().optional(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({
       pod,
@@ -256,6 +258,7 @@ export function registerKubernetesTools(server: McpServer) {
           }),
         ),
       },
+      annotations: { readOnlyHint: true },
     },
     async () => {
       const result = await exec("kubectl", [

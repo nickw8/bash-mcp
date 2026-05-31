@@ -71,6 +71,7 @@ export function registerTerraformTools(server: McpServer) {
         count: z.number(),
         byType: z.record(z.number()),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ cwd, binary }) => {
       const result = await exec(resolveTfBinary(binary), ["state", "list"], {
@@ -132,6 +133,7 @@ export function registerTerraformTools(server: McpServer) {
         ),
         count: z.number(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ cwd, binary }) => {
       const result = await execJson<TfShowState>(
@@ -288,6 +290,7 @@ export function registerTerraformTools(server: McpServer) {
         current: z.string(),
         workspaces: z.array(z.string()),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ cwd, binary }) => {
       const result = await exec(

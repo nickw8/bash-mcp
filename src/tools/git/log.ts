@@ -53,6 +53,7 @@ export function registerGitLogTool(server: McpServer) {
         ),
         count: z.number(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ cwd, count, author, since, path, range, exclude, withFiles }) => {
       // Unicode separator avoids collisions with commit message content

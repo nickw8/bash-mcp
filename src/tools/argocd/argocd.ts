@@ -49,6 +49,7 @@ export function registerArgocdTools(server: McpServer) {
           degraded: z.number(),
         }),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ project, selector }) => {
       const args = ["app", "list", "-o", "json"];
@@ -125,6 +126,7 @@ export function registerArgocdTools(server: McpServer) {
           }),
         ),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ name }) => {
       const result = await execJson<ArgoApp>(
@@ -187,6 +189,7 @@ export function registerArgocdTools(server: McpServer) {
         hasDiff: z.boolean(),
         diff: z.string(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ name }) => {
       const result = await exec(

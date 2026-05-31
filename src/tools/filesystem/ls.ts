@@ -62,6 +62,7 @@ export function registerLsTool(server: McpServer) {
         total: z.number(),
         path: z.string(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ path, all, recursive, nameOnly, format }) => {
       const fmt = (format ?? "tsv") as ListFormat;

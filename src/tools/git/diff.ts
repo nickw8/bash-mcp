@@ -140,6 +140,7 @@ export function registerGitDiffContentTools(server: McpServer) {
           deletions: z.number(),
         }),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ cwd, ref, base, staged, path, context }) => {
       const args = ["diff", `-U${context ?? 3}`];

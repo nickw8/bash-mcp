@@ -87,6 +87,7 @@ export function registerTreeTool(server: McpServer) {
           }),
         ),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ path, maxDepth, dirsOnly, pattern, exclude }) => {
       const defaultExcludes =

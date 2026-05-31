@@ -28,6 +28,7 @@ export function registerNpmTypecheckTool(server: McpServer) {
         errorCount: z.number(),
         success: z.boolean(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ cwd, project }) => {
       // Try tsgo first (faster), fall back to tsc

@@ -27,6 +27,7 @@ export function registerPythonTypecheckTool(server: McpServer) {
         errorCount: z.number(),
         success: z.boolean(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ cwd, paths }) => {
       const args = [

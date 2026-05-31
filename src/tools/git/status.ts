@@ -25,6 +25,7 @@ export function registerGitStatusTool(server: McpServer) {
         untracked: z.array(z.string()),
         clean: z.boolean(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ cwd }) => {
       const opts = cwd ? { cwd } : {};

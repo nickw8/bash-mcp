@@ -46,6 +46,7 @@ export function registerHelmTools(server: McpServer) {
         ),
         count: z.number(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ namespace, allNamespaces, filter, context }) => {
       const args = ["list", "-o", "json"];
@@ -101,6 +102,7 @@ export function registerHelmTools(server: McpServer) {
         lastDeployed: z.string(),
         notes: z.string(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ release, namespace, context }) => {
       const args = [
@@ -166,6 +168,7 @@ export function registerHelmTools(server: McpServer) {
       outputSchema: {
         values: z.record(z.unknown()),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ release, namespace, allValues, context }) => {
       const args = [

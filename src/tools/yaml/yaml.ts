@@ -50,6 +50,7 @@ export function registerYamlTools(server: McpServer) {
         ]),
         format: z.string(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ expression, file, input, outputFormat }) => {
       if (!file && !input) {

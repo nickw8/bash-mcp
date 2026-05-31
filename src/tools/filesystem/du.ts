@@ -41,6 +41,7 @@ export function registerDuTool(server: McpServer) {
           }),
         ),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ path, maxDepth }) => {
       const depth = maxDepth ?? 1;

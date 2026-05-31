@@ -75,6 +75,7 @@ export function registerFindTool(server: McpServer) {
           )
           .optional(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({
       path,

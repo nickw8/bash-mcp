@@ -54,6 +54,7 @@ export function registerJsonTools(server: McpServer) {
         ]),
         multiline: z.boolean(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ filter, file, input, rawOutput, slurp, compact }) => {
       if (!file && !input) {
