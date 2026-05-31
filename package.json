@@ -29,7 +29,9 @@
     "#error": "./src/error.ts",
     "#exec": "./src/exec.ts",
     "#format": "./src/format.ts",
+    "#logger": "./src/logger.ts",
     "#response": "./src/response.ts",
+    "#tool": "./src/tool.ts",
     "#parsers": "./src/parsers/types.ts",
     "#shell": "./src/shell.ts"
   },

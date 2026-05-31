@@ -10,12 +10,14 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execJson, execWithStdin, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
+import { defineTool } from "#tool";
 import { parseJsonishOutput } from "../../parsers/json-output.js";
 
 /** Register all Kubernetes tools on the MCP server. */
 export function registerKubernetesTools(server: McpServer) {
   // ── kubectl get ─────────────────────────────────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "kube_get",
     {
       title: "Kubectl get resources",
@@ -111,7 +113,8 @@ export function registerKubernetesTools(server: McpServer) {
   );
 
   // ── kubectl logs ────────────────────────────────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "kube_logs",
     {
       title: "Kubectl logs",
@@ -208,7 +211,8 @@ export function registerKubernetesTools(server: McpServer) {
   );
 
   // ── kubectl contexts ────────────────────────────────────────────────
-  server.registerTool(
+  defineTool(
+    server,
     "kube_contexts",
     {
       title: "Kubectl contexts",
