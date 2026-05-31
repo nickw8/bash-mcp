@@ -11,6 +11,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { registerArgocdTools } from "./tools/argocd/argocd.js";
 import { registerBatchTools } from "./tools/batch/batch.js";
 import { registerDotnetTools } from "./tools/dotnet/dotnet.js";
+import { registerEnvTools } from "./tools/env/env.js";
 import { registerFileTools } from "./tools/file/file.js";
 import { registerFilesystemTools } from "./tools/filesystem/filesystem.js";
 import { registerGitDiffContentTools } from "./tools/git/diff.js";
@@ -63,6 +64,7 @@ registerGitDiffContentTools(server);
 registerNpmTools(server);
 registerDotnetTools(server);
 registerPythonTools(server);
+registerEnvTools(server);
 
 async function main() {
   const transport = new StdioServerTransport();
