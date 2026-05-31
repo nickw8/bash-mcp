@@ -6,6 +6,7 @@
  * helpers eliminate the boilerplate of assembling that shape.
  */
 
+import type { ToolError } from "#error";
 import { formatList, type ListFormat } from "#format";
 
 /** Build a successful MCP tool response with structured content. */
@@ -38,14 +39,26 @@ export function okList<T extends Record<string, unknown>>(
   };
 }
 
-/** Build an error MCP tool response. */
+/**
+ * Build an error MCP tool response.
+ *
+ * Backward-compatible: the 2-arg form returns `structuredContent` unchanged.
+ * When a `ToolError` is supplied, it is merged in as `{ ok: false, error }`
+ * so agents get a machine-readable recovery signal. This is safe even for
+ * tools that declare an `outputSchema` — the MCP SDK skips output validation
+ * on `isError: true` results.
+ */
 export function err<T extends Record<string, unknown>>(
   message: string,
   structuredContent: T,
+  error?: ToolError,
 ) {
+  const structured = error
+    ? { ...structuredContent, ok: false as const, error }
+    : structuredContent;
   return {
     content: [{ type: "text" as const, text: message }],
-    structuredContent,
+    structuredContent: structured,
     isError: true,
   };
 }

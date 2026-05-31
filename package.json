@@ -26,6 +26,7 @@
     "LICENSE"
   ],
   "imports": {
+    "#error": "./src/error.ts",
     "#exec": "./src/exec.ts",
     "#format": "./src/format.ts",
     "#response": "./src/response.ts",
