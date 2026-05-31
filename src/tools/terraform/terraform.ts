@@ -12,6 +12,28 @@ import { z } from "zod";
 import { exec, execJson, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
 
+/**
+ * Resolve which Terraform-compatible binary to invoke.
+ *
+ * Precedence: explicit `binary` param → `$TF_BINARY` env → "terraform".
+ * The value is restricted to a known enum (never a free string) because it is
+ * the executable passed to exec — a free string would be a command-exec vector.
+ */
+export function resolveTfBinary(
+  binary?: "terraform" | "tofu",
+): "terraform" | "tofu" {
+  if (binary) return binary;
+  return process.env.TF_BINARY === "tofu" ? "tofu" : "terraform";
+}
+
+/** Shared `binary` input fragment for tf_* tools. */
+const binarySchema = z
+  .enum(["terraform", "tofu"])
+  .optional()
+  .describe(
+    "Binary to invoke (terraform or tofu). Defaults to $TF_BINARY, else terraform.",
+  );
+
 /** Register all Terraform tools on the MCP server. */
 export function registerTerraformTools(server: McpServer) {
   // ── terraform state list ────────────────────────────────────────────
@@ -23,6 +45,7 @@ export function registerTerraformTools(server: McpServer) {
         "List resources in Terraform state. Returns structured resource addresses grouped by type.",
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
+        binary: binarySchema,
       },
       outputSchema: {
         resources: z.array(
@@ -37,8 +60,8 @@ export function registerTerraformTools(server: McpServer) {
         byType: z.record(z.number()),
       },
     },
-    async ({ cwd }) => {
-      const result = await exec("terraform", ["state", "list"], {
+    async ({ cwd, binary }) => {
+      const result = await exec(resolveTfBinary(binary), ["state", "list"], {
         cwd,
         timeout: 30_000,
       });
@@ -82,6 +105,7 @@ export function registerTerraformTools(server: McpServer) {
         "Show current Terraform state as structured JSON. Returns resource summary with types and attributes.",
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
+        binary: binarySchema,
       },
       outputSchema: {
         resources: z.array(
@@ -96,9 +120,9 @@ export function registerTerraformTools(server: McpServer) {
         count: z.number(),
       },
     },
-    async ({ cwd }) => {
+    async ({ cwd, binary }) => {
       const result = await execJson<TfShowState>(
-        "terraform",
+        resolveTfBinary(binary),
         ["show", "-json"],
         { cwd, timeout: TIMEOUT.TYPECHECK },
       );
@@ -136,6 +160,7 @@ export function registerTerraformTools(server: McpServer) {
         cwd: z.string().describe("Terraform project directory"),
         target: z.string().optional().describe("Target specific resource"),
         varFile: z.string().optional().describe("Var file to use"),
+        binary: binarySchema,
       },
       annotations: { readOnlyHint: true },
       outputSchema: {
@@ -152,12 +177,12 @@ export function registerTerraformTools(server: McpServer) {
         noChanges: z.boolean(),
       },
     },
-    async ({ cwd, target, varFile }) => {
+    async ({ cwd, target, varFile, binary }) => {
       const args = ["plan", "-json", "-no-color", "-input=false"];
       if (target) args.push(`-target=${target}`);
       if (varFile) args.push(`-var-file=${varFile}`);
 
-      const result = await exec("terraform", args, {
+      const result = await exec(resolveTfBinary(binary), args, {
         cwd,
         timeout: TIMEOUT.BUILD,
       });
@@ -216,14 +241,21 @@ export function registerTerraformTools(server: McpServer) {
       description: "List Terraform workspaces with current workspace marked.",
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
+        binary: binarySchema,
       },
       outputSchema: {
         current: z.string(),
         workspaces: z.array(z.string()),
       },
     },
-    async ({ cwd }) => {
-      const result = await exec("terraform", ["workspace", "list"], { cwd });
+    async ({ cwd, binary }) => {
+      const result = await exec(
+        resolveTfBinary(binary),
+        ["workspace", "list"],
+        {
+          cwd,
+        },
+      );
       const lines = result.stdout.trim().split("\n").filter(Boolean);
       let current = "";
       const workspaces = lines.map((line) => {
