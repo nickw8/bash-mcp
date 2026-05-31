@@ -10,6 +10,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerGitBranchesTool } from "./branches.js";
 import { registerGitDiffSummaryTool } from "./diff-summary.js";
 import { registerGitLogTool } from "./log.js";
+import { registerGitPrContextTool } from "./pr-context.js";
+import { registerRepoHealthTool } from "./repo-health.js";
 import { registerGitStatusTool } from "./status.js";
 
 /** Register all git tools on the MCP server. */
@@ -18,4 +20,6 @@ export function registerGitTools(server: McpServer) {
   registerGitLogTool(server);
   registerGitDiffSummaryTool(server);
   registerGitBranchesTool(server);
+  registerRepoHealthTool(server);
+  registerGitPrContextTool(server);
 }
