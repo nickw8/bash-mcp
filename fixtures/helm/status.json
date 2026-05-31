@@ -1,0 +1,9 @@
+{
+  "name": "myapp",
+  "namespace": "prod",
+  "version": 5,
+  "info": {
+    "status": "failed",
+    "description": "Upgrade \"myapp\" failed: timed out waiting for the condition"
+  }
+}

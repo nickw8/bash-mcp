@@ -1,0 +1,42 @@
+[
+  {
+    "revision": 1,
+    "updated": "2024-01-01T00:00:00Z",
+    "status": "superseded",
+    "chart": "myapp-1.0.0",
+    "app_version": "1.0",
+    "description": "Install complete"
+  },
+  {
+    "revision": 2,
+    "updated": "2024-01-02T00:00:00Z",
+    "status": "superseded",
+    "chart": "myapp-1.1.0",
+    "app_version": "1.1",
+    "description": "Upgrade complete"
+  },
+  {
+    "revision": 3,
+    "updated": "2024-01-03T00:00:00Z",
+    "status": "failed",
+    "chart": "myapp-1.2.0",
+    "app_version": "1.2",
+    "description": "Upgrade failed"
+  },
+  {
+    "revision": 4,
+    "updated": "2024-01-04T00:00:00Z",
+    "status": "superseded",
+    "chart": "myapp-1.1.0",
+    "app_version": "1.1",
+    "description": "Rollback to 2"
+  },
+  {
+    "revision": 5,
+    "updated": "2024-01-05T00:00:00Z",
+    "status": "failed",
+    "chart": "myapp-1.3.0",
+    "app_version": "1.3",
+    "description": "Upgrade \"myapp\" failed: timed out"
+  }
+]

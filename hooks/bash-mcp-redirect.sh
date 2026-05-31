@@ -76,7 +76,7 @@ RULES=(
   "helm get values|block|mcp__bash-mcp__helm_values"
   "helm list|block|mcp__bash-mcp__helm_list"
   "helm status|block|mcp__bash-mcp__helm_status"
-  "helm history|warn|mcp__bash-mcp__helm_release_triage (roadmap)"
+  "helm history|block|mcp__bash-mcp__helm_release_triage"
 
   # ── ArgoCD ──
   "argocd app list|block|mcp__bash-mcp__argo_apps"

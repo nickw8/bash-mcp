@@ -105,6 +105,7 @@ describe("bash-mcp-redirect: implemented tools BLOCK", () => {
   it("helm / argocd implemented reads", () => {
     expectBlock("helm list -A", "mcp__bash-mcp__helm_list");
     expectBlock("helm status rel", "mcp__bash-mcp__helm_status");
+    expectBlock("helm history rel", "mcp__bash-mcp__helm_release_triage");
     expectBlock("argocd app list", "mcp__bash-mcp__argo_apps");
     expectBlock("argocd app get app1", "mcp__bash-mcp__argo_app_detail");
   });
@@ -130,10 +131,6 @@ describe("bash-mcp-redirect: implemented tools BLOCK", () => {
 });
 
 describe("bash-mcp-redirect: roadmap tools WARN", () => {
-  it("helm roadmap reads", () => {
-    expectWarn("helm history rel", "helm_release_triage");
-  });
-
   it("generic npm run is advisory", () => {
     expectWarn("npm run build", "mcp__bash-mcp__run");
   });

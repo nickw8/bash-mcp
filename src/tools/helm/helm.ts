@@ -10,6 +10,11 @@ import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
+import {
+  type HelmHistoryEntry,
+  type HelmStatusInfo,
+  triageRelease,
+} from "./triage.js";
 
 /** Register all Helm tools on the MCP server. */
 export function registerHelmTools(server: McpServer) {
@@ -184,6 +189,68 @@ export function registerHelmTools(server: McpServer) {
       }
 
       return ok({ values: result.data ?? {} });
+    },
+  );
+
+  // ── helm release triage ─────────────────────────────────────────────
+  defineTool(
+    server,
+    "helm_release_triage",
+    {
+      title: "Helm release triage",
+      description:
+        "Diagnose a Helm release's health in one call: combines helm status + helm history into " +
+        "current status, likely causes, suggested next commands, and recent-revision evidence.",
+      inputSchema: {
+        release: z.string().describe("Release name"),
+        namespace: z
+          .string()
+          .optional()
+          .default("default")
+          .describe("Namespace"),
+        context: z.string().optional().describe("Kubectl context"),
+      },
+      outputSchema: {
+        status: z.string(),
+        healthy: z.boolean(),
+        revision: z.number(),
+        revisions: z.number(),
+        likelyCauses: z.array(z.string()),
+        suggestedNextCommands: z.array(z.string()),
+        evidence: z.array(z.string()),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ release, namespace, context }) => {
+      const ns = namespace ?? "default";
+      const ctxArgs = context ? ["--kube-context", context] : [];
+      const empty = {
+        status: "error",
+        healthy: false,
+        revision: 0,
+        revisions: 0,
+        likelyCauses: [],
+        suggestedNextCommands: [],
+        evidence: [],
+      };
+
+      const statusRes = await execJson<HelmStatusInfo>(
+        "helm",
+        ["status", release, "-n", ns, "-o", "json", ...ctxArgs],
+        { timeout: TIMEOUT.INFRA },
+      );
+      if (statusRes.error || !statusRes.data) {
+        return err(statusRes.error ?? "helm status: no data", empty);
+      }
+
+      // History is best-effort — a missing history shouldn't fail the triage.
+      const histRes = await execJson<HelmHistoryEntry[]>(
+        "helm",
+        ["history", release, "-n", ns, "-o", "json", ...ctxArgs],
+        { timeout: TIMEOUT.INFRA },
+      );
+
+      return ok(triageRelease(statusRes.data, histRes.data ?? []));
     },
   );
 }
