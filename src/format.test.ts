@@ -41,6 +41,32 @@ describe("formatList — tsv", () => {
     const out = formatList([{ a: "x\ty", b: "line1\nline2", c: null }], "tsv");
     expect(out).toBe("a\tb\tc\nx y\tline1\\nline2\t");
   });
+
+  it("JSON-encodes object/array meta values instead of [object Object]", () => {
+    expect(formatList(ROWS, "tsv", { byType: { a: 1, b: 2 } })).toBe(
+      'byType\t{"a":1,"b":2}\n---\nname\tsize\na\t1\nb\t2',
+    );
+  });
+});
+
+describe("formatList — bare", () => {
+  it("emits tab-separated rows with NO header", () => {
+    expect(formatList(ROWS, "bare")).toBe("a\t1\nb\t2");
+  });
+
+  it("collapses a single-column list to bare values (matches raw)", () => {
+    expect(formatList([{ path: "x" }, { path: "y" }], "bare")).toBe("x\ny");
+  });
+
+  it("keeps the meta block and --- separator", () => {
+    expect(formatList(ROWS, "bare", { count: 2 })).toBe(
+      "count\t2\n---\na\t1\nb\t2",
+    );
+  });
+
+  it("returns an empty string for no rows and no meta", () => {
+    expect(formatList([], "bare")).toBe("");
+  });
 });
 
 describe("formatList — columnar", () => {

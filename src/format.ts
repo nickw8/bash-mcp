@@ -6,7 +6,7 @@
  * columnar are alternatives that eliminate repeated key names.
  */
 
-export type ListFormat = "json" | "tsv" | "columnar";
+export type ListFormat = "json" | "tsv" | "columnar" | "bare";
 
 type Row = Record<string, unknown>;
 
@@ -16,6 +16,8 @@ type Row = Record<string, unknown>;
  * - json:     standard JSON (default, most compatible)
  * - tsv:      header row + tab-separated values, metadata as key=value prefix
  * - columnar: JSON with keys listed once in "cols", values as positional arrays
+ * - bare:     like tsv but with NO header row — most compact for single-column
+ *             lists (paths, addresses) where the column name adds no signal
  */
 export function formatList(
   rows: Row[],
@@ -25,6 +27,8 @@ export function formatList(
   switch (format) {
     case "tsv":
       return formatTsv(rows, meta);
+    case "bare":
+      return formatTsv(rows, meta, false);
     case "columnar":
       return formatColumnar(rows, meta);
     default:
@@ -32,23 +36,32 @@ export function formatList(
   }
 }
 
+/** Render one metadata line, JSON-encoding object/array values. */
+function metaLine(k: string, v: unknown): string {
+  return `${k}\t${v !== null && typeof v === "object" ? JSON.stringify(v) : v}`;
+}
+
 function formatJson(rows: Row[], meta?: Record<string, unknown>): string {
   return JSON.stringify(meta ? { ...meta, rows } : rows);
 }
 
-function formatTsv(rows: Row[], meta?: Record<string, unknown>): string {
+function formatTsv(
+  rows: Row[],
+  meta?: Record<string, unknown>,
+  header = true,
+): string {
   const parts: string[] = [];
 
   if (meta) {
     for (const [k, v] of Object.entries(meta)) {
-      parts.push(`${k}\t${v}`);
+      parts.push(metaLine(k, v));
     }
     parts.push("---");
   }
 
   if (rows.length > 0) {
     const keys = Object.keys(rows[0] ?? {});
-    parts.push(keys.join("\t"));
+    if (header) parts.push(keys.join("\t"));
     for (const row of rows) {
       parts.push(keys.map((k) => escapeCell(row[k])).join("\t"));
     }

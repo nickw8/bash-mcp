@@ -11,15 +11,57 @@
  * from Claude's, but the *relative reduction* (the headline figure) is robust
  * across tokenizers. Run:  node scripts/token-benchmark.mjs
  *
+ * For EXACT Claude counts, set USE_CLAUDE_TOKENIZER=1 with a direct Anthropic
+ * API key in ANTHROPIC_API_KEY — the script then calls the count_tokens API
+ * instead of the proxy:  USE_CLAUDE_TOKENIZER=1 node scripts/token-benchmark.mjs
+ *
  * The samples below are representative, hand-captured outputs (no live cluster
- * required). Structured samples mirror what the corresponding bash-mcp tool
- * returns for the same data — compact summaries, not the full upstream JSON.
+ * required) — a SUBSET of the wrappers, not all of them. Structured samples
+ * mirror what the corresponding bash-mcp tool returns for the same data —
+ * compact summaries, not the full upstream JSON.
+ *
+ * Three aggregates are reported: a token-weighted total (dominated by the few
+ * large samples), the median per-command reduction (robust central tendency),
+ * and a frequency-weighted total using the illustrative WEIGHTS below (a
+ * realistic triage/dev session: mostly read/diff/log/diagnose calls). A scaling
+ * section measures how the flat-list gap behaves as row count grows.
  */
 
 import { getEncoding } from "js-tiktoken";
 
 const enc = getEncoding("o200k_base");
-const count = (s) => enc.encode(s).length;
+const proxyCount = (s) => enc.encode(s).length;
+
+// Optional: real Claude token counts via the Anthropic count_tokens API. The
+// API wraps the text in a user message, so counts carry a small constant
+// per-call overhead — the relative reduction stays the robust figure.
+const USE_CLAUDE = process.env.USE_CLAUDE_TOKENIZER === "1";
+const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-4-8";
+
+async function claudeCount(text) {
+  const res = await fetch(
+    "https://api.anthropic.com/v1/messages/count_tokens",
+    {
+      method: "POST",
+      headers: {
+        "x-api-key": process.env.ANTHROPIC_API_KEY ?? "",
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODEL,
+        messages: [{ role: "user", content: text || " " }],
+      }),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`count_tokens ${res.status}: ${await res.text()}`);
+  }
+  const json = await res.json();
+  return json.input_tokens;
+}
+
+const count = USE_CLAUDE ? claudeCount : async (s) => proxyCount(s);
 
 /** @type {{tool: string, raw: string, structured: string}[]} */
 const SAMPLES = [
@@ -343,22 +385,20 @@ tsconfig.json\tfile\t220\t-rw-r--r--\t2026-05-12`,
     └── types.ts
 
 5 directories, 6 files`,
-    structured: JSON.stringify({
-      dirs: 5,
-      files: 6,
-      tree: [
-        { path: "src/index.ts", type: "file", depth: 1 },
-        { path: "src/exec.ts", type: "file", depth: 1 },
-        { path: "src/tools", type: "dir", depth: 1 },
-        { path: "src/tools/git", type: "dir", depth: 2 },
-        { path: "src/tools/git/status.ts", type: "file", depth: 3 },
-        { path: "src/tools/git/log.ts", type: "file", depth: 3 },
-        { path: "src/tools/kubernetes", type: "dir", depth: 2 },
-        { path: "src/tools/kubernetes/kubernetes.ts", type: "file", depth: 3 },
-        { path: "src/parsers", type: "dir", depth: 1 },
-        { path: "src/parsers/types.ts", type: "file", depth: 2 },
-      ],
-    }),
+    // tree defaults to bare output (okList) — paths only, dirs end with "/".
+    structured: `dirs\t5
+files\t6
+---
+src/index.ts
+src/exec.ts
+src/tools/
+src/tools/git/
+src/tools/git/status.ts
+src/tools/git/log.ts
+src/tools/kubernetes/
+src/tools/kubernetes/kubernetes.ts
+src/parsers/
+src/parsers/types.ts`,
   },
   {
     tool: "du (→ du)",
@@ -367,15 +407,13 @@ tsconfig.json\tfile\t220\t-rw-r--r--\t2026-05-12`,
 40K\t./src
 8.0K\t./fixtures
 60K\t.`,
-    structured: JSON.stringify({
-      entries: [
-        { path: "./src/parsers", sizeBytes: 4096, sizeHuman: "4.0KB" },
-        { path: "./src/tools", sizeBytes: 24576, sizeHuman: "24.0KB" },
-        { path: "./src", sizeBytes: 40960, sizeHuman: "40.0KB" },
-        { path: "./fixtures", sizeBytes: 8192, sizeHuman: "8.0KB" },
-        { path: ".", sizeBytes: 61440, sizeHuman: "60.0KB" },
-      ],
-    }),
+    // du defaults to TSV (okList); derived sizeHuman omitted from the text view.
+    structured: `path\tsizeBytes
+./src/parsers\t4096
+./src/tools\t24576
+./src\t40960
+./fixtures\t8192
+.\t61440`,
   },
   {
     tool: "ripgrep (→ rg)",
@@ -490,54 +528,25 @@ Author: Nick <nick@example.com>
 Date:   Thu May 29 10:02:55 2026 +0000
 
     fix: handle null token`,
-    structured: JSON.stringify({
-      commits: [
-        {
-          hash: "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
-          shortHash: "a1b2c3d",
-          author: "Nick",
-          date: "2026-05-30T22:11:04+00:00",
-          message: "feat: add retry logic",
-        },
-        {
-          hash: "9f8e7d6c5b4a3210fedcba9876543210fedcba98",
-          shortHash: "9f8e7d6",
-          author: "Nick",
-          date: "2026-05-29T10:02:55+00:00",
-          message: "fix: handle null token",
-        },
-      ],
-      count: 2,
-    }),
+    // git_log defaults to TSV (okList); redundant full hash dropped from text.
+    structured: `count\t2
+---
+shortHash\tauthor\tdate\tmessage
+a1b2c3d\tNick\t2026-05-30T22:11:04+00:00\tfeat: add retry logic
+9f8e7d6\tNick\t2026-05-29T10:02:55+00:00\tfix: handle null token`,
   },
   {
     tool: "git branch -v (→ git_branches)",
     raw: `* main                a1b2c3d feat: add retry logic
   feature/auth        9f8e7d6 wip: oauth flow
   bugfix/null-token   5d4c3b2 fix: handle null token`,
-    structured: JSON.stringify({
-      current: "main",
-      branches: [
-        {
-          name: "main",
-          current: true,
-          lastCommit: "a1b2c3d feat: add retry logic",
-          remote: false,
-        },
-        {
-          name: "feature/auth",
-          current: false,
-          lastCommit: "9f8e7d6 wip: oauth flow",
-          remote: false,
-        },
-        {
-          name: "bugfix/null-token",
-          current: false,
-          lastCommit: "5d4c3b2 fix: handle null token",
-          remote: false,
-        },
-      ],
-    }),
+    // git_branches defaults to TSV (okList); all-false remote column omitted.
+    structured: `current\tmain
+---
+name\tcurrent\tlastCommit
+main\ttrue\ta1b2c3d feat: add retry logic
+feature/auth\tfalse\t9f8e7d6 wip: oauth flow
+bugfix/null-token\tfalse\t5d4c3b2 fix: handle null token`,
   },
   {
     tool: "kubectl config get-contexts (→ kube_contexts)",
@@ -545,19 +554,13 @@ Date:   Thu May 29 10:02:55 2026 +0000
 *         prod      prod      prod-admin   payments
           staging   staging   stg-admin    default
           dev       dev       dev-admin    default`,
-    structured: JSON.stringify({
-      current: "prod",
-      contexts: [
-        { name: "prod", cluster: "prod", namespace: "payments", current: true },
-        {
-          name: "staging",
-          cluster: "staging",
-          namespace: "default",
-          current: false,
-        },
-        { name: "dev", cluster: "dev", namespace: "default", current: false },
-      ],
-    }),
+    // kube_contexts defaults to TSV (okList).
+    structured: `current\tprod
+---
+name\tcluster\tnamespace\tcurrent
+prod\tprod\tpayments\ttrue
+staging\tstaging\tdefault\tfalse
+dev\tdev\tdefault\tfalse`,
   },
   {
     tool: "kubectl get events (→ kube_events_summary)",
@@ -588,42 +591,15 @@ module.network.aws_subnet.public[0]
 module.network.aws_subnet.public[1]
 aws_instance.web
 aws_s3_bucket.logs`,
-    structured: JSON.stringify({
-      resources: [
-        {
-          address: "module.network.aws_vpc.main",
-          type: "aws_vpc",
-          name: "main",
-          module: "module.network",
-        },
-        {
-          address: "module.network.aws_subnet.public[0]",
-          type: "aws_subnet",
-          name: "public[0]",
-          module: "module.network",
-        },
-        {
-          address: "module.network.aws_subnet.public[1]",
-          type: "aws_subnet",
-          name: "public[1]",
-          module: "module.network",
-        },
-        {
-          address: "aws_instance.web",
-          type: "aws_instance",
-          name: "web",
-          module: "",
-        },
-        {
-          address: "aws_s3_bucket.logs",
-          type: "aws_s3_bucket",
-          name: "logs",
-          module: "",
-        },
-      ],
-      count: 5,
-      byType: { aws_vpc: 1, aws_subnet: 2, aws_instance: 1, aws_s3_bucket: 1 },
-    }),
+    // tf_state_list defaults to bare (okList): addresses only, byType in meta.
+    structured: `count\t5
+byType\t{"aws_vpc":1,"aws_subnet":2,"aws_instance":1,"aws_s3_bucket":1}
+---
+module.network.aws_vpc.main
+module.network.aws_subnet.public[0]
+module.network.aws_subnet.public[1]
+aws_instance.web
+aws_s3_bucket.logs`,
   },
   {
     tool: "terraform output (→ tf_outputs)",
@@ -634,23 +610,14 @@ public_subnets = [
 ]
 db_endpoint = "app-db.xyz.rds.amazonaws.com:5432"
 api_key = <sensitive>`,
-    structured: JSON.stringify({
-      outputs: [
-        { name: "vpc_id", value: "vpc-0abc123", sensitive: false },
-        {
-          name: "public_subnets",
-          value: ["subnet-01", "subnet-02"],
-          sensitive: false,
-        },
-        {
-          name: "db_endpoint",
-          value: "app-db.xyz.rds.amazonaws.com:5432",
-          sensitive: false,
-        },
-        { name: "api_key", value: null, sensitive: true },
-      ],
-      count: 4,
-    }),
+    // tf_outputs defaults to TSV (okList); verbose type column dropped from text.
+    structured: `count\t4
+---
+name\tvalue\tsensitive
+vpc_id\tvpc-0abc123\tfalse
+public_subnets\t["subnet-01","subnet-02"]\tfalse
+db_endpoint\tapp-db.xyz.rds.amazonaws.com:5432\tfalse
+api_key\t\ttrue`,
   },
   {
     tool: "helm status (→ helm_status)",
@@ -857,33 +824,110 @@ prod`,
   },
 ];
 
-const rows = SAMPLES.map(({ tool, raw, structured }) => {
-  const rawT = count(raw);
-  const strT = count(structured);
-  const reduction = ((rawT - strT) / rawT) * 100;
-  return { tool, rawT, strT, reduction };
-});
+// Illustrative call frequency for a realistic triage/dev session — used only
+// for the frequency-weighted aggregate. Read/diff/log/diagnose dominate; bulk
+// infra listings are rare. Tools not listed default to weight 1.
+const WEIGHTS = {
+  "cat full file (→ outline)": 8,
+  "ripgrep (→ rg)": 8,
+  "ls -lh (→ ls)": 6,
+  "git status (→ git_status)": 5,
+  "git diff (→ git_diff)": 5,
+  "kubectl get pods -A": 5,
+  "kubectl logs (ERROR filter)": 4,
+  "kubectl describe pod (→ kube_diagnose_pod)": 3,
+  "git log (→ git_log)": 3,
+  "tsc --noEmit (→ npm_typecheck)": 3,
+  "helm list -A": 2,
+  "helm status (→ helm_status)": 2,
+  "argocd app list": 2,
+  "argocd app get (→ argo_app_detail)": 2,
+  "kubectl get events (→ kube_events_summary)": 2,
+  "terraform plan": 2,
+  "pytest (→ python_test)": 2,
+  "tree (→ tree)": 2,
+  "git branch -v (→ git_branches)": 2,
+};
+
+// Synthetic, homogeneous terraform state list of N resources — used by the
+// scaling section to show how the flat-list gap behaves as rows grow. tf_state_list
+// now defaults to BARE output (one address per line, byType in meta), so per-row
+// cost equals the raw address and only the fixed meta block is overhead — the gap
+// closes toward ~0% as the meta amortizes across rows.
+const tfStateListRaw = (n) =>
+  Array.from(
+    { length: n },
+    (_, i) => `module.network.aws_subnet.public[${i}]`,
+  ).join("\n");
+
+const tfStateListStructured = (n) =>
+  `count\t${n}\nbyType\t${JSON.stringify({ aws_subnet: n })}\n---\n${tfStateListRaw(n)}`;
+
+const rows = await Promise.all(
+  SAMPLES.map(async ({ tool, raw, structured }) => {
+    const [rawT, strT] = await Promise.all([count(raw), count(structured)]);
+    const reduction = ((rawT - strT) / rawT) * 100;
+    return { tool, rawT, strT, reduction, weight: WEIGHTS[tool] ?? 1 };
+  }),
+);
 
 const totalRaw = rows.reduce((s, r) => s + r.rawT, 0);
 const totalStr = rows.reduce((s, r) => s + r.strT, 0);
 const totalReduction = ((totalRaw - totalStr) / totalRaw) * 100;
 
+const sortedRed = rows.map((r) => r.reduction).sort((a, b) => a - b);
+const mid = Math.floor(sortedRed.length / 2);
+const medianReduction =
+  sortedRed.length % 2 === 0
+    ? (sortedRed[mid - 1] + sortedRed[mid]) / 2
+    : sortedRed[mid];
+
+const wRaw = rows.reduce((s, r) => s + r.rawT * r.weight, 0);
+const wStr = rows.reduce((s, r) => s + r.strT * r.weight, 0);
+const weightedReduction = ((wRaw - wStr) / wRaw) * 100;
+
 const pad = (s, n) => String(s).padEnd(n);
 const padl = (s, n) => String(s).padStart(n);
+const pct = (n) => `${n.toFixed(0)}%`;
 
-console.log(
-  `Tokenizer: o200k_base (GPT-4o) — proxy for Claude; relative reduction is the headline.\n`,
-);
+const label = USE_CLAUDE
+  ? `Claude count_tokens (${CLAUDE_MODEL}) — exact Claude counts.`
+  : "o200k_base (GPT-4o) — proxy for Claude; relative reduction is the headline.";
+console.log(`Tokenizer: ${label}\n`);
 console.log(
   `${pad("Command", 42)} ${padl("raw", 6)} ${padl("struct", 7)} ${padl("saved", 7)}`,
 );
 console.log("-".repeat(66));
-for (const r of rows) {
+for (const r of [...rows].sort((a, b) => b.reduction - a.reduction)) {
   console.log(
-    `${pad(r.tool, 42)} ${padl(r.rawT, 6)} ${padl(r.strT, 7)} ${padl(`${r.reduction.toFixed(0)}%`, 7)}`,
+    `${pad(r.tool, 42)} ${padl(r.rawT, 6)} ${padl(r.strT, 7)} ${padl(pct(r.reduction), 7)}`,
   );
 }
 console.log("-".repeat(66));
 console.log(
-  `${pad("TOTAL", 42)} ${padl(totalRaw, 6)} ${padl(totalStr, 7)} ${padl(`${totalReduction.toFixed(0)}%`, 7)}`,
+  `${pad("TOTAL (token-weighted)", 42)} ${padl(totalRaw, 6)} ${padl(totalStr, 7)} ${padl(pct(totalReduction), 7)}`,
 );
+console.log(
+  `${pad("MEDIAN per-command reduction", 42)} ${padl(pct(medianReduction), 23)}`,
+);
+console.log(
+  `${pad("FREQUENCY-weighted reduction", 42)} ${padl(pct(weightedReduction), 23)}`,
+);
+
+console.log(
+  `\nScaling: homogeneous terraform state list (→ tf_state_list) at N rows`,
+);
+console.log(
+  `${pad("N rows", 42)} ${padl("raw", 6)} ${padl("struct", 7)} ${padl("saved", 7)}`,
+);
+console.log("-".repeat(66));
+for (const n of [5, 50, 200, 1000]) {
+  const [r, s] = await Promise.all([
+    count(tfStateListRaw(n)),
+    count(tfStateListStructured(n)),
+  ]);
+  const red = ((r - s) / r) * 100;
+  console.log(
+    `${pad(String(n), 42)} ${padl(r, 6)} ${padl(s, 7)} ${padl(pct(red), 7)}`,
+  );
+}

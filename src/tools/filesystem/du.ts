@@ -1,7 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, IS_MACOS } from "#exec";
-import { err, ok } from "#response";
+import type { ListFormat } from "#format";
+import { err, okList } from "#response";
 import { defineTool } from "#tool";
 
 /** Format bytes into a human-readable size string (e.g. 1024 -> "1.0KB"). */
@@ -23,7 +24,9 @@ export function registerDuTool(server: McpServer) {
     "du",
     {
       title: "Disk usage",
-      description: "Show disk usage for paths. Returns structured size data.",
+      description:
+        "Show disk usage for paths. Returns structured size data. The text view omits " +
+        "the derived sizeHuman field (computable from sizeBytes); it remains in structuredContent.",
       inputSchema: {
         path: z.string().describe("Path to measure"),
         maxDepth: z
@@ -31,6 +34,10 @@ export function registerDuTool(server: McpServer) {
           .optional()
           .default(1)
           .describe("Depth to summarize"),
+        format: z
+          .enum(["json", "tsv", "columnar", "bare"])
+          .optional()
+          .describe("Output format (default: tsv)"),
       },
       outputSchema: {
         entries: z.array(
@@ -43,7 +50,8 @@ export function registerDuTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ path, maxDepth }) => {
+    async ({ path, maxDepth, format }) => {
+      const fmt = (format ?? "tsv") as ListFormat;
       const depth = maxDepth ?? 1;
       const duArgs = IS_MACOS
         ? ["-k", "-d", String(depth), path]
@@ -69,7 +77,11 @@ export function registerDuTool(server: McpServer) {
           };
         });
 
-      return ok({ entries });
+      const rows = entries.map(({ path: p, sizeBytes }) => ({
+        path: p,
+        sizeBytes,
+      }));
+      return okList({ entries }, rows, {}, fmt);
     },
   );
 }

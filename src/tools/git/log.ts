@@ -1,7 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
-import { ok } from "#response";
+import type { ListFormat } from "#format";
+import { okList } from "#response";
 import { defineTool } from "#tool";
 
 /** Register the git_log tool for structured commit history. */
@@ -39,6 +40,10 @@ export function registerGitLogTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Include list of files changed per commit"),
+        format: z
+          .enum(["json", "tsv", "columnar", "bare"])
+          .optional()
+          .describe("Output format (default: tsv)"),
       },
       outputSchema: {
         commits: z.array(
@@ -55,7 +60,18 @@ export function registerGitLogTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ cwd, count, author, since, path, range, exclude, withFiles }) => {
+    async ({
+      cwd,
+      count,
+      author,
+      since,
+      path,
+      range,
+      exclude,
+      withFiles,
+      format,
+    }) => {
+      const fmt = (format ?? "tsv") as ListFormat;
       // Unicode separator avoids collisions with commit message content
       const sep = "\u2016";
       const args = [
@@ -124,7 +140,23 @@ export function registerGitLogTool(server: McpServer) {
           });
       }
 
-      return ok({ commits, count: commits.length });
+      // Text view keeps shortHash (the full hash is a redundant prefix);
+      // structuredContent retains both. Files (if any) collapse to one cell.
+      const rows = commits.map((c) => ({
+        shortHash: c.shortHash,
+        author: c.author,
+        date: c.date,
+        message: c.message,
+        ...(withFiles ? { files: (c.files ?? []).join(",") } : {}),
+      }));
+      return okList(
+        { commits, count: commits.length },
+        rows,
+        {
+          count: commits.length,
+        },
+        fmt,
+      );
     },
   );
 }

@@ -1,7 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
-import { ok } from "#response";
+import type { ListFormat } from "#format";
+import { okList } from "#response";
 import { defineTool } from "#tool";
 
 /** Node from tree's JSON output (-J flag). */
@@ -9,6 +10,13 @@ interface TreeNode {
   type: string;
   name: string;
   contents?: TreeNode[];
+}
+
+type TreeEntry = { path: string; type: "file" | "dir"; depth: number };
+
+/** Single-column rows for the text view: path with a trailing "/" for dirs. */
+function treeRows(flat: TreeEntry[]): { path: string }[] {
+  return flat.map((n) => ({ path: n.type === "dir" ? `${n.path}/` : n.path }));
 }
 
 /** Recursively flatten tree's nested JSON into a flat array with depth. */
@@ -30,7 +38,12 @@ function flattenTree(
 }
 
 /** Fallback tree implementation using find when tree binary is not installed. */
-async function treeFallback(path: string, maxDepth: number, dirsOnly: boolean) {
+async function treeFallback(
+  path: string,
+  maxDepth: number,
+  dirsOnly: boolean,
+  fmt: ListFormat,
+) {
   const args = [path, "-maxdepth", String(maxDepth)];
   if (dirsOnly) args.push("-type", "d");
   args.push("-not", "-path", "*/node_modules/*", "-not", "-path", "*/.git/*");
@@ -38,13 +51,14 @@ async function treeFallback(path: string, maxDepth: number, dirsOnly: boolean) {
   const result = await exec("find", args);
   const lines = result.stdout.trim().split("\n").filter(Boolean);
 
-  const tree = lines.map((p) => ({
+  const tree: TreeEntry[] = lines.map((p) => ({
     path: p,
     type: "file" as const,
     depth: p.replace(path, "").split("/").filter(Boolean).length,
   }));
 
-  return ok({ dirs: 0, files: tree.length, tree });
+  const meta = { dirs: 0, files: tree.length };
+  return okList({ ...meta, tree }, treeRows(tree), meta, fmt);
 }
 
 /** Register the tree tool for structured directory tree output. */
@@ -75,6 +89,10 @@ export function registerTreeTool(server: McpServer) {
           .describe(
             "Pipe-separated patterns to exclude (default: node_modules|.git|dist|__pycache__|.venv|.next|.terraform)",
           ),
+        format: z
+          .enum(["json", "tsv", "columnar", "bare"])
+          .optional()
+          .describe("Output format (default: bare — paths, dirs end with /)"),
       },
       outputSchema: {
         dirs: z.number(),
@@ -89,7 +107,8 @@ export function registerTreeTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ path, maxDepth, dirsOnly, pattern, exclude }) => {
+    async ({ path, maxDepth, dirsOnly, pattern, exclude, format }) => {
+      const fmt = (format ?? "bare") as ListFormat;
       const defaultExcludes =
         "node_modules|.git|dist|__pycache__|.venv|.next|.terraform";
       const args = [
@@ -107,20 +126,20 @@ export function registerTreeTool(server: McpServer) {
       const result = await exec("tree", args);
 
       if (result.exitCode !== 0) {
-        return await treeFallback(path, maxDepth ?? 3, dirsOnly ?? false);
+        return await treeFallback(path, maxDepth ?? 3, dirsOnly ?? false, fmt);
       }
 
       try {
         const json = JSON.parse(result.stdout);
-        const flat: { path: string; type: "file" | "dir"; depth: number }[] =
-          [];
+        const flat: TreeEntry[] = [];
         flattenTree(json, flat, 0);
 
         const dirs = flat.filter((n) => n.type === "dir").length;
         const files = flat.filter((n) => n.type === "file").length;
-        return ok({ dirs, files, tree: flat });
+        const meta = { dirs, files };
+        return okList({ ...meta, tree: flat }, treeRows(flat), meta, fmt);
       } catch {
-        return await treeFallback(path, maxDepth ?? 3, dirsOnly ?? false);
+        return await treeFallback(path, maxDepth ?? 3, dirsOnly ?? false, fmt);
       }
     },
   );

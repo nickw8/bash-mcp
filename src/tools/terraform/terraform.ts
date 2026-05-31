@@ -12,7 +12,8 @@ import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execJson, TIMEOUT } from "#exec";
-import { err, ok } from "#response";
+import type { ListFormat } from "#format";
+import { err, ok, okList } from "#response";
 import { defineTool } from "#tool";
 import {
   parseBackend,
@@ -54,10 +55,15 @@ export function registerTerraformTools(server: McpServer) {
     {
       title: "Terraform state list",
       description:
-        "List resources in Terraform state. Returns structured resource addresses grouped by type.",
+        "List resources in Terraform state. Returns structured resource addresses grouped by type. " +
+        "Text view lists addresses only (type/name/module are parsed from each address); the byType rollup is in meta.",
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
         binary: binarySchema,
+        format: z
+          .enum(["json", "tsv", "columnar", "bare"])
+          .optional()
+          .describe("Output format (default: bare — one address per line)"),
       },
       outputSchema: {
         resources: z.array(
@@ -73,7 +79,8 @@ export function registerTerraformTools(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ cwd, binary }) => {
+    async ({ cwd, binary, format }) => {
+      const fmt = (format ?? "bare") as ListFormat;
       const result = await exec(resolveTfBinary(binary), ["state", "list"], {
         cwd,
         timeout: 30_000,
@@ -105,7 +112,12 @@ export function registerTerraformTools(server: McpServer) {
         byType[r.type] = (byType[r.type] ?? 0) + 1;
       }
 
-      return ok({ resources, count: resources.length, byType });
+      return okList(
+        { resources, count: resources.length, byType },
+        resources.map(({ address }) => ({ address })),
+        { count: resources.length, byType },
+        fmt,
+      );
     },
   );
 
@@ -324,6 +336,10 @@ export function registerTerraformTools(server: McpServer) {
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
         binary: binarySchema,
+        format: z
+          .enum(["json", "tsv", "columnar", "bare"])
+          .optional()
+          .describe("Output format (default: tsv)"),
       },
       outputSchema: {
         outputs: z.array(
@@ -338,7 +354,8 @@ export function registerTerraformTools(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ cwd, binary }) => {
+    async ({ cwd, binary, format }) => {
+      const fmt = (format ?? "tsv") as ListFormat;
       const res = await execJson<
         Record<string, { value?: unknown; type?: unknown; sensitive?: boolean }>
       >(resolveTfBinary(binary), ["output", "-json"], {
@@ -347,7 +364,20 @@ export function registerTerraformTools(server: McpServer) {
       });
       if (res.error) return err(res.error, { outputs: [], count: 0 });
       const outputs = parseOutputs(res.data ?? {});
-      return ok({ outputs, count: outputs.length });
+      // Text view drops the verbose `type` column (kept in structuredContent).
+      const rows = outputs.map((o) => ({
+        name: o.name,
+        value: o.value ?? "",
+        sensitive: o.sensitive,
+      }));
+      return okList(
+        { outputs, count: outputs.length },
+        rows,
+        {
+          count: outputs.length,
+        },
+        fmt,
+      );
     },
   );
 

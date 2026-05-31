@@ -2,7 +2,9 @@
 
 How many tokens does structured output actually save? This page reports measured
 token counts for raw CLI text vs. the structured response `bash-mcp` returns for the
-same operation, across the full set of wrappers over text-emitting CLIs.
+same operation, across a representative subset of the wrappers over text-emitting
+CLIs (not every tool — `jq`, `yq`, `find_files`, `glob`, the `*_summary` diagnostics,
+and others are omitted).
 
 ## Method
 
@@ -15,15 +17,30 @@ node scripts/token-benchmark.mjs
 ```
 
 **What "structured" means here.** Each `bash-mcp` tool returns both a `structuredContent`
-(JSON) and a `content` text block. The benchmark uses each tool's **default text
-representation**: TSV for the list tools that emit it (`ls`, `rg`, …) and JSON for the
-rest. This is the conservative, real-world output — JSON is the larger of the two, so
-tools that default to TSV would look even better if compared as JSON.
+(JSON, for programmatic use) and a `content` text block (what the model actually reads and
+token-counts). The benchmark measures the **text block** — each tool's **default text
+representation**: `bare` (values only) or `TSV` (header + tab-separated) for list tools,
+JSON for the rest. Field-curated text views (e.g. `du` drops the derived `sizeHuman`,
+`git_log` drops the redundant full hash) keep `structuredContent` complete — only the text
+block is trimmed, so the savings cost nothing programmatically.
 
-**Tokenizer caveat.** The script uses [`js-tiktoken`](https://github.com/dqbd/tiktoken)
+**Tokenizer.** By default the script uses [`js-tiktoken`](https://www.npmjs.com/package/js-tiktoken)
 with the `o200k_base` encoding (GPT-4o/o200k). This is a **GPT tokenizer used as a proxy
-for Claude** — Claude's tokenizer differs, so the *absolute* counts won't match what
+for Claude** — Claude's tokenizer differs, so the *absolute* counts below won't match what
 Claude sees. The robust, tokenizer-independent figure is the **relative reduction**.
+
+For **exact Claude counts**, run with `USE_CLAUDE_TOKENIZER=1` and a direct Anthropic API
+key in `ANTHROPIC_API_KEY` — the script then calls the [`count_tokens`](https://docs.anthropic.com/en/docs/build-with-claude/token-counting)
+API instead of the proxy:
+
+```bash
+USE_CLAUDE_TOKENIZER=1 ANTHROPIC_API_KEY=sk-... node scripts/token-benchmark.mjs
+```
+
+The API wraps each sample in a user message, so its counts carry a small constant
+per-call overhead (a few tokens) that slightly dampens the reductions — the *relative*
+figure still holds. This path needs a direct Anthropic key; it does not work through
+Vertex/Bedrock gateways.
 
 ## Results
 
@@ -38,62 +55,122 @@ Measured with `o200k_base` (positive `saved` = structured is smaller):
 | `cat` full file (→ `outline`)              |  232 |     94 |  59% |
 | `git status` (→ `git_status`)              |  116 |     53 |  54% |
 | `helm status` (→ `helm_status`)            |  123 |     56 |  54% |
+| `git log` (→ `git_log`, TSV)               |  143 |     77 |  46% |
 | `kubectl logs` ERROR filter (→ `kube_logs`)|  143 |     82 |  43% |
 | `argocd app get` (→ `argo_app_detail`)     |  158 |     98 |  38% |
+| `kubectl config get-contexts` (→ `kube_contexts`, TSV) | 44 | 29 | 34% |
 | `argocd app list` (→ `argo_apps`)          |  149 |    102 |  32% |
 | `dotnet build` (→ `dotnet_build`)          |  150 |    104 |  31% |
+| `tree` (→ `tree`, bare)                     |   81 |     59 |  27% |
 | `which`+versions (→ `check_environment`)   |  118 |     87 |  26% |
 | `helm list -A` (→ `helm_list`)             |  149 |    117 |  21% |
 | `ls -lh` (→ `ls`, TSV)                      |  146 |    116 |  21% |
 | `kubectl get events` (→ `kube_events_summary`) | 141 | 137 |   3% |
-| `git log` (→ `git_log`)                    |  143 |    165 | −15% |
+| `du` (→ `du`, TSV)                          |   35 |     35 |   0% |
+| `terraform output` (→ `tf_outputs`, TSV)   |   54 |     56 |  −4% |
+| `git branch -v` (→ `git_branches`, TSV)    |   53 |     59 | −11% |
 | `tsc --noEmit` (→ `npm_typecheck`)         |   73 |     86 | −18% |
 | `kubectl get pods -A` (→ `kube_get`)       |  234 |    295 | −26% |
-| `kubectl config get-contexts` (→ `kube_contexts`) | 44 | 59 | −34% |
 | `ripgrep` (→ `rg`, TSV)                     |   39 |     59 | −51% |
-| `terraform output` (→ `tf_outputs`)        |   54 |     90 | −67% |
-| `git branch -v` (→ `git_branches`)         |   53 |     97 | −83% |
-| `tree` (→ `tree`)                          |   81 |    164 | −102% |
-| `du` (→ `du`)                              |   35 |    102 | −191% |
-| `terraform state list` (→ `tf_state_list`) |   34 |    162 | −376% |
-| **TOTAL**                                 | 3279 |   2593 |  **21%** |
+| `terraform state list` (→ `tf_state_list`, bare) | 34 | 67 | −97% |
+| **TOTAL (token-weighted)**                 | 3279 |   2136 |  **35%** |
+
+Three aggregates, because the single TOTAL is misleading on its own:
+
+| Aggregate                       | Reduction | What it measures |
+|---------------------------------|----------:|------------------|
+| Token-weighted total            |   **35%** | `(Σraw − Σstruct)/Σraw` — dominated by the few large samples (plan, describe, outline). |
+| Median per-command reduction    |   **31%** | Robust central tendency across the 25 commands; ignores sample size. |
+| Frequency-weighted total        |   **35%** | Weighted by an illustrative session mix (read/diff/log/diagnose dominate, bulk infra listings are rare — see `WEIGHTS` in the script). |
+
+> These numbers reflect the compact-format work described in [How to read this](#how-to-read-this):
+> the flat-list tools (`tree`, `du`, `git_log`, `git_branches`, `tf_state_list`, `tf_outputs`,
+> `kube_contexts`) now default to `bare`/`TSV` text. Before that change the same mix scored
+> 21% / 21% / 28% — several tools were deeply negative (`tf_state_list` −376%, `du` −191%,
+> `tree` −102%, `git_log` −15%, `kube_contexts` −34%).
+
+The frequency-weighted figure is the most representative of real usage: a triage or
+dev session is mostly the high-saving diagnostic, diff, log, and file-read calls, not
+repeated tiny `tf_state_list`/`rg` listings.
+
+### Scaling: how the flat-list gap behaves at higher row counts
+
+`tf_state_list` now defaults to `bare` text (one address per line, with the `byType` rollup
+in the meta block). Measured on a homogeneous list of N identical resources:
+
+| N rows |  raw | struct | saved |
+|-------:|-----:|-------:|------:|
+|      5 |   45 |     60 | −33% |
+|     50 |  450 |    465 |  −3% |
+|    200 | 1800 |   1815 |  −1% |
+|   1000 | 9000 |   9017 |  −0% |
+
+The gap **closes toward 0% as rows grow**: bare per-row cost equals the raw address, so the
+only overhead is the fixed `count`/`byType` meta block, which amortizes away. (For
+comparison, the old JSON default plateaued near **−234%** here — it repeated four field
+names on every row, so scale never helped. The fix was the format, not the row count.) And
+unlike raw, the structured form still carries the `byType` summary the agent would otherwise
+have to compute.
 
 ## How to read this
 
-Two clear regimes:
+The table uses one sign convention: **positive `saved` = structured is smaller; negative =
+structured costs more.** Two clear regimes emerge.
 
 **Structured wins big on verbose, nested, and diagnostic output** — the cases that
-dominate real triage. `terraform plan` (−75%), `pytest` (−74%), `git diff` (−65%),
-`kubectl describe`→`kube_diagnose_pod` (−64%), and `cat`→`outline` (−59%) all collapse
+dominate real triage. `terraform plan` (75% saved), `pytest` (74%), `git diff` (65%),
+`kubectl describe`→`kube_diagnose_pod` (64%), and `cat`→`outline` (59%) all collapse
 pages of human-formatted text (symbol legends, stack traces, full file bodies, multi-step
 state) into the few fields an agent acts on. Diagnostics go further: one
 `kube_diagnose_pod` call replaces a `get` + `describe` + `logs` sequence *and* the
 reasoning across them.
 
-**Small, already-terse flat lists can cost more as JSON.** `terraform state list`
-(+376%), `du` (+191%), and `tree` (+102%) are the worst cases: the raw output is a bare
-column of strings, while JSON repeats every field name on every row. Here the value of
-`bash-mcp` is **reliability and pre-computation** (typed fields, `byType` rollups,
-grouped resources) rather than token count — and three things shrink or flip the gap:
+**Small, already-terse flat lists used to cost more as JSON — now they don't.** When these
+tools serialized full JSON, the raw output was a bare column of strings while JSON repeated
+every field name on every row: `tf_state_list` was −376%, `du` −191%, `tree` −102%. The fix
+was to emit compact text by default while keeping `structuredContent` as JSON:
 
-1. **Compact list formats.** List tools (`ls`, `rg`, `find_files`, `glob`) default to
-   **TSV**, which writes each field name once. `ls` at +21% is already TSV; the JSON-only
-   tools (`tree`, `du`, `git_branches`) could adopt the same `format` param.
-2. **Output budgets.** `detailLevel` / `maxItems` cap large lists so the agent never pays
+1. **Compact list formats (the main lever).** List tools now route their text block through
+   `formatList` with a non-JSON default — **`bare`** (values only, no header) for
+   single-column lists (`tree`, `tf_state_list`, `glob`) and **`TSV`** (header + tab rows)
+   for multi-column ones (`ls`, `rg`, `du`, `git_log`, `git_branches`, `tf_outputs`,
+   `kube_contexts`). Each still accepts a `format` param to override. This is what turned
+   `tf_state_list` −376% → −97% (and → ~0% at scale), `du` → 0%, `tree` → +27%.
+2. **Field curation.** The text view drops fields the agent can recompute or that duplicate
+   others, while `structuredContent` keeps them: `du` omits the derived `sizeHuman`,
+   `git_log` drops the full `hash` (keeps `shortHash`) → −15% to **+46%**, `tf_outputs`
+   drops the verbose `type`, `git_branches` omits the all-`false` `remote` column.
+3. **Output budgets.** `detailLevel` / `maxItems` cap large lists so the agent never pays
    for rows it won't read.
-3. **Scale.** JSON's per-row key overhead is *fixed per field*; raw text grows with column
-   width and with the number of fields the agent would otherwise have to parse. The 5-row
-   samples here are the worst case — a 200-resource `tf_state_list` amortizes the keys and
-   the `byType` summary becomes a net win.
 
-**Aggregate: ~21% fewer tokens** across this representative mix — and that *under*-weights
-real usage, where a triage session is mostly the high-saving diagnostic and diff/log/plan
-calls, not repeated tiny `du`/`tree` listings.
+**What's still negative, and why:**
+
+- `tf_state_list` (−97% at 5 rows) and `rg` (−51%): tiny results where the fixed meta/header
+  block dominates. Both amortize to ~0% with more rows (see the scaling table).
+- `kube_get` (−26%): not yet converted — `summarizeResource` returns nested `labels`/`extra`
+  objects that don't flatten cleanly into TSV cells. A flattening pass is the follow-up.
+- `npm_typecheck` (−18%): genuinely structured diagnostics where the JSON envelope (file,
+  line, column, rule, message per error) costs more than terse `tsc` text on a 2-error
+  sample; it wins on larger error sets and pays for itself in parse reliability.
+
+**Bottom line: ~35% fewer tokens token-weighted, 31% median, ~35% on a realistic session
+mix** (up from 21% / 21% / 28% before the compact-format work) — and that still
+under-weights real usage, dominated by the high-saving diagnostic, diff, log, and plan calls.
 
 ## Reproducing / extending
 
 Edit the `SAMPLES` array in `scripts/token-benchmark.mjs` to add commands or swap in your
 own captured output, then re-run. Each entry is `{ tool, raw, structured }`; the samples
 are checked into the script (not fetched live) so the benchmark runs anywhere without a
-cluster, repo, or cloud creds. To benchmark a list tool's TSV vs JSON form, put the
+cluster, repo, or cloud credentials. To benchmark a list tool's TSV vs JSON form, put the
 representation you want to measure in the `structured` field.
+
+Other knobs:
+
+- **`WEIGHTS`** — the illustrative call-frequency map driving the frequency-weighted
+  aggregate. Tune it to your own session mix; tools absent from the map default to 1.
+- **Scaling section** — `tfStateListRaw` / `tfStateListStructured` generate the synthetic
+  N-row series. Adjust the `[5, 50, 200, 1000]` list or the generators to probe a different
+  tool's scaling behavior.
+- **`USE_CLAUDE_TOKENIZER=1`** — swaps the o200k proxy for exact Claude counts via the
+  `count_tokens` API (needs `ANTHROPIC_API_KEY`; see [Method](#method)).

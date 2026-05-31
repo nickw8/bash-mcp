@@ -1,7 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
-import { ok } from "#response";
+import type { ListFormat } from "#format";
+import { okList } from "#response";
 import { defineTool } from "#tool";
 
 /** Register the git_branches tool for structured branch listing. */
@@ -16,6 +17,10 @@ export function registerGitBranchesTool(server: McpServer) {
       inputSchema: {
         cwd: z.string().optional().describe("Repository path"),
         remote: z.boolean().optional().describe("Include remote branches"),
+        format: z
+          .enum(["json", "tsv", "columnar", "bare"])
+          .optional()
+          .describe("Output format (default: tsv)"),
       },
       outputSchema: {
         current: z.string(),
@@ -30,7 +35,8 @@ export function registerGitBranchesTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ cwd, remote }) => {
+    async ({ cwd, remote, format }) => {
+      const fmt = (format ?? "tsv") as ListFormat;
       const args = ["branch", "-v", "--no-color"];
       if (remote) args.push("-a");
 
@@ -52,7 +58,19 @@ export function registerGitBranchesTool(server: McpServer) {
           return { name, current: isCurrent, lastCommit, remote: isRemote };
         });
 
-      return ok({ current: currentBranch, branches });
+      // Drop the all-false `remote` column from the text view unless remotes
+      // were requested; structuredContent keeps it for schema completeness.
+      const rows = branches.map(({ name, current, lastCommit, ...rest }) =>
+        remote
+          ? { name, current, lastCommit, remote: rest.remote }
+          : { name, current, lastCommit },
+      );
+      return okList(
+        { current: currentBranch, branches },
+        rows,
+        { current: currentBranch },
+        fmt,
+      );
     },
   );
 }

@@ -9,7 +9,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execJson, execWithStdin, TIMEOUT } from "#exec";
-import { err, ok } from "#response";
+import type { ListFormat } from "#format";
+import { err, ok, okList } from "#response";
 import { defineTool } from "#tool";
 import { parseJsonishOutput } from "../../parsers/json-output.js";
 import { applyBudget, budgetSchema } from "../../parsers/schemas.js";
@@ -246,7 +247,12 @@ export function registerKubernetesTools(server: McpServer) {
       title: "Kubectl contexts",
       description:
         "List available kubectl contexts with current context marked.",
-      inputSchema: {},
+      inputSchema: {
+        format: z
+          .enum(["json", "tsv", "columnar", "bare"])
+          .optional()
+          .describe("Output format (default: tsv)"),
+      },
       outputSchema: {
         current: z.string(),
         contexts: z.array(
@@ -260,14 +266,16 @@ export function registerKubernetesTools(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async () => {
+    async ({ format }) => {
+      const fmt = (format ?? "tsv") as ListFormat;
       const result = await exec("kubectl", [
         "config",
         "get-contexts",
         "--no-headers",
       ]);
 
-      return ok(parseContexts(result.stdout));
+      const parsed = parseContexts(result.stdout);
+      return okList(parsed, parsed.contexts, { current: parsed.current }, fmt);
     },
   );
 
