@@ -1,0 +1,1 @@
+{"lines":[{"timestamp":"2026-05-31T09:40:12.002Z","message":"ERROR could not connect to database: connection refused"},{"timestamp":"2026-05-31T09:40:12.003Z","message":"ERROR shutting down after fatal error"}],"count":2,"pod":"worker-5d9f7b6c-ghi56"}

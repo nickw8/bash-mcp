@@ -1,0 +1,28 @@
+Name:             worker-5d9f7b6c-ghi56
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             node-3/10.0.1.23
+Start Time:       Mon, 26 May 2026 09:14:02 +0000
+Labels:           app=worker
+                  pod-template-hash=5d9f7b6c
+Status:           Running
+IP:               10.244.2.17
+Controlled By:    ReplicaSet/worker-5d9f7b6c
+Containers:
+  worker:
+    Container ID:   containerd://a1b2c3
+    Image:          registry.example.com/worker:1.4.2
+    State:          Waiting
+      Reason:       CrashLoopBackOff
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    1
+      Started:      Mon, 26 May 2026 09:40:11 +0000
+      Finished:     Mon, 26 May 2026 09:40:12 +0000
+    Ready:          False
+    Restart Count:  12
+Events:
+  Type     Reason     Age                   From     Message
+  ----     ------     ----                  ----     -------
+  Warning  BackOff    2m (x140 over 30m)    kubelet  Back-off restarting failed container worker

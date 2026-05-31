@@ -1,0 +1,9 @@
+total	5
+path	.
+---
+name	type	size	permissions	modified
+package.json	file	1638	-rw-r--r--	2026-05-31
+README.md	file	8396	-rw-r--r--	2026-05-30
+src	dir	4096	drwxr-xr-x	2026-05-31
+fixtures	dir	4096	drwxr-xr-x	2026-05-31
+tsconfig.json	file	220	-rw-r--r--	2026-05-12

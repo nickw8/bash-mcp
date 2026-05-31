@@ -1,0 +1,6 @@
+src/auth.ts
+12:  if (!token) throw new Error("missing token");
+45:  const token = req.headers.authorization;
+
+src/server.ts
+88:  validateToken(token);

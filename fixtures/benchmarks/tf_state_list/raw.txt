@@ -1,0 +1,5 @@
+module.network.aws_vpc.main
+module.network.aws_subnet.public[0]
+module.network.aws_subnet.public[1]
+aws_instance.web
+aws_s3_bucket.logs

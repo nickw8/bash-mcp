@@ -1,0 +1,8 @@
+count	5
+byType	{"aws_vpc":1,"aws_subnet":2,"aws_instance":1,"aws_s3_bucket":1}
+---
+module.network.aws_vpc.main
+module.network.aws_subnet.public[0]
+module.network.aws_subnet.public[1]
+aws_instance.web
+aws_s3_bucket.logs

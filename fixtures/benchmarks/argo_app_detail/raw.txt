@@ -1,0 +1,16 @@
+Name:               web
+Project:            prod
+Server:             https://kubernetes.default.svc
+Namespace:          default
+URL:                https://argocd.example.com/applications/web
+Repo:               git@github.com:org/infra.git
+Target:             main
+Path:               apps/web
+SyncWindow:         Sync Allowed
+Sync Policy:        Automated
+Sync Status:        OutOfSync from main (a1b2c3d)
+Health Status:      Degraded
+
+GROUP  KIND        NAMESPACE  NAME  STATUS     HEALTH    HOOK  MESSAGE
+       Service     default    web   Synced     Healthy
+apps   Deployment  default    web   OutOfSync  Degraded        replica set "web-7c5" failed progressing

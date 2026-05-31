@@ -1,0 +1,6 @@
+path	sizeBytes
+./src/parsers	4096
+./src/tools	24576
+./src	40960
+./fixtures	8192
+.	61440

@@ -1,0 +1,1 @@
+{"node":{"installed":true,"version":"20.18.0"},"kubectl":{"installed":true,"version":"1.31.2","context":"prod"},"terraform":{"installed":true,"version":"1.9.5"},"helm":{"installed":true,"version":"3.16.1"},"jq":{"installed":true,"version":"1.7"},"argocd":{"installed":false}}

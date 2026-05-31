@@ -1,0 +1,17 @@
+$ which kubectl terraform helm jq node argocd
+/usr/local/bin/kubectl
+/usr/local/bin/terraform
+/usr/local/bin/helm
+/usr/bin/jq
+/usr/local/bin/node
+argocd not found
+$ kubectl version --client -o json | jq -r .clientVersion.gitVersion
+v1.31.2
+$ terraform version
+Terraform v1.9.5
+$ helm version --short
+v3.16.1
+$ node --version
+v20.18.0
+$ kubectl config current-context
+prod

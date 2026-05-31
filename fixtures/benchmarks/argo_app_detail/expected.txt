@@ -1,0 +1,1 @@
+{"name":"web","project":"prod","syncStatus":"OutOfSync","healthStatus":"Degraded","revision":"a1b2c3d","message":"replica set \"web-7c5\" failed progressing","resources":[{"kind":"Service","name":"web","namespace":"default","status":"Synced","health":"Healthy"},{"kind":"Deployment","name":"web","namespace":"default","status":"OutOfSync","health":"Degraded"}],"conditions":[]}

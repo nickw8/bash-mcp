@@ -1,0 +1,4 @@
+CURRENT   NAME      CLUSTER   AUTHINFO     NAMESPACE
+*         prod      prod      prod-admin   payments
+          staging   staging   stg-admin    default
+          dev       dev       dev-admin    default

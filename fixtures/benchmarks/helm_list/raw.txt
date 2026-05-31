@@ -1,0 +1,4 @@
+NAME       NAMESPACE   REVISION   UPDATED                                 STATUS     CHART            APP VERSION
+api        payments    7          2026-05-30 22:11:04.12 +0000 UTC        deployed   api-2.3.1        1.4.2
+web        default     3          2026-05-28 10:02:55.91 +0000 UTC        deployed   web-1.8.0        2.0.0
+cache      default     1          2026-05-12 08:44:10.55 +0000 UTC        failed     redis-17.4.0     7.0.5

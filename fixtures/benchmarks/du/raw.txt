@@ -1,0 +1,5 @@
+4.0K	./src/parsers
+24K	./src/tools
+40K	./src
+8.0K	./fixtures
+60K	.

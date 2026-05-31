@@ -1,0 +1,11 @@
+count	7
+resource	pods
+---
+name	namespace	status	ready	restarts	age
+web-7c5b8d6c88-abc12	default	Running	1/1	0	3d4h
+web-7c5b8d6c88-def34	default	Running	1/1	0	3d4h
+worker-5d9f7b6c-ghi56	default	CrashLoopBackOff	0/1	12	3d4h
+coredns-5d78c9869d-jkl78	kube-system	Running	1/1	1	9d
+kube-proxy-mno90	kube-system	Running	1/1	0	9d
+api-6f8c9d7b5-pqr12	payments	Running	1/1	0	18h
+migrate-xyz98	payments	Completed	0/1	0	18h

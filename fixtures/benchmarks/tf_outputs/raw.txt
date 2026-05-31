@@ -1,0 +1,7 @@
+vpc_id = "vpc-0abc123"
+public_subnets = [
+  "subnet-01",
+  "subnet-02",
+]
+db_endpoint = "app-db.xyz.rds.amazonaws.com:5432"
+api_key = <sensitive>

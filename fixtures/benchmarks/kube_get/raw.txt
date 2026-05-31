@@ -1,0 +1,8 @@
+NAMESPACE     NAME                                READY   STATUS             RESTARTS      AGE
+default       web-7c5b8d6c88-abc12                1/1     Running            0             3d4h
+default       web-7c5b8d6c88-def34                1/1     Running            0             3d4h
+default       worker-5d9f7b6c-ghi56               0/1     CrashLoopBackOff   12 (2m ago)   3d4h
+kube-system   coredns-5d78c9869d-jkl78            1/1     Running            1 (5d ago)    9d
+kube-system   kube-proxy-mno90                    1/1     Running            0             9d
+payments      api-6f8c9d7b5-pqr12                 1/1     Running            0             18h
+payments      migrate-xyz98                       0/1     Completed          0             18h

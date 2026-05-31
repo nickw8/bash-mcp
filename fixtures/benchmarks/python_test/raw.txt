@@ -1,0 +1,19 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-8.0.0, pluggy-1.4.0
+rootdir: /proj
+collected 14 items
+
+tests/test_auth.py ....F....                                            [ 64%]
+tests/test_db.py .....                                                  [100%]
+
+=================================== FAILURES ===================================
+______________________________ test_expired_token _____________________________
+
+    def test_expired_token():
+>       assert verify(expired) is None
+E       AssertionError: assert <User id=1> is None
+
+tests/test_auth.py:42: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_auth.py::test_expired_token - AssertionError: assert <User...
+========================= 1 failed, 13 passed in 1.23s =========================

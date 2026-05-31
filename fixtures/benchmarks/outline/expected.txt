@@ -1,0 +1,1 @@
+{"path":"src/user-service.ts","language":"typescript","totalLines":38,"symbols":6,"outline":"import { z } from \"zod\"\nimport { db } from \"./db\"\ninterface User\nclass UserService\n  getUser(id: string): Promise<User | null>\n  createUser(email: string): Promise<User>\n  deleteUser(id: string): Promise<void>\nfunction validateEmail(email: string): boolean"}

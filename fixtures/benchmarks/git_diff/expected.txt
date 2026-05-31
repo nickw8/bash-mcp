@@ -1,0 +1,1 @@
+{"files":[{"file":"src/auth.ts","insertions":3,"deletions":2},{"file":"README.md","insertions":1,"deletions":1}],"totalInsertions":4,"totalDeletions":3,"fileCount":2}

@@ -1,0 +1,36 @@
+import { z } from "zod";
+import { db } from "./db";
+
+export interface User {
+  id: string;
+  email: string;
+}
+
+export class UserService {
+  constructor(private cache: Cache) {}
+
+  async getUser(id: string): Promise<User | null> {
+    const cached = this.cache.get(id);
+    if (cached) return cached;
+    const row = await db.query("SELECT * FROM users WHERE id = $1", [id]);
+    if (!row) return null;
+    const user = { id: row.id, email: row.email };
+    this.cache.set(id, user);
+    return user;
+  }
+
+  async createUser(email: string): Promise<User> {
+    const id = crypto.randomUUID();
+    await db.insert("users", { id, email });
+    return { id, email };
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete("users", id);
+    this.cache.evict(id);
+  }
+}
+
+export function validateEmail(email: string): boolean {
+  return /^[^@]+@[^@]+$/.test(email);
+}

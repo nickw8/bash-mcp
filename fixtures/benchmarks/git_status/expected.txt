@@ -1,0 +1,1 @@
+{"branch":"main","ahead":2,"behind":0,"staged":[{"file":"src/auth.ts","status":"modified"}],"unstaged":[{"file":"README.md","status":"modified"}],"untracked":["notes.txt"],"clean":false}

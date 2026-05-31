@@ -1,0 +1,1 @@
+{"add":1,"change":1,"destroy":1,"changes":[{"address":"aws_instance.web","action":"update"},{"address":"aws_s3_bucket.logs","action":"create"},{"address":"aws_security_group.old","action":"delete"}],"noChanges":false}

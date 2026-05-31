@@ -1,0 +1,1 @@
+{"releases":[{"name":"api","namespace":"payments","revision":7,"status":"deployed","chart":"api-2.3.1","appVersion":"1.4.2"},{"name":"web","namespace":"default","revision":3,"status":"deployed","chart":"web-1.8.0","appVersion":"2.0.0"},{"name":"cache","namespace":"default","revision":1,"status":"failed","chart":"redis-17.4.0","appVersion":"7.0.5"}],"count":3}

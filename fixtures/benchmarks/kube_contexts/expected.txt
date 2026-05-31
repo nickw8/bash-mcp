@@ -1,0 +1,6 @@
+current	prod
+---
+name	cluster	namespace	current
+prod	prod	payments	true
+staging	staging	default	false
+dev	dev	default	false

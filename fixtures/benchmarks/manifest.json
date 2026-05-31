@@ -1,0 +1,152 @@
+[
+  {
+    "id": "kube_get",
+    "command": "kubectl get pods -A",
+    "weight": 5,
+    "budget": 227
+  },
+  {
+    "id": "kube_diagnose_pod",
+    "command": "kubectl describe pod (→ kube_diagnose_pod)",
+    "weight": 3,
+    "budget": 124
+  },
+  {
+    "id": "kube_logs",
+    "command": "kubectl logs (ERROR filter)",
+    "weight": 4,
+    "budget": 91
+  },
+  {
+    "id": "tf_plan_summary",
+    "command": "terraform plan",
+    "weight": 2,
+    "budget": 61
+  },
+  {
+    "id": "helm_list",
+    "command": "helm list -A",
+    "weight": 2,
+    "budget": 129
+  },
+  {
+    "id": "argo_apps",
+    "command": "argocd app list",
+    "weight": 2,
+    "budget": 113
+  },
+  {
+    "id": "git_diff",
+    "command": "git diff (→ git_diff)",
+    "weight": 5,
+    "budget": 62
+  },
+  {
+    "id": "ls",
+    "command": "ls -lh (→ ls)",
+    "weight": 6,
+    "budget": 128
+  },
+  {
+    "id": "tree",
+    "command": "tree (→ tree)",
+    "weight": 2,
+    "budget": 65
+  },
+  {
+    "id": "du",
+    "command": "du (→ du)",
+    "weight": 1,
+    "budget": 39
+  },
+  {
+    "id": "rg",
+    "command": "ripgrep (→ rg)",
+    "weight": 8,
+    "budget": 61
+  },
+  {
+    "id": "outline",
+    "command": "cat full file (→ outline)",
+    "weight": 8,
+    "budget": 104
+  },
+  {
+    "id": "git_status",
+    "command": "git status (→ git_status)",
+    "weight": 5,
+    "budget": 59
+  },
+  {
+    "id": "git_log",
+    "command": "git log (→ git_log)",
+    "weight": 3,
+    "budget": 85
+  },
+  {
+    "id": "git_branches",
+    "command": "git branch -v (→ git_branches)",
+    "weight": 2,
+    "budget": 65
+  },
+  {
+    "id": "kube_contexts",
+    "command": "kubectl config get-contexts (→ kube_contexts)",
+    "weight": 1,
+    "budget": 32
+  },
+  {
+    "id": "kube_events_summary",
+    "command": "kubectl get events (→ kube_events_summary)",
+    "weight": 2,
+    "budget": 151
+  },
+  {
+    "id": "tf_state_list",
+    "command": "terraform state list (→ tf_state_list)",
+    "weight": 1,
+    "budget": 74
+  },
+  {
+    "id": "tf_outputs",
+    "command": "terraform output (→ tf_outputs)",
+    "weight": 1,
+    "budget": 62
+  },
+  {
+    "id": "helm_status",
+    "command": "helm status (→ helm_status)",
+    "weight": 2,
+    "budget": 62
+  },
+  {
+    "id": "argo_app_detail",
+    "command": "argocd app get (→ argo_app_detail)",
+    "weight": 2,
+    "budget": 108
+  },
+  {
+    "id": "npm_typecheck",
+    "command": "tsc --noEmit (→ npm_typecheck)",
+    "weight": 3,
+    "budget": 95
+  },
+  {
+    "id": "python_test",
+    "command": "pytest (→ python_test)",
+    "weight": 2,
+    "budget": 50
+  },
+  {
+    "id": "dotnet_build",
+    "command": "dotnet build (→ dotnet_build)",
+    "weight": 1,
+    "budget": 115
+  },
+  {
+    "id": "check_environment",
+    "command": "which + version probes (→ check_environment)",
+    "weight": 1,
+    "budget": 96
+  }
+]

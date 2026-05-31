@@ -1,0 +1,6 @@
+2026-05-31T09:40:11.001Z INFO  starting worker v1.4.2
+2026-05-31T09:40:11.114Z INFO  connecting to postgres at db:5432
+2026-05-31T09:40:11.430Z WARN  retrying connection (attempt 1)
+2026-05-31T09:40:12.002Z ERROR could not connect to database: connection refused
+2026-05-31T09:40:12.003Z ERROR shutting down after fatal error
+2026-05-31T09:40:12.004Z INFO  flushed metrics

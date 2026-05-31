@@ -1,0 +1,5 @@
+LAST SEEN   TYPE      REASON             OBJECT                       MESSAGE
+2m          Warning   BackOff            pod/worker-5d9f7b6c-ghi56    Back-off restarting failed container worker
+5m          Warning   FailedScheduling   pod/api-6f8c9d7b5-new        0/3 nodes available: insufficient memory
+8m          Normal    Scheduled          pod/web-7c5b8d6c88-abc12     Successfully assigned default/web to node-1
+10m         Warning   Unhealthy          pod/web-7c5b8d6c88-def34     Readiness probe failed: HTTP probe returned 503

@@ -1,0 +1,13 @@
+Microsoft (R) Build Engine version 17.8.0+abc for .NET
+  Determining projects to restore...
+  Restored /proj/App.csproj (in 412 ms).
+  App -> /proj/bin/Debug/net8.0/App.dll
+/proj/Services/UserService.cs(28,17): error CS0103: The name 'cach' does not exist in the current context [/proj/App.csproj]
+/proj/Services/UserService.cs(40,9): warning CS0168: The variable 'ex' is declared but never used [/proj/App.csproj]
+
+Build FAILED.
+
+    1 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:03.45

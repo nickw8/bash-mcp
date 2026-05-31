@@ -1,0 +1,4 @@
+NAME      CLUSTER                         NAMESPACE   PROJECT   STATUS     HEALTH      SYNCPOLICY   CONDITIONS   REPO                              PATH        TARGET
+api       https://kubernetes.default.svc  payments    prod      Synced     Healthy     Auto         <none>       git@github.com:org/infra.git      apps/api    main
+web       https://kubernetes.default.svc  default     prod      OutOfSync  Degraded    Auto         <none>       git@github.com:org/infra.git      apps/web    main
+cache     https://kubernetes.default.svc  default     prod      Synced     Healthy     Manual       <none>       git@github.com:org/infra.git      apps/cache  main
