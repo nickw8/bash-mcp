@@ -6,32 +6,45 @@ TypeScript, Node.js >= 20 (ESM), MCP SDK, Zod schemas, Vitest, Biome (lint/forma
 
 ## Key Paths
 - src/index.ts — server entry, registers all tool groups via stdio transport
-- src/exec.ts — command execution (exec, execJson, execWithStdin), IS_MACOS, TIMEOUT constants
-- src/response.ts — MCP response helpers (ok, okList, err)
+- src/exec.ts — command execution (exec, execJson, execWithStdin), IS_MACOS, TIMEOUT constants; surfaces errorCode/signal/timedOut
+- src/tool.ts — defineTool: wraps registerTool with wide-event logging + uniform error catching (all tools use it)
+- src/error.ts — ToolError taxonomy + classifyError (missing_binary/timeout/permission_denied/...)
+- src/logger.ts — zero-dep structured stderr logger; resolveLevel(BASH_MCP_LOG)
+- src/safety.ts — resolveMode(BASH_MCP_MODE) + classifyCommand + checkCommandAllowed (gates run/batch)
+- src/response.ts — MCP response helpers (ok, okList, err); err takes optional 3rd ToolError arg
 - src/format.ts — multi-format list output (TSV, columnar, JSON)
 - src/shell.ts — shell escaping (shellEscape)
-- src/parsers/types.ts — shared interfaces (Diagnostic, TestResult, TestSuite)
-- src/parsers/schemas.ts — shared Zod schemas (diagnosticSchema, testResultSchema, countBySeverity)
+- src/parsers/types.ts — shared interfaces (Diagnostic, TestResult, TestSuite, BudgetParams)
+- src/parsers/schemas.ts — shared Zod schemas (diagnosticSchema, testResultSchema, countBySeverity, budgetSchema, applyBudget)
 - src/parsers/strip-prefix.ts — generic prefix stripping (paths, namespaces)
 - src/parsers/diagnostic-line.ts — generic path(line,col): severity code: msg parser
 - src/parsers/json-output.ts — JSON-ish output parser (jq/yq parse cascade)
 - src/tools/&lt;category&gt;/&lt;category&gt;.ts — tool implementations, each exports registerXTools(server)
 
 ## Tool Inventory
-**Filesystem**: ls, tree, du, find_files | **Search**: rg, glob | **Git**: git_status, git_log, git_diff, git_branches, git_diff_content | **Kubernetes**: kube_get, kube_logs, kube_contexts | **Terraform**: tf_state_list, tf_show, tf_plan_summary, tf_workspaces | **Helm**: helm_list, helm_status, helm_values | **ArgoCD**: argo_apps, argo_app_detail, argo_app_diff | **JSON/YAML**: jq, yq | **File**: cat, outline | **Run**: run | **Batch**: batch | **npm**: npm_lint, npm_test, npm_typecheck | **dotnet**: dotnet_build, dotnet_test | **Python**: python_lint, python_test, python_typecheck
+**Environment**: check_environment | **Filesystem**: ls, tree, du, find_files | **Search**: rg, glob | **Git**: git_status, git_log, git_diff, git_branches, git_diff_content, repo_health_summary, git_pr_context | **Kubernetes**: kube_get, kube_logs, kube_contexts, kube_diagnose_pod, kube_pod_failure_summary, kube_deployment_status, kube_events_summary | **Terraform/OpenTofu**: tf_state_list, tf_show, tf_plan_summary, tf_workspaces, tf_outputs, tf_providers, tf_validate_summary, tf_modules_summary, tf_backend_info (all accept binary: terraform|tofu) | **Helm**: helm_list, helm_status, helm_values, helm_release_triage | **ArgoCD**: argo_apps, argo_app_detail, argo_app_diff, argo_app_health_summary | **JSON/YAML**: jq, yq | **File**: cat, outline | **Run**: run | **Batch**: batch | **npm**: npm_lint, npm_test, npm_typecheck | **dotnet**: dotnet_build, dotnet_test | **Python**: python_lint, python_test, python_typecheck
+
+Diagnostic tools (kube_diagnose_pod, *_summary, helm_release_triage, argo_app_health_summary, repo_health_summary) return `{ status/healthy, likelyCauses[], suggestedNextCommands[], evidence[] }` — collapse multi-call triage into one answer.
 
 ## Adding a New Tool
 See docs/adding-tools.md
 
 ## Conventions
-- Subpath imports: #exec, #response, #shell, #format, #parsers (package.json "imports")
+- Subpath imports: #exec, #response, #shell, #format, #parsers, #tool, #error, #logger, #safety (package.json "imports")
+- Register tools via `defineTool(server, name, config, handler)` from #tool — NOT server.registerTool directly (defineTool adds wide-event logging + error catching)
+- Read-only tools carry `annotations: { readOnlyHint: true }` in their config object
 - All schemas: Zod (inputSchema, outputSchema)
 - All tools return: { content: [{ type: "text", text }], structuredContent: {...}, isError?: true }
-- Co-located tests: &lt;name&gt;.test.ts next to &lt;name&gt;.ts
+- Co-located tests: &lt;name&gt;.test.ts next to &lt;name&gt;.ts; pure parsers extracted to parse.ts/diagnose.ts with fixture-driven tests reading from fixtures/
 - Build with tsup (single-file bundle with shebang), dev with tsx (fast reload)
 - Shared parser types in src/parsers/types.ts — reuse Diagnostic/TestResult/TestSuite across tool groups
-- Shared Zod schemas in src/parsers/schemas.ts — use diagnosticSchema/testResultSchema in outputSchema
+- Shared Zod schemas in src/parsers/schemas.ts — use diagnosticSchema/testResultSchema in outputSchema; spread budgetSchema + call applyBudget for variable-size lists
 - Timeouts use TIMEOUT constants from src/exec.ts (DEFAULT, INFRA, BUILD, TYPECHECK)
+
+## Env Vars
+- BASH_MCP_LOG: error (default, only failed calls) | info (adds successes) | off/silent. Wide-event JSON to stderr; run/batch args redacted.
+- BASH_MCP_MODE: off (default, no enforcement) | readOnly | confirmWrites. Gates run/batch mutating commands.
+- TF_BINARY: terraform (default) | tofu. Default binary for tf_* tools.
 
 ## Timeouts (TIMEOUT constants in src/exec.ts)
 DEFAULT: 30s (filesystem/search/git) | INFRA: 15s (kube/helm/argocd) | TYPECHECK: 60s (tsc, tf show) | BUILD: 120s (dotnet, npm test, tf plan) | All: 10 MB maxBuffer
