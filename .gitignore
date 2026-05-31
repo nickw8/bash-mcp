@@ -26,11 +26,7 @@ Thumbs.db
 npm-debug.log*
 
 # Personal / internal files
-entities.json
-mempalace.yaml
-
-# AI tooling
-.serena/
+**/scratch
 
 ### AI agent files
 # mempalace
