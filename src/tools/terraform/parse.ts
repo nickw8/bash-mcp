@@ -49,6 +49,73 @@ export function parseProviders(data: {
   return { version: data?.terraform_version ?? "", providers };
 }
 
+/** Parse `.terraform/modules/modules.json` into a module list (root excluded). */
+export function parseModules(raw: {
+  Modules?: Array<{ Key?: string; Source?: string; Version?: string }>;
+}): Array<{ key: string; source: string; version: string }> {
+  return (raw?.Modules ?? [])
+    .filter((m) => m.Key) // root module has an empty Key
+    .map((m) => ({
+      key: m.Key ?? "",
+      source: m.Source ?? "",
+      version: m.Version ?? "",
+    }));
+}
+
+/** Parse `.terraform/terraform.tfstate` backend pointer into type + config. */
+export function parseBackend(raw: {
+  backend?: { type?: string; config?: Record<string, unknown> };
+}): { type: string; config: Record<string, string> } {
+  const config: Record<string, string> = {};
+  for (const [k, v] of Object.entries(raw?.backend?.config ?? {})) {
+    if (v === null || v === undefined) continue;
+    config[k] = typeof v === "object" ? JSON.stringify(v) : String(v);
+  }
+  return { type: raw?.backend?.type ?? "", config };
+}
+
+/** Parse `terraform show -json <plan>` resource_changes into a change summary. */
+export function parsePlanJson(raw: {
+  resource_changes?: Array<{
+    address?: string;
+    type?: string;
+    change?: { actions?: string[] };
+  }>;
+}): {
+  add: number;
+  change: number;
+  destroy: number;
+  changes: Array<{ action: string; address: string; type: string }>;
+  noChanges: boolean;
+} {
+  const changes: Array<{ action: string; address: string; type: string }> = [];
+  let add = 0;
+  let change = 0;
+  let destroy = 0;
+
+  for (const rc of raw?.resource_changes ?? []) {
+    const actions = rc.change?.actions ?? [];
+    if (actions.length === 0 || actions.includes("no-op")) continue;
+    changes.push({
+      action: actions.join(","),
+      address: rc.address ?? "",
+      type: rc.type ?? "",
+    });
+    // A replace is ["delete","create"] (or ["create","delete"]) → counts both.
+    if (actions.includes("create")) add++;
+    if (actions.includes("delete")) destroy++;
+    if (actions.includes("update")) change++;
+  }
+
+  return {
+    add,
+    change,
+    destroy,
+    changes,
+    noChanges: add === 0 && change === 0 && destroy === 0,
+  };
+}
+
 /** Parse `terraform validate -json` into a compact summary. */
 export function parseValidate(data: {
   valid?: boolean;

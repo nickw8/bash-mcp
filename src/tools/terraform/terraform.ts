@@ -7,12 +7,21 @@
  * per resource type to keep output compact.
  */
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execJson, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
-import { parseOutputs, parseProviders, parseValidate } from "./parse.js";
+import {
+  parseBackend,
+  parseModules,
+  parseOutputs,
+  parsePlanJson,
+  parseProviders,
+  parseValidate,
+} from "./parse.js";
 
 /**
  * Resolve which Terraform-compatible binary to invoke.
@@ -165,6 +174,12 @@ export function registerTerraformTools(server: McpServer) {
         cwd: z.string().describe("Terraform project directory"),
         target: z.string().optional().describe("Target specific resource"),
         varFile: z.string().optional().describe("Var file to use"),
+        planFile: z
+          .string()
+          .optional()
+          .describe(
+            "Path to a saved plan file (from `terraform plan -out`); summarized via `show -json` instead of re-running plan.",
+          ),
         binary: binarySchema,
       },
       annotations: { readOnlyHint: true },
@@ -182,7 +197,27 @@ export function registerTerraformTools(server: McpServer) {
         noChanges: z.boolean(),
       },
     },
-    async ({ cwd, target, varFile, binary }) => {
+    async ({ cwd, target, varFile, planFile, binary }) => {
+      // Saved-plan path: summarize an existing plan file without re-planning.
+      if (planFile) {
+        const showRes = await exec(
+          resolveTfBinary(binary),
+          ["show", "-json", planFile],
+          { cwd, timeout: TIMEOUT.TYPECHECK },
+        );
+        try {
+          return ok(parsePlanJson(JSON.parse(showRes.stdout)));
+        } catch {
+          return err(showRes.stderr || "terraform show -json failed", {
+            add: 0,
+            change: 0,
+            destroy: 0,
+            changes: [],
+            noChanges: true,
+          });
+        }
+      }
+
       const args = ["plan", "-json", "-no-color", "-input=false"];
       if (target) args.push(`-target=${target}`);
       if (varFile) args.push(`-var-file=${varFile}`);
@@ -397,6 +432,81 @@ export function registerTerraformTools(server: McpServer) {
           warningCount: 0,
           diagnostics: [],
         });
+      }
+    },
+  );
+
+  // ── terraform modules (from .terraform/modules/modules.json) ────────
+  defineTool(
+    server,
+    "tf_modules_summary",
+    {
+      title: "Terraform modules summary",
+      description:
+        "List the modules used by an initialized Terraform/OpenTofu project (key, source, version). " +
+        "Reads .terraform/modules/modules.json — run init first.",
+      inputSchema: {
+        cwd: z.string().describe("Terraform project directory"),
+      },
+      outputSchema: {
+        modules: z.array(
+          z.object({
+            key: z.string(),
+            source: z.string(),
+            version: z.string(),
+          }),
+        ),
+        count: z.number(),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ cwd }) => {
+      try {
+        const raw = readFileSync(
+          join(cwd, ".terraform", "modules", "modules.json"),
+          "utf8",
+        );
+        const modules = parseModules(JSON.parse(raw));
+        return ok({ modules, count: modules.length });
+      } catch {
+        return err(
+          "Could not read .terraform/modules/modules.json — run `terraform init` first.",
+          { modules: [], count: 0 },
+        );
+      }
+    },
+  );
+
+  // ── terraform backend (from .terraform/terraform.tfstate) ───────────
+  defineTool(
+    server,
+    "tf_backend_info",
+    {
+      title: "Terraform backend info",
+      description:
+        "Report the configured backend type and config for an initialized project. " +
+        "Reads .terraform/terraform.tfstate — run init first.",
+      inputSchema: {
+        cwd: z.string().describe("Terraform project directory"),
+      },
+      outputSchema: {
+        type: z.string(),
+        config: z.record(z.string()),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ cwd }) => {
+      try {
+        const raw = readFileSync(
+          join(cwd, ".terraform", "terraform.tfstate"),
+          "utf8",
+        );
+        return ok(parseBackend(JSON.parse(raw)));
+      } catch {
+        return err(
+          "Could not read .terraform/terraform.tfstate — run `terraform init` first.",
+          { type: "", config: {} },
+        );
       }
     },
   );

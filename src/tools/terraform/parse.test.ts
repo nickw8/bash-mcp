@@ -6,7 +6,14 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { parseOutputs, parseProviders, parseValidate } from "./parse.js";
+import {
+  parseBackend,
+  parseModules,
+  parseOutputs,
+  parsePlanJson,
+  parseProviders,
+  parseValidate,
+} from "./parse.js";
 
 const fixtures = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -68,5 +75,42 @@ describe("parseValidate", () => {
     const r = parseValidate({ valid: true, error_count: 0, warning_count: 0 });
     expect(r.valid).toBe(true);
     expect(r.diagnostics).toHaveLength(0);
+  });
+});
+
+describe("parseModules", () => {
+  it("lists modules excluding the root module", () => {
+    const mods = parseModules(load("modules.json"));
+    expect(mods).toHaveLength(2);
+    expect(mods[0]).toEqual({
+      key: "vpc",
+      source: "terraform-aws-modules/vpc/aws",
+      version: "5.1.2",
+    });
+    expect(mods[1]?.version).toBe(""); // local module has no version
+  });
+});
+
+describe("parseBackend", () => {
+  it("extracts backend type and stringified config", () => {
+    const b = parseBackend(load("backend.json"));
+    expect(b.type).toBe("s3");
+    expect(b.config.bucket).toBe("my-tf-state");
+    expect(b.config.encrypt).toBe("true");
+  });
+});
+
+describe("parsePlanJson", () => {
+  it("counts add/change/destroy from resource_changes (replace counts both)", () => {
+    const p = parsePlanJson(load("plan.json"));
+    expect(p.add).toBe(2); // web create + db replace
+    expect(p.change).toBe(1); // s3 update
+    expect(p.destroy).toBe(1); // db replace
+    expect(p.changes).toHaveLength(3); // no-op excluded
+    expect(p.noChanges).toBe(false);
+  });
+
+  it("reports noChanges for an empty plan", () => {
+    expect(parsePlanJson({ resource_changes: [] }).noChanges).toBe(true);
   });
 });

@@ -1,0 +1,12 @@
+{
+  "version": 3,
+  "backend": {
+    "type": "s3",
+    "config": {
+      "bucket": "my-tf-state",
+      "key": "prod/terraform.tfstate",
+      "region": "us-east-1",
+      "encrypt": true
+    }
+  }
+}

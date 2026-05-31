@@ -1,0 +1,16 @@
+{
+  "Modules": [
+    { "Key": "", "Source": "", "Dir": "." },
+    {
+      "Key": "vpc",
+      "Source": "terraform-aws-modules/vpc/aws",
+      "Version": "5.1.2",
+      "Dir": ".terraform/modules/vpc"
+    },
+    {
+      "Key": "vpc.subnets",
+      "Source": "./modules/subnets",
+      "Dir": "modules/subnets"
+    }
+  ]
+}

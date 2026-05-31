@@ -1,0 +1,25 @@
+{
+  "format_version": "1.2",
+  "resource_changes": [
+    {
+      "address": "aws_instance.web",
+      "type": "aws_instance",
+      "change": { "actions": ["create"] }
+    },
+    {
+      "address": "aws_s3_bucket.b",
+      "type": "aws_s3_bucket",
+      "change": { "actions": ["update"] }
+    },
+    {
+      "address": "aws_db_instance.d",
+      "type": "aws_db_instance",
+      "change": { "actions": ["delete", "create"] }
+    },
+    {
+      "address": "aws_vpc.main",
+      "type": "aws_vpc",
+      "change": { "actions": ["no-op"] }
+    }
+  ]
+}
