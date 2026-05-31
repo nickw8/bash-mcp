@@ -7,6 +7,16 @@
  * that produce the same shapes.
  */
 
+/** Caller-supplied output-budget controls for variable-size tools. */
+export interface BudgetParams {
+  /** Coarse size preset: summary (small), normal (medium), full (uncapped). */
+  detailLevel?: "summary" | "normal" | "full";
+  /** Explicit cap on returned items; overrides the detailLevel default. */
+  maxItems?: number;
+  /** Include raw/verbose fields where a tool supports it. */
+  includeRaw?: boolean;
+}
+
 /** A single diagnostic (lint error, type error, build error, etc.) with source location. */
 export interface Diagnostic {
   /** Relative path to the source file. */

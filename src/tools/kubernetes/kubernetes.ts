@@ -12,6 +12,7 @@ import { exec, execJson, execWithStdin, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
 import { parseJsonishOutput } from "../../parsers/json-output.js";
+import { applyBudget, budgetSchema } from "../../parsers/schemas.js";
 
 /** Register all Kubernetes tools on the MCP server. */
 export function registerKubernetesTools(server: McpServer) {
@@ -46,6 +47,7 @@ export function registerKubernetesTools(server: McpServer) {
             "jq filter applied to raw kubectl JSON. Skips the default summary and returns the jq result instead. " +
               "Example: '.spec.template.spec.containers[].env'",
           ),
+        ...budgetSchema,
       },
     },
     async ({
@@ -56,6 +58,8 @@ export function registerKubernetesTools(server: McpServer) {
       name,
       context,
       jq: jqFilter,
+      detailLevel,
+      maxItems,
     }) => {
       const args = ["get", resource, "-o", "json"];
       if (name) args.splice(2, 0, name);
@@ -105,10 +109,20 @@ export function registerKubernetesTools(server: McpServer) {
           ? (result.data.items ?? [])
           : [result.data];
 
-      const items = rawItems
+      const allItems = rawItems
         .filter(Boolean)
         .map((item) => summarizeResource(item!));
-      return ok({ items, count: items.length, resource });
+
+      const hasBudget = detailLevel !== undefined || maxItems !== undefined;
+      const { items, truncated, total } = applyBudget(allItems, {
+        detailLevel,
+        maxItems,
+      });
+      return ok(
+        hasBudget
+          ? { items, count: items.length, resource, total, truncated }
+          : { items, count: items.length, resource },
+      );
     },
   );
 
@@ -146,6 +160,7 @@ export function registerKubernetesTools(server: McpServer) {
           .optional()
           .describe("Case-insensitive grep matching (default: false)"),
         context: z.string().optional().describe("Kubectl context"),
+        ...budgetSchema,
       },
       outputSchema: {
         lines: z.array(
@@ -156,6 +171,8 @@ export function registerKubernetesTools(server: McpServer) {
         ),
         count: z.number(),
         pod: z.string(),
+        total: z.number().optional(),
+        truncated: z.boolean().optional(),
       },
     },
     async ({
@@ -167,6 +184,8 @@ export function registerKubernetesTools(server: McpServer) {
       grep,
       ignoreCase,
       context,
+      detailLevel,
+      maxItems,
     }) => {
       const args = [
         "logs",
@@ -206,7 +225,20 @@ export function registerKubernetesTools(server: McpServer) {
         lines = lines.filter((l) => re.test(l.message));
       }
 
-      return ok({ lines, count: lines.length, pod });
+      const hasBudget = detailLevel !== undefined || maxItems !== undefined;
+      const {
+        items: capped,
+        truncated,
+        total,
+      } = applyBudget(lines, {
+        detailLevel,
+        maxItems,
+      });
+      return ok(
+        hasBudget
+          ? { lines: capped, count: capped.length, pod, total, truncated }
+          : { lines: capped, count: capped.length, pod },
+      );
     },
   );
 

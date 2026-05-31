@@ -6,7 +6,7 @@
  */
 
 import { z } from "zod";
-import type { Diagnostic } from "./types.js";
+import type { BudgetParams, Diagnostic } from "./types.js";
 
 export const diagnosticSchema = z.object({
   file: z.string(),
@@ -23,6 +23,53 @@ export const testResultSchema = z.object({
   duration: z.number(),
   failureMessage: z.string().optional(),
 });
+
+/**
+ * Shared output-budget Zod fragment. Spread into a tool's `inputSchema` to add
+ * caller-controlled size limits without redefining the params each time:
+ *   inputSchema: { resource: z.string(), ...budgetSchema }
+ */
+export const budgetSchema = {
+  detailLevel: z
+    .enum(["summary", "normal", "full"])
+    .optional()
+    .describe(
+      "Output size preset: summary (~20 items), normal (~100), full (uncapped, default).",
+    ),
+  maxItems: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe("Explicit cap on returned items; overrides detailLevel."),
+  includeRaw: z
+    .boolean()
+    .optional()
+    .describe("Include raw/verbose fields where supported."),
+};
+
+/** Default item caps per detailLevel; full (and unset) means no cap. */
+const DETAIL_CAPS = { summary: 20, normal: 100, full: Infinity } as const;
+
+/**
+ * Apply an output budget to a list of rows.
+ *
+ * The effective cap is `maxItems` if given, else the detailLevel default
+ * (full/unset → no cap). Returns the (possibly) truncated rows plus the
+ * original total and a `truncated` flag. Omitting all params returns the list
+ * unchanged.
+ */
+export function applyBudget<T>(
+  rows: T[],
+  budget: BudgetParams,
+): { items: T[]; truncated: boolean; total: number } {
+  const total = rows.length;
+  const cap = budget.maxItems ?? DETAIL_CAPS[budget.detailLevel ?? "full"];
+  if (total > cap) {
+    return { items: rows.slice(0, cap), truncated: true, total };
+  }
+  return { items: rows, truncated: false, total };
+}
 
 export function countBySeverity(diagnostics: Diagnostic[]) {
   let errorCount = 0;
