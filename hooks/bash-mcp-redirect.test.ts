@@ -108,6 +108,11 @@ describe("bash-mcp-redirect: implemented tools BLOCK", () => {
     expectBlock("ruff check .", "mcp__bash-mcp__python_lint");
     expectBlock("mypy src", "mcp__bash-mcp__python_typecheck");
   });
+
+  it("capability discovery (graduated: check_environment now exists)", () => {
+    expectBlock("which kubectl", "check_environment");
+    expectBlock("command -v jq", "check_environment");
+  });
 });
 
 describe("bash-mcp-redirect: roadmap tools WARN", () => {
@@ -122,11 +127,6 @@ describe("bash-mcp-redirect: roadmap tools WARN", () => {
     expectWarn("terraform providers", "tf_providers");
     expectWarn("terraform validate", "tf_validate_summary");
     expectWarn("helm history rel", "helm_release_triage");
-  });
-
-  it("capability discovery (roadmap)", () => {
-    expectWarn("which kubectl", "check_environment");
-    expectWarn("command -v jq", "check_environment");
   });
 
   it("generic npm run is advisory", () => {

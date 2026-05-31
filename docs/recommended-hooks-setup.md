@@ -84,7 +84,8 @@ picked up.
   Put more-specific prefixes *before* their generic parent (e.g.
   `kubectl get events` before `kubectl get`).
 - **Graduate a roadmap tool:** once a tool is implemented, change its rule's
-  action from `warn` to `block`.
+  action from `warn` to `block`. *Graduated so far:* `which` / `command -v` →
+  `check_environment` (block).
 - **Loosen/tighten:** flip any `block` to `warn` to make it advisory only.
 
 ## Requirements & safety

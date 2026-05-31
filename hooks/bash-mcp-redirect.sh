@@ -94,8 +94,8 @@ RULES=(
   "mypy|block|mcp__bash-mcp__python_typecheck"
 
   # ── Capability discovery ──
-  "which|warn|mcp__bash-mcp__check_environment (roadmap)"
-  "command -v|warn|mcp__bash-mcp__check_environment (roadmap)"
+  "which|block|mcp__bash-mcp__check_environment"
+  "command -v|block|mcp__bash-mcp__check_environment"
 )
 
 # ── Input ─────────────────────────────────────────────────────────────────
