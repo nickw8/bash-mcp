@@ -65,29 +65,29 @@ Measured with `o200k_base` (positive `saved` = structured is smaller):
 | `which`+versions (→ `check_environment`)   |  118 |     87 |  26% |
 | `helm list -A` (→ `helm_list`)             |  149 |    117 |  21% |
 | `ls -lh` (→ `ls`, TSV)                      |  146 |    116 |  21% |
+| `kubectl get pods -A` (→ `kube_get`, TSV)   |  234 |    206 |  12% |
 | `kubectl get events` (→ `kube_events_summary`) | 141 | 137 |   3% |
 | `du` (→ `du`, TSV)                          |   35 |     35 |   0% |
 | `terraform output` (→ `tf_outputs`, TSV)   |   54 |     56 |  −4% |
 | `git branch -v` (→ `git_branches`, TSV)    |   53 |     59 | −11% |
 | `tsc --noEmit` (→ `npm_typecheck`)         |   73 |     86 | −18% |
-| `kubectl get pods -A` (→ `kube_get`)       |  234 |    295 | −26% |
-| `ripgrep` (→ `rg`, TSV)                     |   39 |     59 | −51% |
+| `ripgrep` (→ `rg`, TSV)                     |   39 |     55 | −41% |
 | `terraform state list` (→ `tf_state_list`, bare) | 34 | 67 | −97% |
-| **TOTAL (token-weighted)**                 | 3279 |   2136 |  **35%** |
+| **TOTAL (token-weighted)**                 | 3279 |   2043 |  **38%** |
 
 Three aggregates, because the single TOTAL is misleading on its own:
 
 | Aggregate                       | Reduction | What it measures |
 |---------------------------------|----------:|------------------|
-| Token-weighted total            |   **35%** | `(Σraw − Σstruct)/Σraw` — dominated by the few large samples (plan, describe, outline). |
+| Token-weighted total            |   **38%** | `(Σraw − Σstruct)/Σraw` — dominated by the few large samples (plan, describe, outline). |
 | Median per-command reduction    |   **31%** | Robust central tendency across the 25 commands; ignores sample size. |
-| Frequency-weighted total        |   **35%** | Weighted by an illustrative session mix (read/diff/log/diagnose dominate, bulk infra listings are rare — see `WEIGHTS` in the script). |
+| Frequency-weighted total        |   **40%** | Weighted by an illustrative session mix (read/diff/log/diagnose dominate, bulk infra listings are rare — see `WEIGHTS` in the script). |
 
 > These numbers reflect the compact-format work described in [How to read this](#how-to-read-this):
 > the flat-list tools (`tree`, `du`, `git_log`, `git_branches`, `tf_state_list`, `tf_outputs`,
-> `kube_contexts`) now default to `bare`/`TSV` text. Before that change the same mix scored
-> 21% / 21% / 28% — several tools were deeply negative (`tf_state_list` −376%, `du` −191%,
-> `tree` −102%, `git_log` −15%, `kube_contexts` −34%).
+> `kube_contexts`, `kube_get`) now default to `bare`/`TSV` text, omit low-signal meta, and curate
+> redundant columns. Before that change the same mix scored 21% / 21% / 28% — several tools were
+> deeply negative (`tf_state_list` −376%, `du` −191%, `tree` −102%, `kube_get` −26%, `kube_contexts` −34%).
 
 The frequency-weighted figure is the most representative of real usage: a triage or
 dev session is mostly the high-saving diagnostic, diff, log, and file-read calls, not
@@ -142,18 +142,26 @@ was to emit compact text by default while keeping `structuredContent` as JSON:
    drops the verbose `type`, `git_branches` omits the all-`false` `remote` column.
 3. **Output budgets.** `detailLevel` / `maxItems` cap large lists so the agent never pays
    for rows it won't read.
+4. **Agent-driven levers.** Most list tools take a `fields` param to project just the columns
+   the task needs (text view only — `structuredContent` keeps every field), and `cat` accepts
+   `paths` to read several files in one call. These cut tokens the encoding work can't, by
+   removing whole columns and whole round-trips.
+
+`kube_get` flattens its summarized rows (the per-item `extra` map — replicas, restarts, type —
+becomes top-level TSV columns; verbose `labels` stay in `structuredContent`), which flipped it
+from −26% to +12%.
 
 **What's still negative, and why:**
 
-- `tf_state_list` (−97% at 5 rows) and `rg` (−51%): tiny results where the fixed meta/header
-  block dominates. Both amortize to ~0% with more rows (see the scaling table).
-- `kube_get` (−26%): not yet converted — `summarizeResource` returns nested `labels`/`extra`
-  objects that don't flatten cleanly into TSV cells. A flattening pass is the follow-up.
+- `tf_state_list` (−97% at 5 rows) and `rg` (−41%): tiny results where the fixed meta/header
+  block dominates. Both amortize toward ~0% as rows grow (see the scaling table); omitting
+  low-signal meta (e.g. `truncated:false`) already trimmed `rg` from −51%, and its `grouped`
+  format collapses repeated file paths further on many-match-per-file results.
 - `npm_typecheck` (−18%): genuinely structured diagnostics where the JSON envelope (file,
   line, column, rule, message per error) costs more than terse `tsc` text on a 2-error
   sample; it wins on larger error sets and pays for itself in parse reliability.
 
-**Bottom line: ~35% fewer tokens token-weighted, 31% median, ~35% on a realistic session
+**Bottom line: ~38% fewer tokens token-weighted, 31% median, ~40% on a realistic session
 mix** (up from 21% / 21% / 28% before the compact-format work) — and that still
 under-weights real usage, dominated by the high-saving diagnostic, diff, log, and plan calls.
 

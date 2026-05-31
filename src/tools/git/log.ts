@@ -44,6 +44,12 @@ export function registerGitLogTool(server: McpServer) {
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
           .describe("Output format (default: tsv)"),
+        fields: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Limit the text view to these columns, e.g. ['shortHash','message'] (structuredContent keeps all)",
+          ),
       },
       outputSchema: {
         commits: z.array(
@@ -70,6 +76,7 @@ export function registerGitLogTool(server: McpServer) {
       exclude,
       withFiles,
       format,
+      fields,
     }) => {
       const fmt = (format ?? "tsv") as ListFormat;
       // Unicode separator avoids collisions with commit message content
@@ -156,6 +163,7 @@ export function registerGitLogTool(server: McpServer) {
           count: commits.length,
         },
         fmt,
+        { fields },
       );
     },
   );

@@ -45,9 +45,15 @@ export function registerLsTool(server: McpServer) {
             "Only return names and types (omit size, permissions, modified)",
           ),
         format: z
-          .enum(["json", "tsv", "columnar"])
+          .enum(["json", "tsv", "columnar", "bare"])
           .optional()
           .describe("Output format (default: tsv)"),
+        fields: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Limit the text view to these columns (structuredContent keeps all)",
+          ),
       },
       outputSchema: {
         entries: z.array(
@@ -64,7 +70,7 @@ export function registerLsTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ path, all, recursive, nameOnly, format }) => {
+    async ({ path, all, recursive, nameOnly, format, fields }) => {
       const fmt = (format ?? "tsv") as ListFormat;
       const args = IS_MACOS ? ["-lh"] : ["-lh", "--time-style=iso"];
       if (all) args.push("-A");
@@ -111,7 +117,9 @@ export function registerLsTool(server: McpServer) {
         .filter((e) => e.name.length > 0);
 
       const structured = { entries, total: entries.length, path };
-      return okList(structured, entries, { total: entries.length, path }, fmt);
+      return okList(structured, entries, { total: entries.length, path }, fmt, {
+        fields,
+      });
     },
   );
 }

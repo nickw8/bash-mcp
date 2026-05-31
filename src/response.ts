@@ -7,7 +7,7 @@
  */
 
 import type { ToolError } from "#error";
-import { formatList, type ListFormat } from "#format";
+import { formatList, type ListFormat, projectRows } from "#format";
 
 /** Build a successful MCP tool response with structured content. */
 export function ok<T extends Record<string, unknown>>(structuredContent: T) {
@@ -22,17 +22,22 @@ export function ok<T extends Record<string, unknown>>(structuredContent: T) {
 /**
  * Build a response for list-shaped data, formatting the text content
  * using the specified format while keeping structuredContent as JSON.
+ *
+ * `opts.fields` restricts the text block to the named columns (in order);
+ * structuredContent is unaffected, so the agent can ask for exactly the columns
+ * it needs without losing the full typed payload.
  */
 export function okList<T extends Record<string, unknown>>(
   structuredContent: T,
   rows: Record<string, unknown>[],
   meta: Record<string, unknown>,
   format: ListFormat = "json",
+  opts: { fields?: string[] } = {},
 ) {
   const text =
     format === "json"
       ? JSON.stringify(structuredContent)
-      : formatList(rows, format, meta);
+      : formatList(projectRows(rows, opts.fields), format, meta);
   return {
     content: [{ type: "text" as const, text }],
     structuredContent,

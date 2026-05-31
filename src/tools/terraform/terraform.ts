@@ -340,6 +340,12 @@ export function registerTerraformTools(server: McpServer) {
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
           .describe("Output format (default: tsv)"),
+        fields: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Limit the text view to these columns (structuredContent keeps all)",
+          ),
       },
       outputSchema: {
         outputs: z.array(
@@ -354,7 +360,7 @@ export function registerTerraformTools(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ cwd, binary, format }) => {
+    async ({ cwd, binary, format, fields }) => {
       const fmt = (format ?? "tsv") as ListFormat;
       const res = await execJson<
         Record<string, { value?: unknown; type?: unknown; sensitive?: boolean }>
@@ -377,6 +383,7 @@ export function registerTerraformTools(server: McpServer) {
           count: outputs.length,
         },
         fmt,
+        { fields },
       );
     },
   );

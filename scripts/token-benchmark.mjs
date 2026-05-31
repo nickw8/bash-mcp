@@ -75,68 +75,18 @@ kube-system   coredns-5d78c9869d-jkl78            1/1     Running            1 (
 kube-system   kube-proxy-mno90                    1/1     Running            0             9d
 payments      api-6f8c9d7b5-pqr12                 1/1     Running            0             18h
 payments      migrate-xyz98                       0/1     Completed          0             18h`,
-    structured: JSON.stringify({
-      items: [
-        {
-          name: "web-7c5b8d6c88-abc12",
-          namespace: "default",
-          status: "Running",
-          ready: "1/1",
-          restarts: 0,
-          age: "3d4h",
-        },
-        {
-          name: "web-7c5b8d6c88-def34",
-          namespace: "default",
-          status: "Running",
-          ready: "1/1",
-          restarts: 0,
-          age: "3d4h",
-        },
-        {
-          name: "worker-5d9f7b6c-ghi56",
-          namespace: "default",
-          status: "CrashLoopBackOff",
-          ready: "0/1",
-          restarts: 12,
-          age: "3d4h",
-        },
-        {
-          name: "coredns-5d78c9869d-jkl78",
-          namespace: "kube-system",
-          status: "Running",
-          ready: "1/1",
-          restarts: 1,
-          age: "9d",
-        },
-        {
-          name: "kube-proxy-mno90",
-          namespace: "kube-system",
-          status: "Running",
-          ready: "1/1",
-          restarts: 0,
-          age: "9d",
-        },
-        {
-          name: "api-6f8c9d7b5-pqr12",
-          namespace: "payments",
-          status: "Running",
-          ready: "1/1",
-          restarts: 0,
-          age: "18h",
-        },
-        {
-          name: "migrate-xyz98",
-          namespace: "payments",
-          status: "Completed",
-          ready: "0/1",
-          restarts: 0,
-          age: "18h",
-        },
-      ],
-      count: 7,
-      resource: "pods",
-    }),
+    // kube_get flattens summarized items to TSV (labels stay in structuredContent).
+    structured: `count\t7
+resource\tpods
+---
+name\tnamespace\tstatus\tready\trestarts\tage
+web-7c5b8d6c88-abc12\tdefault\tRunning\t1/1\t0\t3d4h
+web-7c5b8d6c88-def34\tdefault\tRunning\t1/1\t0\t3d4h
+worker-5d9f7b6c-ghi56\tdefault\tCrashLoopBackOff\t0/1\t12\t3d4h
+coredns-5d78c9869d-jkl78\tkube-system\tRunning\t1/1\t1\t9d
+kube-proxy-mno90\tkube-system\tRunning\t1/1\t0\t9d
+api-6f8c9d7b5-pqr12\tpayments\tRunning\t1/1\t0\t18h
+migrate-xyz98\tpayments\tCompleted\t0/1\t0\t18h`,
   },
   {
     tool: "kubectl describe pod (→ kube_diagnose_pod)",
@@ -423,10 +373,9 @@ src/parsers/types.ts`,
 
 src/server.ts
 88:  validateToken(token);`,
-    // rg defaults to TSV output (okList) — its real, compact default representation.
+    // rg defaults to TSV output (okList); low-signal meta (truncated:false) omitted.
     structured: `fileCount\t2
 matchCount\t3
-truncated\tfalse
 ---
 file\tline\ttext
 src/auth.ts\t12\t  if (!token) throw new Error("missing token");

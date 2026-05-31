@@ -21,6 +21,12 @@ export function registerGitBranchesTool(server: McpServer) {
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
           .describe("Output format (default: tsv)"),
+        fields: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Limit the text view to these columns (structuredContent keeps all)",
+          ),
       },
       outputSchema: {
         current: z.string(),
@@ -35,7 +41,7 @@ export function registerGitBranchesTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ cwd, remote, format }) => {
+    async ({ cwd, remote, format, fields }) => {
       const fmt = (format ?? "tsv") as ListFormat;
       const args = ["branch", "-v", "--no-color"];
       if (remote) args.push("-a");
@@ -70,6 +76,7 @@ export function registerGitBranchesTool(server: McpServer) {
         rows,
         { current: currentBranch },
         fmt,
+        { fields },
       );
     },
   );

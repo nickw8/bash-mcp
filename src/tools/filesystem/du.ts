@@ -38,6 +38,12 @@ export function registerDuTool(server: McpServer) {
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
           .describe("Output format (default: tsv)"),
+        fields: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Limit the text view to these columns (structuredContent keeps all)",
+          ),
       },
       outputSchema: {
         entries: z.array(
@@ -50,7 +56,7 @@ export function registerDuTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ path, maxDepth, format }) => {
+    async ({ path, maxDepth, format, fields }) => {
       const fmt = (format ?? "tsv") as ListFormat;
       const depth = maxDepth ?? 1;
       const duArgs = IS_MACOS
@@ -81,7 +87,7 @@ export function registerDuTool(server: McpServer) {
         path: p,
         sizeBytes,
       }));
-      return okList({ entries }, rows, {}, fmt);
+      return okList({ entries }, rows, {}, fmt, { fields });
     },
   );
 }

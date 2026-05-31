@@ -55,6 +55,16 @@ export function registerKubernetesTools(server: McpServer) {
             "jq filter applied to raw kubectl JSON. Skips the default summary and returns the jq result instead. " +
               "Example: '.spec.template.spec.containers[].env'",
           ),
+        format: z
+          .enum(["json", "tsv", "columnar", "bare"])
+          .optional()
+          .describe("Output format for the item list (default: tsv)"),
+        fields: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Limit the text view to these columns, e.g. ['name','status','restarts'] (structuredContent keeps all)",
+          ),
         ...budgetSchema,
       },
       annotations: { readOnlyHint: true },
@@ -67,9 +77,12 @@ export function registerKubernetesTools(server: McpServer) {
       name,
       context,
       jq: jqFilter,
+      format,
+      fields,
       detailLevel,
       maxItems,
     }) => {
+      const fmt = (format ?? "tsv") as ListFormat;
       const args = ["get", resource, "-o", "json"];
       if (name) args.splice(2, 0, name);
       if (namespace) args.push("-n", namespace);
@@ -127,10 +140,24 @@ export function registerKubernetesTools(server: McpServer) {
         detailLevel,
         maxItems,
       });
-      return ok(
-        hasBudget
-          ? { items, count: items.length, resource, total, truncated }
-          : { items, count: items.length, resource },
+      const structured = hasBudget
+        ? { items, count: items.length, resource, total, truncated }
+        : { items, count: items.length, resource };
+      // Flatten labels/extra for the text view: extra fields (replicas, restarts,
+      // type, …) become top-level columns; verbose labels stay in structuredContent.
+      const rows = items.map((it) => ({
+        name: it.name,
+        namespace: it.namespace,
+        status: it.status,
+        age: it.age,
+        ...it.extra,
+      }));
+      return okList(
+        structured,
+        rows,
+        { count: items.length, resource, total, truncated },
+        fmt,
+        { fields },
       );
     },
   );
@@ -252,6 +279,12 @@ export function registerKubernetesTools(server: McpServer) {
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
           .describe("Output format (default: tsv)"),
+        fields: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Limit the text view to these columns (structuredContent keeps all)",
+          ),
       },
       outputSchema: {
         current: z.string(),
@@ -266,7 +299,7 @@ export function registerKubernetesTools(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ format }) => {
+    async ({ format, fields }) => {
       const fmt = (format ?? "tsv") as ListFormat;
       const result = await exec("kubectl", [
         "config",
@@ -275,7 +308,9 @@ export function registerKubernetesTools(server: McpServer) {
       ]);
 
       const parsed = parseContexts(result.stdout);
-      return okList(parsed, parsed.contexts, { current: parsed.current }, fmt);
+      return okList(parsed, parsed.contexts, { current: parsed.current }, fmt, {
+        fields,
+      });
     },
   );
 

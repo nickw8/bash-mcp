@@ -57,10 +57,16 @@ export function registerSearchTools(server: McpServer) {
           .optional()
           .describe("Treat pattern as literal string"),
         format: z
-          .enum(["json", "tsv", "columnar"])
+          .enum(["json", "tsv", "columnar", "bare", "grouped"])
           .optional()
           .describe(
-            "Output format: json (default), tsv (tab-separated, most compact), columnar (keys once)",
+            "Output format: tsv (default), json, columnar (keys once), bare (no header), grouped (file header once then line+text, ripgrep-style)",
+          ),
+        fields: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Limit the text view to these columns (e.g. ['file','line']); structuredContent keeps all",
           ),
       },
       outputSchema: {
@@ -91,6 +97,7 @@ export function registerSearchTools(server: McpServer) {
       countPerFile,
       fixedStrings,
       format,
+      fields,
     }) => {
       const fmt = (format ?? "tsv") as ListFormat;
       const limit = maxResults ?? 100;
@@ -139,6 +146,7 @@ export function registerSearchTools(server: McpServer) {
           fileCounts,
           { fileCount: fileCounts.length, matchCount: totalMatches },
           fmt,
+          { fields },
         );
       }
 
@@ -164,6 +172,7 @@ export function registerSearchTools(server: McpServer) {
           fileRows,
           { fileCount: files.length, matchCount: files.length },
           fmt,
+          { fields },
         );
       }
 
@@ -224,6 +233,7 @@ export function registerSearchTools(server: McpServer) {
           truncated: matches.length >= limit,
         },
         fmt,
+        { fields },
       );
     },
   );
