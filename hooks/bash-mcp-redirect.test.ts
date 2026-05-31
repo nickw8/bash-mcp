@@ -113,15 +113,15 @@ describe("bash-mcp-redirect: implemented tools BLOCK", () => {
     expectBlock("which kubectl", "check_environment");
     expectBlock("command -v jq", "check_environment");
   });
+
+  it("kubernetes diagnostics (graduated)", () => {
+    expectBlock("kubectl get events -A", "kube_events_summary");
+    expectBlock("kubectl describe pod x", "kube_diagnose_pod");
+    expectBlock("kubectl rollout status deploy/x", "kube_deployment_status");
+  });
 });
 
 describe("bash-mcp-redirect: roadmap tools WARN", () => {
-  it("kubernetes diagnostics (roadmap)", () => {
-    expectWarn("kubectl get events -A", "kube_events_summary");
-    expectWarn("kubectl describe pod x", "kube_diagnose_pod");
-    expectWarn("kubectl rollout status deploy/x", "kube_deployment_status");
-  });
-
   it("terraform / helm roadmap reads", () => {
     expectWarn("terraform output", "tf_outputs");
     expectWarn("terraform providers", "tf_providers");
@@ -184,8 +184,8 @@ describe("bash-mcp-redirect: finer targeting", () => {
     expectBlock("FOO=bar ls -la", "mcp__bash-mcp__ls");
   });
 
-  it("routes a failed-pods `kubectl get` to the pod-failure summary (roadmap)", () => {
-    expectWarn(
+  it("routes a failed-pods `kubectl get` to the pod-failure summary (graduated)", () => {
+    expectBlock(
       "kubectl get pods --field-selector=status.phase=Failed",
       "kube_pod_failure_summary",
     );

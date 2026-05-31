@@ -85,7 +85,10 @@ picked up.
   `kubectl get events` before `kubectl get`).
 - **Graduate a roadmap tool:** once a tool is implemented, change its rule's
   action from `warn` to `block`. *Graduated so far:* `which` / `command -v` →
-  `check_environment` (block).
+  `check_environment`; `kubectl describe` → `kube_diagnose_pod`;
+  `kubectl get events` → `kube_events_summary`; `kubectl rollout status` →
+  `kube_deployment_status`; `kubectl get … status.phase=Failed` →
+  `kube_pod_failure_summary` (all block).
 - **Loosen/tighten:** flip any `block` to `warn` to make it advisory only.
 
 ## Requirements & safety

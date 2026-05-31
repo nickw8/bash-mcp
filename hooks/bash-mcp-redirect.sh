@@ -48,10 +48,10 @@ RULES=(
   "git show|block|mcp__bash-mcp__git_diff_content"
   "git branch|block|mcp__bash-mcp__git_branches"
 
-  # ── Kubernetes (specific roadmap reads before generic get) ──
-  "kubectl get events|warn|mcp__bash-mcp__kube_events_summary (roadmap)"
-  "kubectl describe|warn|mcp__bash-mcp__kube_diagnose_pod (roadmap)"
-  "kubectl rollout status|warn|mcp__bash-mcp__kube_deployment_status (roadmap)"
+  # ── Kubernetes (specific reads before generic get) ──
+  "kubectl get events|block|mcp__bash-mcp__kube_events_summary"
+  "kubectl describe|block|mcp__bash-mcp__kube_diagnose_pod"
+  "kubectl rollout status|block|mcp__bash-mcp__kube_deployment_status"
   "kubectl config get-contexts|block|mcp__bash-mcp__kube_contexts"
   "kubectl get|block|mcp__bash-mcp__kube_get"
   "kubectl logs|block|mcp__bash-mcp__kube_logs"
@@ -138,12 +138,17 @@ emit_warn() {
 
 # ── Targeted overrides (more specific than the generic RULES below) ─────────
 # A `kubectl get` filtered to failed pods is a triage intent better served by
-# the (roadmap) kube_pod_failure_summary than by generic kube_get.
+# kube_pod_failure_summary than by generic kube_get. Demote to warn in a
+# pipeline, like any block rule.
 case "$cmd" in
   "kubectl get "*)
     case "$cmd" in
       *"status.phase=Failed"*)
-        emit_warn "bash-mcp: prefer mcp__bash-mcp__kube_pod_failure_summary (roadmap) over 'kubectl get … --field-selector=status.phase=Failed'"
+        if [[ "$compound" -eq 0 ]]; then
+          emit_block "Use mcp__bash-mcp__kube_pod_failure_summary instead of 'kubectl get … --field-selector=status.phase=Failed' — structured triage, fewer tokens. (bash-mcp-redirect hook)"
+        else
+          emit_warn "bash-mcp: prefer mcp__bash-mcp__kube_pod_failure_summary over 'kubectl get … status.phase=Failed'"
+        fi
         ;;
     esac
     ;;
