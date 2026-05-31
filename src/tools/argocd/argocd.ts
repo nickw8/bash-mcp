@@ -11,6 +11,7 @@ import { z } from "zod";
 import { exec, execJson, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
+import { type ArgoAppHealth, summarizeAppHealth } from "./health.js";
 
 /** Register all ArgoCD tools on the MCP server. */
 export function registerArgocdTools(server: McpServer) {
@@ -208,6 +209,51 @@ export function registerArgocdTools(server: McpServer) {
         ],
         structuredContent,
       };
+    },
+  );
+
+  // ── argocd app health summary ───────────────────────────────────────
+  defineTool(
+    server,
+    "argo_app_health_summary",
+    {
+      title: "ArgoCD app health summary",
+      description:
+        "Diagnose an ArgoCD application's health in one call: overall sync/health, likely causes, " +
+        "suggested next commands, and the unhealthy resources/conditions as evidence.",
+      inputSchema: {
+        name: z.string().describe("Application name"),
+      },
+      outputSchema: {
+        name: z.string(),
+        status: z.string(),
+        syncStatus: z.string(),
+        healthy: z.boolean(),
+        likelyCauses: z.array(z.string()),
+        suggestedNextCommands: z.array(z.string()),
+        evidence: z.array(z.string()),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ name }) => {
+      const result = await execJson<ArgoAppHealth>(
+        "argocd",
+        ["app", "get", name, "-o", "json"],
+        { timeout: TIMEOUT.INFRA },
+      );
+      if (result.error || !result.data) {
+        return err(result.error ?? "argocd app get: no data", {
+          name,
+          status: "Unknown",
+          syncStatus: "Unknown",
+          healthy: false,
+          likelyCauses: [],
+          suggestedNextCommands: [],
+          evidence: [],
+        });
+      }
+      const summary = summarizeAppHealth(result.data);
+      return ok({ ...summary, name: summary.name || name });
     },
   );
 }

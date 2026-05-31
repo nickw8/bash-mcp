@@ -1,0 +1,34 @@
+{
+  "metadata": { "name": "checkout" },
+  "spec": { "project": "default" },
+  "status": {
+    "sync": { "status": "OutOfSync", "revision": "abc123" },
+    "health": { "status": "Degraded" },
+    "operationState": {
+      "phase": "Failed",
+      "message": "one or more objects failed to apply"
+    },
+    "resources": [
+      {
+        "kind": "Deployment",
+        "name": "checkout-api",
+        "namespace": "shop",
+        "status": "OutOfSync",
+        "health": {
+          "status": "Degraded",
+          "message": "Deployment has minimum availability"
+        }
+      },
+      {
+        "kind": "Service",
+        "name": "checkout-api",
+        "namespace": "shop",
+        "status": "Synced",
+        "health": { "status": "Healthy" }
+      }
+    ],
+    "conditions": [
+      { "type": "ComparisonError", "message": "rpc error: code = Unknown" }
+    ]
+  }
+}
