@@ -94,6 +94,14 @@ describe("bash-mcp-redirect: implemented tools BLOCK", () => {
     expectBlock("tofu plan", "mcp__bash-mcp__tf_plan_summary");
   });
 
+  it("terraform / tofu read-only tools (graduated)", () => {
+    expectBlock("terraform output", "mcp__bash-mcp__tf_outputs");
+    expectBlock("terraform providers", "mcp__bash-mcp__tf_providers");
+    expectBlock("terraform validate", "mcp__bash-mcp__tf_validate_summary");
+    expectBlock("tofu output", "mcp__bash-mcp__tf_outputs");
+    expectBlock("tofu validate", "mcp__bash-mcp__tf_validate_summary");
+  });
+
   it("helm / argocd implemented reads", () => {
     expectBlock("helm list -A", "mcp__bash-mcp__helm_list");
     expectBlock("helm status rel", "mcp__bash-mcp__helm_status");
@@ -122,10 +130,7 @@ describe("bash-mcp-redirect: implemented tools BLOCK", () => {
 });
 
 describe("bash-mcp-redirect: roadmap tools WARN", () => {
-  it("terraform / helm roadmap reads", () => {
-    expectWarn("terraform output", "tf_outputs");
-    expectWarn("terraform providers", "tf_providers");
-    expectWarn("terraform validate", "tf_validate_summary");
+  it("helm roadmap reads", () => {
     expectWarn("helm history rel", "helm_release_triage");
   });
 

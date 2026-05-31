@@ -88,7 +88,9 @@ picked up.
   `check_environment`; `kubectl describe` → `kube_diagnose_pod`;
   `kubectl get events` → `kube_events_summary`; `kubectl rollout status` →
   `kube_deployment_status`; `kubectl get … status.phase=Failed` →
-  `kube_pod_failure_summary` (all block).
+  `kube_pod_failure_summary`; `terraform/tofu output` → `tf_outputs`;
+  `terraform/tofu providers` → `tf_providers`; `terraform/tofu validate` →
+  `tf_validate_summary` (all block).
 - **Loosen/tighten:** flip any `block` to `warn` to make it advisory only.
 
 ## Requirements & safety
