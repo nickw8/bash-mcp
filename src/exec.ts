@@ -21,6 +21,16 @@ export interface ExecResult {
   stderr: string;
   /** Process exit code (0 = success). */
   exitCode: number;
+  /**
+   * Raw spawn error code when the process could not run as a normal exit —
+   * e.g. "ENOENT" for a missing binary. Undefined on success or a clean
+   * non-zero exit. Lets classifyError() distinguish missing-binary failures.
+   */
+  errorCode?: string;
+  /** Signal that terminated the process (e.g. "SIGTERM"), if any. */
+  signal?: string;
+  /** True when the process was killed for exceeding its timeout. */
+  timedOut?: boolean;
 }
 
 /** Options for controlling command execution. */
@@ -78,10 +88,23 @@ export function exec(
         maxBuffer: options.maxBuffer ?? DEFAULT_MAX_BUFFER,
       },
       (error, stdout, stderr) => {
+        const e = error as
+          | (NodeJS.ErrnoException & { killed?: boolean; signal?: string })
+          | null;
+        // execFile sets killed:true when it terminates the child for either a
+        // timeout or a maxBuffer overflow; only the former is a real timeout.
+        const timedOut =
+          e?.killed === true && e.code !== "ERR_CHILD_PROCESS_STDIO_MAXBUFFER";
         resolve({
           stdout: stdout?.toString() ?? "",
           stderr: stderr?.toString() ?? "",
           exitCode: error && "code" in error ? Number(error.code) || 1 : 0,
+          // error.code is a numeric exit code on a normal non-zero exit, but a
+          // string (e.g. "ENOENT") when the process never ran. Surface only the
+          // string form so callers can detect missing binaries.
+          errorCode: typeof e?.code === "string" ? e.code : undefined,
+          signal: e?.signal ?? undefined,
+          timedOut: timedOut || undefined,
         });
       },
     );

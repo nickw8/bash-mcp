@@ -49,6 +49,24 @@ describe("exec", () => {
     // execFile returns SIGTERM kill which gives a non-zero exit
     expect(result.exitCode).not.toBe(0);
   });
+
+  it("surfaces errorCode ENOENT for a missing binary", async () => {
+    const result = await exec("definitely-not-a-real-binary-xyz", []);
+    expect(result.exitCode).not.toBe(0);
+    expect(result.errorCode).toBe("ENOENT");
+    expect(result.timedOut).toBeFalsy();
+  });
+
+  it("flags timedOut when a command exceeds its timeout", async () => {
+    const result = await exec("sleep", ["10"], { timeout: 100 });
+    expect(result.timedOut).toBe(true);
+  });
+
+  it("leaves error fields unset on success", async () => {
+    const result = await exec("echo", ["ok"]);
+    expect(result.errorCode).toBeUndefined();
+    expect(result.timedOut).toBeFalsy();
+  });
 });
 
 describe("execJson", () => {
