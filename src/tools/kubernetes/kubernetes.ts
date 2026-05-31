@@ -13,6 +13,12 @@ import { err, ok } from "#response";
 import { defineTool } from "#tool";
 import { parseJsonishOutput } from "../../parsers/json-output.js";
 import { applyBudget, budgetSchema } from "../../parsers/schemas.js";
+import {
+  type KubeList,
+  parseContexts,
+  parseLogLines,
+  summarizeResource,
+} from "./parse.js";
 
 /** Register all Kubernetes tools on the MCP server. */
 export function registerKubernetesTools(server: McpServer) {
@@ -205,20 +211,7 @@ export function registerKubernetesTools(server: McpServer) {
         return err(result.stderr, { lines: [], count: 0, pod });
       }
 
-      let lines = result.stdout
-        .trim()
-        .split("\n")
-        .filter(Boolean)
-        .map((line) => {
-          const spaceIdx = line.indexOf(" ");
-          if (spaceIdx > 0 && line[0]! >= "0" && line[0]! <= "9") {
-            return {
-              timestamp: line.slice(0, spaceIdx),
-              message: line.slice(spaceIdx + 1),
-            };
-          }
-          return { timestamp: "", message: line };
-        });
+      let lines = parseLogLines(result.stdout);
 
       if (grep) {
         const re = new RegExp(grep, ignoreCase ? "i" : undefined);
@@ -270,117 +263,7 @@ export function registerKubernetesTools(server: McpServer) {
         "--no-headers",
       ]);
 
-      let current = "";
-      const contexts = result.stdout
-        .trim()
-        .split("\n")
-        .filter(Boolean)
-        .map((line) => {
-          const isCurrent = line.startsWith("*");
-          // get-contexts columns: NAME  CLUSTER  AUTHINFO  NAMESPACE
-          const parts = line.replace(/^\*?\s+/, "").split(/\s+/);
-          const name = parts[0] ?? "";
-          const cluster = parts[1] ?? "";
-          const ns = parts[3] ?? "default";
-          if (isCurrent) current = name;
-          return { name, cluster, namespace: ns, current: isCurrent };
-        });
-
-      return ok({ current, contexts });
+      return ok(parseContexts(result.stdout));
     },
   );
-}
-
-// ── Types & helpers ───────────────────────────────────────────────────
-
-/** Partial representation of a Kubernetes resource from kubectl JSON output. */
-interface KubeResource {
-  kind?: string;
-  metadata?: {
-    name?: string;
-    namespace?: string;
-    creationTimestamp?: string;
-    labels?: Record<string, string>;
-  };
-  status?: {
-    phase?: string;
-    conditions?: Array<{ type: string; status: string }>;
-    readyReplicas?: number;
-    replicas?: number;
-    availableReplicas?: number;
-    containerStatuses?: Array<{
-      name: string;
-      ready: boolean;
-      restartCount: number;
-    }>;
-  };
-  spec?: {
-    replicas?: number;
-    type?: string;
-    clusterIP?: string;
-    ports?: Array<{ port: number; targetPort: number; protocol: string }>;
-  };
-}
-
-/** Kubernetes List response wrapper. */
-interface KubeList {
-  kind: string;
-  items: KubeResource[];
-}
-
-/** Extract the most useful fields from a verbose Kubernetes resource object. */
-function summarizeResource(item: KubeResource) {
-  const meta = item.metadata ?? {};
-  const status = item.status ?? {};
-  const spec = item.spec ?? {};
-
-  const age = meta.creationTimestamp
-    ? formatAge(new Date(meta.creationTimestamp))
-    : "unknown";
-
-  const extra: Record<string, string> = {};
-  if (item.kind) extra.kind = item.kind;
-  if (spec.replicas !== undefined)
-    extra.replicas = `${status.readyReplicas ?? 0}/${spec.replicas}`;
-  if (spec.type) extra.type = spec.type;
-  if (spec.clusterIP) extra.clusterIP = spec.clusterIP;
-  if (status.containerStatuses) {
-    const restarts = status.containerStatuses.reduce(
-      (s, c) => s + c.restartCount,
-      0,
-    );
-    if (restarts > 0) extra.restarts = String(restarts);
-  }
-
-  return {
-    name: meta.name ?? "",
-    namespace: meta.namespace ?? "",
-    status: status.phase ?? inferStatus(status.conditions),
-    age,
-    labels: meta.labels ?? {},
-    extra,
-  };
-}
-
-/** Infer a simple status string from Kubernetes conditions when phase is absent. */
-function inferStatus(
-  conditions?: Array<{ type: string; status: string }>,
-): string {
-  if (!conditions?.length) return "Unknown";
-  const ready = conditions.find(
-    (c) => c.type === "Ready" || c.type === "Available",
-  );
-  return ready?.status === "True" ? "Ready" : "NotReady";
-}
-
-/** Format a creation timestamp into a compact age string (e.g. "3d", "2h"). */
-function formatAge(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `${days}d`;
 }

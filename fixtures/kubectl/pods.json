@@ -1,0 +1,36 @@
+{
+  "kind": "List",
+  "apiVersion": "v1",
+  "items": [
+    {
+      "kind": "Pod",
+      "metadata": {
+        "name": "web-7d9f",
+        "namespace": "default",
+        "labels": { "app": "web" },
+        "creationTimestamp": "2024-01-01T00:00:00Z"
+      },
+      "status": {
+        "phase": "Running",
+        "containerStatuses": [
+          { "name": "web", "ready": true, "restartCount": 3 }
+        ]
+      }
+    },
+    {
+      "kind": "Pod",
+      "metadata": {
+        "name": "db-0",
+        "namespace": "data",
+        "creationTimestamp": "2024-06-01T00:00:00Z"
+      },
+      "status": { "phase": "Pending" }
+    },
+    {
+      "kind": "Deployment",
+      "metadata": { "name": "api", "namespace": "default" },
+      "spec": { "replicas": 3 },
+      "status": { "readyReplicas": 2, "replicas": 3 }
+    }
+  ]
+}
