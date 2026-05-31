@@ -67,6 +67,7 @@ describe("bash-mcp-redirect: implemented tools BLOCK", () => {
     expectBlock("ls -la", "mcp__bash-mcp__ls");
     expectBlock("tree src", "mcp__bash-mcp__tree");
     expectBlock("du -sh .", "mcp__bash-mcp__du");
+    expectBlock("find . -name '*.ts'", "mcp__bash-mcp__find_files");
     expectBlock("grep -r foo .", "mcp__bash-mcp__rg");
     expectBlock("rg foo", "mcp__bash-mcp__rg");
     expectBlock("jq '.x' a.json", "mcp__bash-mcp__jq");
@@ -91,7 +92,11 @@ describe("bash-mcp-redirect: implemented tools BLOCK", () => {
     expectBlock("terraform state list", "mcp__bash-mcp__tf_state_list");
     expectBlock("terraform show", "mcp__bash-mcp__tf_show");
     expectBlock("terraform plan", "mcp__bash-mcp__tf_plan_summary");
+    expectBlock("terraform workspace list", "mcp__bash-mcp__tf_workspaces");
+    expectBlock("tofu state list", "mcp__bash-mcp__tf_state_list");
+    expectBlock("tofu show", "mcp__bash-mcp__tf_show");
     expectBlock("tofu plan", "mcp__bash-mcp__tf_plan_summary");
+    expectBlock("tofu workspace list", "mcp__bash-mcp__tf_workspaces");
   });
 
   it("terraform / tofu read-only tools (graduated)", () => {
@@ -99,20 +104,28 @@ describe("bash-mcp-redirect: implemented tools BLOCK", () => {
     expectBlock("terraform providers", "mcp__bash-mcp__tf_providers");
     expectBlock("terraform validate", "mcp__bash-mcp__tf_validate_summary");
     expectBlock("tofu output", "mcp__bash-mcp__tf_outputs");
+    expectBlock("tofu providers", "mcp__bash-mcp__tf_providers");
     expectBlock("tofu validate", "mcp__bash-mcp__tf_validate_summary");
   });
 
   it("helm / argocd implemented reads", () => {
+    expectBlock("helm get values rel", "mcp__bash-mcp__helm_values");
     expectBlock("helm list -A", "mcp__bash-mcp__helm_list");
     expectBlock("helm status rel", "mcp__bash-mcp__helm_status");
     expectBlock("helm history rel", "mcp__bash-mcp__helm_release_triage");
     expectBlock("argocd app list", "mcp__bash-mcp__argo_apps");
     expectBlock("argocd app get app1", "mcp__bash-mcp__argo_app_detail");
+    expectBlock("argocd app diff app1", "mcp__bash-mcp__argo_app_diff");
   });
 
-  it("node / python tooling", () => {
+  it("node / dotnet / python tooling", () => {
     expectBlock("npm run lint", "mcp__bash-mcp__npm_lint");
+    expectBlock("npm run typecheck", "mcp__bash-mcp__npm_typecheck");
     expectBlock("npm test", "mcp__bash-mcp__npm_test");
+    expectBlock("dotnet build", "mcp__bash-mcp__dotnet_build");
+    expectBlock("dotnet test", "mcp__bash-mcp__dotnet_test");
+    expectBlock("uv run ruff check .", "mcp__bash-mcp__python_lint");
+    expectBlock("uv run pytest -q", "mcp__bash-mcp__python_test");
     expectBlock("pytest -q", "mcp__bash-mcp__python_test");
     expectBlock("ruff check .", "mcp__bash-mcp__python_lint");
     expectBlock("mypy src", "mcp__bash-mcp__python_typecheck");
