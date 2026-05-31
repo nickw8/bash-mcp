@@ -58,6 +58,12 @@ Add bash-mcp to your Claude Code settings. For **all projects** (recommended), e
 
 To verify it's working, start Claude Code and check that bash-mcp tools (like `cat`, `rg`, `git_status`) appear in the tool list.
 
+## Recommended Hooks
+
+Optional Claude Code hooks in [`hooks/`](hooks) steer agents toward the structured tools by blocking raw shell commands (`git status`, `kubectl get`, `cat`, …) that have a bash-mcp equivalent, while letting write commands (`git commit`, `kubectl apply`) pass through.
+
+See [docs/recommended-hooks-setup.md](docs/recommended-hooks-setup.md) for setup.
+
 ## Why Structured Output?
 
 Raw CLI tools return text meant for humans. AI agents waste tokens parsing tables, aligning columns, and guessing field boundaries. bash-mcp runs the same CLI tools but returns structured JSON with typed schemas, so the agent gets exactly the data it needs.
