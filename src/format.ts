@@ -50,7 +50,7 @@ function formatTsv(rows: Row[], meta?: Record<string, unknown>): string {
     const keys = Object.keys(rows[0]!);
     parts.push(keys.join("\t"));
     for (const row of rows) {
-      parts.push(keys.map((k) => escape(row[k])).join("\t"));
+      parts.push(keys.map((k) => escapeCell(row[k])).join("\t"));
     }
   }
 
@@ -67,7 +67,7 @@ function formatColumnar(rows: Row[], meta?: Record<string, unknown>): string {
 }
 
 /** Escape a cell value for TSV (replace tabs and newlines). */
-function escape(v: unknown): string {
+function escapeCell(v: unknown): string {
   if (v === null || v === undefined) return "";
   const s = String(v);
   return s.replace(/\t/g, " ").replace(/\n/g, "\\n").replace(/\r/g, "");

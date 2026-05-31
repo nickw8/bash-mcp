@@ -9,7 +9,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { IS_MACOS, exec } from "#exec";
+import { exec, IS_MACOS } from "#exec";
 import { err, ok } from "#response";
 import { detectLanguage, extractOutline } from "./outline/index.js";
 
@@ -168,10 +168,7 @@ export function registerFileTools(server: McpServer) {
         if (lineNumbers) {
           content = content
             .split("\n")
-            .map(
-              (line, i) =>
-                `${String(rangeStart + i).padStart(6)}\t${line}`,
-            )
+            .map((line, i) => `${String(rangeStart + i).padStart(6)}\t${line}`)
             .join("\n");
         }
 

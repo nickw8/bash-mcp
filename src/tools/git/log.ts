@@ -26,9 +26,7 @@ export function registerGitLogTool(server: McpServer) {
         range: z
           .string()
           .optional()
-          .describe(
-            "Git ref range (e.g. 'main..feature', 'HEAD~5..HEAD')",
-          ),
+          .describe("Git ref range (e.g. 'main..feature', 'HEAD~5..HEAD')"),
         exclude: z
           .string()
           .optional()

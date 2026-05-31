@@ -1,8 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { TIMEOUT, exec } from "#exec";
-import { diagnosticSchema } from "../../parsers/schemas.js";
+import { exec, TIMEOUT } from "#exec";
 import { ok } from "#response";
+import { diagnosticSchema } from "../../parsers/schemas.js";
 import { parseTscOutput } from "./parsers/tsc.js";
 
 /** Register the npm_typecheck tool for structured tsc/tsgo type errors. */
@@ -33,7 +33,10 @@ export function registerNpmTypecheckTool(server: McpServer) {
       const args = [compiler, "--noEmit", "--pretty", "false"];
       if (project) args.push("-p", project);
 
-      const result = await exec("npx", args, { cwd, timeout: TIMEOUT.TYPECHECK });
+      const result = await exec("npx", args, {
+        cwd,
+        timeout: TIMEOUT.TYPECHECK,
+      });
 
       const output = result.stdout || result.stderr;
       const errors = parseTscOutput(output);

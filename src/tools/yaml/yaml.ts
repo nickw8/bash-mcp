@@ -9,8 +9,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execWithStdin } from "#exec";
-import { parseJsonishOutput } from "../../parsers/json-output.js";
 import { err, ok } from "#response";
+import { parseJsonishOutput } from "../../parsers/json-output.js";
 
 /** Register the yq tool on the MCP server. */
 export function registerYamlTools(server: McpServer) {

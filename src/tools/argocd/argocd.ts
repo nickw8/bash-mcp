@@ -8,7 +8,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { TIMEOUT, exec, execJson } from "#exec";
+import { exec, execJson, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
 
 /** Register all ArgoCD tools on the MCP server. */

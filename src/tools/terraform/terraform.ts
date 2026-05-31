@@ -9,7 +9,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { TIMEOUT, exec, execJson } from "#exec";
+import { exec, execJson, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
 
 /** Register all Terraform tools on the MCP server. */
@@ -157,7 +157,10 @@ export function registerTerraformTools(server: McpServer) {
       if (target) args.push(`-target=${target}`);
       if (varFile) args.push(`-var-file=${varFile}`);
 
-      const result = await exec("terraform", args, { cwd, timeout: TIMEOUT.BUILD });
+      const result = await exec("terraform", args, {
+        cwd,
+        timeout: TIMEOUT.BUILD,
+      });
 
       const changes: { action: string; address: string; type: string }[] = [];
       let add = 0,

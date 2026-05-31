@@ -10,7 +10,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
 import type { ListFormat } from "#format";
-import { err, ok, okList } from "#response";
+import { err, okList } from "#response";
 
 /** Register all search tools on the MCP server. */
 export function registerSearchTools(server: McpServer) {

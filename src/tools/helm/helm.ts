@@ -7,7 +7,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { TIMEOUT, execJson } from "#exec";
+import { execJson, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
 
 /** Register all Helm tools on the MCP server. */

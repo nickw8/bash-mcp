@@ -1,8 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { IS_MACOS, exec } from "#exec";
+import { exec, IS_MACOS } from "#exec";
 import type { ListFormat } from "#format";
-import { err, ok, okList } from "#response";
+import { err, okList } from "#response";
 
 /** Parse a timespan string (e.g. "7d", "1h", "30m") into minutes for find -mmin. */
 function parseTimespan(s: string): number {

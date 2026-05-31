@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { IS_MACOS, exec } from "#exec";
+import { exec, IS_MACOS } from "#exec";
 import { err, ok } from "#response";
 
 /** Format bytes into a human-readable size string (e.g. 1024 -> "1.0KB"). */

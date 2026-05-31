@@ -11,9 +11,9 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { TIMEOUT, exec } from "#exec";
-import { countBySeverity, diagnosticSchema } from "../../parsers/schemas.js";
+import { exec, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
+import { countBySeverity, diagnosticSchema } from "../../parsers/schemas.js";
 import { detectSolution } from "./detect.js";
 import { parseMSBuildOutput } from "./parsers/msbuild.js";
 
@@ -61,7 +61,10 @@ export function registerDotnetBuildTool(server: McpServer) {
         "-consoleloggerparameters:NoSummary;NoItemAndPropertyList",
       );
 
-      const result = await exec("dotnet", args, { cwd, timeout: TIMEOUT.BUILD });
+      const result = await exec("dotnet", args, {
+        cwd,
+        timeout: TIMEOUT.BUILD,
+      });
 
       const output = `${result.stdout}\n${result.stderr}`;
       const allDiagnostics = parseMSBuildOutput(output);
