@@ -1,8 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, TIMEOUT } from "#exec";
-import { ok } from "#response";
 import { defineTool } from "#tool";
+import {
+  diagnosticInputSchema,
+  diagnosticsResponse,
+} from "../../parsers/diagnostics-response.js";
 import { diagnosticSchema } from "../../parsers/schemas.js";
 import { parseMypyOutput } from "./parsers/mypy.js";
 
@@ -21,6 +24,7 @@ export function registerPythonTypecheckTool(server: McpServer) {
           .array(z.string())
           .optional()
           .describe("Specific paths to check (default: '.')"),
+        ...diagnosticInputSchema,
       },
       outputSchema: {
         errors: z.array(diagnosticSchema),
@@ -29,7 +33,7 @@ export function registerPythonTypecheckTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ cwd, paths }) => {
+    async ({ cwd, paths, format, fields, detailLevel, maxItems }) => {
       const args = [
         "--show-column-numbers",
         "--no-color-output",
@@ -45,11 +49,16 @@ export function registerPythonTypecheckTool(server: McpServer) {
       const output = result.stdout || result.stderr;
       const errors = parseMypyOutput(output);
 
-      return ok({
+      return diagnosticsResponse(
+        { errors, errorCount: errors.length, success: result.exitCode === 0 },
         errors,
-        errorCount: errors.length,
-        success: result.exitCode === 0,
-      });
+        {
+          format,
+          fields,
+          budget: { detailLevel, maxItems },
+          meta: { errorCount: errors.length },
+        },
+      );
     },
   );
 }

@@ -1,1 +1,5 @@
-{"errors":[{"file":"/proj/Services/UserService.cs","line":28,"column":17,"severity":"error","rule":"CS0103","message":"The name 'cach' does not exist in the current context"},{"file":"/proj/Services/UserService.cs","line":40,"column":9,"severity":"warning","rule":"CS0168","message":"The variable 'ex' is declared but never used"}],"errorCount":1,"warningCount":1,"success":false}
+errorCount	1
+warningCount	1
+---
+/proj/Services/UserService.cs:
+28:17	CS0103	The name 'cach' does not exist in the current context

@@ -1,1 +1,6 @@
-{"errors":[{"file":"src/auth.ts","line":12,"column":9,"severity":"error","rule":"TS2304","message":"Cannot find name 'tokenn'."},{"file":"src/server.ts","line":45,"column":3,"severity":"error","rule":"TS2554","message":"Expected 2 arguments, but got 1."}],"errorCount":2,"success":false}
+errorCount	2
+---
+src/auth.ts:
+12:9	TS2304	Cannot find name 'tokenn'.
+src/server.ts:
+45:3	TS2554	Expected 2 arguments, but got 1.

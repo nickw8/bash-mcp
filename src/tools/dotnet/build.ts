@@ -12,8 +12,12 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, TIMEOUT } from "#exec";
-import { err, ok } from "#response";
+import { err } from "#response";
 import { defineTool } from "#tool";
+import {
+  diagnosticInputSchema,
+  diagnosticsResponse,
+} from "../../parsers/diagnostics-response.js";
 import { countBySeverity, diagnosticSchema } from "../../parsers/schemas.js";
 import { detectSolution } from "./detect.js";
 import { parseMSBuildOutput } from "./parsers/msbuild.js";
@@ -40,6 +44,7 @@ export function registerDotnetBuildTool(server: McpServer) {
           .string()
           .optional()
           .describe("Build configuration (e.g. Debug, Release)"),
+        ...diagnosticInputSchema,
       },
       outputSchema: {
         diagnostics: z.array(diagnosticSchema),
@@ -49,7 +54,15 @@ export function registerDotnetBuildTool(server: McpServer) {
         summary: z.string(),
       },
     },
-    async ({ cwd, project, configuration }) => {
+    async ({
+      cwd,
+      project,
+      configuration,
+      format,
+      fields,
+      detailLevel,
+      maxItems,
+    }) => {
       const args = ["build"];
 
       const target = project ?? detectSolution(cwd);
@@ -96,7 +109,12 @@ export function registerDotnetBuildTool(server: McpServer) {
         return err(output.slice(0, 500), structured);
       }
 
-      return ok(structured);
+      return diagnosticsResponse(structured, diagnostics, {
+        format,
+        fields,
+        budget: { detailLevel, maxItems },
+        meta: { errorCount, warningCount },
+      });
     },
   );
 }

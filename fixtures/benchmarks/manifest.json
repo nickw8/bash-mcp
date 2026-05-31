@@ -63,7 +63,7 @@
     "id": "rg",
     "command": "ripgrep (→ rg)",
     "weight": 8,
-    "budget": 61
+    "budget": 49
   },
   {
     "id": "outline",
@@ -129,7 +129,7 @@
     "id": "npm_typecheck",
     "command": "tsc --noEmit (→ npm_typecheck)",
     "weight": 3,
-    "budget": 95
+    "budget": 52
   },
   {
     "id": "python_test",
@@ -141,7 +141,7 @@
     "id": "dotnet_build",
     "command": "dotnet build (→ dotnet_build)",
     "weight": 1,
-    "budget": 115
+    "budget": 43
   },
   {
     "id": "check_environment",

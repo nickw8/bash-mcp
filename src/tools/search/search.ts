@@ -12,6 +12,7 @@ import { exec } from "#exec";
 import type { ListFormat } from "#format";
 import { err, okList } from "#response";
 import { defineTool } from "#tool";
+import { windowMatchText } from "./window.js";
 
 /** Register all search tools on the MCP server. */
 export function registerSearchTools(server: McpServer) {
@@ -56,11 +57,18 @@ export function registerSearchTools(server: McpServer) {
           .boolean()
           .optional()
           .describe("Treat pattern as literal string"),
+        maxLineLength: z
+          .number()
+          .optional()
+          .default(300)
+          .describe(
+            "Window matched line text to ~this many chars centered on the match, so long/minified lines don't dump in full (0 = unlimited, default 300)",
+          ),
         format: z
           .enum(["json", "tsv", "columnar", "bare", "grouped"])
           .optional()
           .describe(
-            "Output format: tsv (default), json, columnar (keys once), bare (no header), grouped (file header once then line+text, ripgrep-style)",
+            "Output format: grouped (default for matches, file header once then line+text, ripgrep-style), tsv, json, columnar (keys once), bare (no header). filesOnly defaults to bare, countPerFile to tsv.",
           ),
         fields: z
           .array(z.string())
@@ -75,6 +83,7 @@ export function registerSearchTools(server: McpServer) {
             file: z.string(),
             line: z.number(),
             text: z.string(),
+            kind: z.enum(["match", "context"]).optional(),
           }),
         ),
         fileCount: z.number(),
@@ -96,13 +105,14 @@ export function registerSearchTools(server: McpServer) {
       filesOnly,
       countPerFile,
       fixedStrings,
+      maxLineLength,
       format,
       fields,
     }) => {
-      const fmt = (format ?? "tsv") as ListFormat;
       const limit = maxResults ?? 100;
 
       if (countPerFile) {
+        const fmt = (format ?? "tsv") as ListFormat;
         const args = ["--count-matches", "--no-heading"];
         if (ignoreCase) args.push("-i");
         if (glob) args.push("-g", glob);
@@ -151,6 +161,7 @@ export function registerSearchTools(server: McpServer) {
       }
 
       if (filesOnly) {
+        const fmt = (format ?? "bare") as ListFormat;
         const args = ["--files-with-matches", "--no-heading"];
         if (ignoreCase) args.push("-i");
         if (glob) args.push("-g", glob);
@@ -176,6 +187,9 @@ export function registerSearchTools(server: McpServer) {
         );
       }
 
+      const fmt = (format ?? "grouped") as ListFormat;
+      const maxLen = maxLineLength ?? 0;
+
       const args = ["--json", `--max-count=${Math.min(limit, 500)}`];
       if (ignoreCase) args.push("-i");
       if (glob) args.push("-g", glob);
@@ -196,42 +210,86 @@ export function registerSearchTools(server: McpServer) {
         });
       }
 
-      const matches: { file: string; line: number; text: string }[] = [];
+      // Collect matches and (when requested) context lines, in rg's emit order.
+      const entries: {
+        file: string;
+        line: number;
+        text: string;
+        kind: "match" | "context";
+      }[] = [];
       const filesSeen = new Set<string>();
+      let matchCount = 0;
 
       for (const line of result.stdout.split("\n").filter(Boolean)) {
+        let msg: { type?: string; data?: Record<string, unknown> };
         try {
-          const msg = JSON.parse(line);
-          if (msg.type === "match") {
-            const file = msg.data.path.text;
-            filesSeen.add(file);
-            if (matches.length < limit) {
-              matches.push({
-                file,
-                line: msg.data.line_number,
-                text: msg.data.lines.text.trimEnd(),
-              });
-            }
-          }
+          msg = JSON.parse(line);
         } catch {
-          // skip malformed lines
+          continue; // skip malformed lines
+        }
+        const data = msg.data as
+          | {
+              path?: { text?: string };
+              line_number?: number;
+              lines?: { text?: string };
+              submatches?: { start: number; end: number }[];
+            }
+          | undefined;
+        if (!data?.path?.text || data.lines?.text === undefined) continue;
+
+        if (msg.type === "match") {
+          filesSeen.add(data.path.text);
+          if (matchCount >= limit) continue;
+          matchCount++;
+          const sub = data.submatches?.[0];
+          const text = sub
+            ? windowMatchText(data.lines.text, sub.start, sub.end, maxLen)
+            : data.lines.text.trim();
+          entries.push({
+            file: data.path.text,
+            line: data.line_number ?? 0,
+            text,
+            kind: "match",
+          });
+        } else if (msg.type === "context" && context) {
+          entries.push({
+            file: data.path.text,
+            line: data.line_number ?? 0,
+            text: windowMatchText(data.lines.text, 0, 0, maxLen),
+            kind: "context",
+          });
         }
       }
+
+      const truncated = matchCount >= limit;
+      const withContext = Boolean(context);
+
+      // structuredContent keeps numeric lines; carry `kind` only when context
+      // was requested (otherwise every entry is a match — keep the lean shape).
+      const matches = entries.map((e) =>
+        withContext
+          ? { file: e.file, line: e.line, text: e.text, kind: e.kind }
+          : { file: e.file, line: e.line, text: e.text },
+      );
+
+      // Text rows mark context lines with a trailing `-` on the line number
+      // (ripgrep's grep convention), so grouped/tsv output distinguishes them.
+      const textRows = entries.map((e) => ({
+        file: e.file,
+        line: e.kind === "context" ? `${e.line}-` : e.line,
+        text: e.text,
+      }));
 
       const structured = {
         matches,
         fileCount: filesSeen.size,
-        matchCount: matches.length,
-        truncated: matches.length >= limit,
+        matchCount,
+        truncated,
       };
       return okList(
         structured,
-        matches,
-        {
-          fileCount: filesSeen.size,
-          matchCount: matches.length,
-          truncated: matches.length >= limit,
-        },
+        textRows,
+        { fileCount: filesSeen.size, matchCount, truncated },
         fmt,
         { fields },
       );

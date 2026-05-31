@@ -1,8 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, TIMEOUT } from "#exec";
-import { ok } from "#response";
 import { defineTool } from "#tool";
+import {
+  diagnosticInputSchema,
+  diagnosticsResponse,
+} from "../../parsers/diagnostics-response.js";
 import { diagnosticSchema } from "../../parsers/schemas.js";
 import { parseTscOutput } from "./parsers/tsc.js";
 
@@ -22,6 +25,7 @@ export function registerNpmTypecheckTool(server: McpServer) {
           .string()
           .optional()
           .describe("Path to tsconfig.json (default: auto-detected by tsc)"),
+        ...diagnosticInputSchema,
       },
       outputSchema: {
         errors: z.array(diagnosticSchema),
@@ -30,7 +34,7 @@ export function registerNpmTypecheckTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ cwd, project }) => {
+    async ({ cwd, project, format, fields, detailLevel, maxItems }) => {
       // Try tsgo first (faster), fall back to tsc
       const compiler = await detectCompiler(cwd);
       const args = [compiler, "--noEmit", "--pretty", "false"];
@@ -44,11 +48,16 @@ export function registerNpmTypecheckTool(server: McpServer) {
       const output = result.stdout || result.stderr;
       const errors = parseTscOutput(output);
 
-      return ok({
+      return diagnosticsResponse(
+        { errors, errorCount: errors.length, success: result.exitCode === 0 },
         errors,
-        errorCount: errors.length,
-        success: result.exitCode === 0,
-      });
+        {
+          format,
+          fields,
+          budget: { detailLevel, maxItems },
+          meta: { errorCount: errors.length },
+        },
+      );
     },
   );
 }

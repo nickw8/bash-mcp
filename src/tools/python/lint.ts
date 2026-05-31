@@ -3,6 +3,10 @@ import { z } from "zod";
 import { exec } from "#exec";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
+import {
+  diagnosticInputSchema,
+  diagnosticsResponse,
+} from "../../parsers/diagnostics-response.js";
 import { countBySeverity, diagnosticSchema } from "../../parsers/schemas.js";
 import { parseRuffDiagnostics } from "./parsers/ruff.js";
 
@@ -31,6 +35,7 @@ export function registerPythonLintTool(server: McpServer) {
           .describe(
             "Minimum severity to include (e.g. 'error' drops warnings and info)",
           ),
+        ...diagnosticInputSchema,
       },
       outputSchema: {
         errors: z.array(diagnosticSchema),
@@ -39,7 +44,16 @@ export function registerPythonLintTool(server: McpServer) {
         fixedCount: z.number(),
       },
     },
-    async ({ cwd, fix, paths, minSeverity }) => {
+    async ({
+      cwd,
+      fix,
+      paths,
+      minSeverity,
+      format,
+      fields,
+      detailLevel,
+      maxItems,
+    }) => {
       const args = ["check", "--output-format", "json"];
       if (fix) args.push("--fix");
       args.push(...(paths ?? ["."]));
@@ -71,12 +85,16 @@ export function registerPythonLintTool(server: McpServer) {
         const fixedMatch = output.match(/Fixed (\d+) file/);
         const fixedCount = fixedMatch ? parseInt(fixedMatch[1] ?? "0", 10) : 0;
 
-        return ok({
-          errors: diagnostics,
-          errorCount,
-          warningCount,
-          fixedCount,
-        });
+        return diagnosticsResponse(
+          { errors: diagnostics, errorCount, warningCount, fixedCount },
+          diagnostics,
+          {
+            format,
+            fields,
+            budget: { detailLevel, maxItems },
+            meta: { errorCount, warningCount, fixedCount },
+          },
+        );
       } catch {
         return err("Failed to parse ruff JSON output", {
           errors: [
