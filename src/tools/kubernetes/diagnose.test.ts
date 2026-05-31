@@ -10,7 +10,12 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { diagnosePod } from "./diagnose.js";
+import {
+  diagnoseDeployment,
+  diagnosePod,
+  type KubeEvent,
+  summarizeEvents,
+} from "./diagnose.js";
 import type { KubeResource } from "./parse.js";
 
 const fixtures = join(
@@ -68,5 +73,46 @@ describe("diagnosePod", () => {
   it("never throws on malformed input", () => {
     expect(() => diagnosePod({})).not.toThrow();
     expect(diagnosePod({}).status).toBe("Unknown");
+  });
+});
+
+describe("summarizeEvents (fixtures/kubectl/events.json)", () => {
+  const list = JSON.parse(
+    readFileSync(join(fixtures, "events.json"), "utf8"),
+  ) as { items: KubeEvent[] };
+
+  it("keeps only Warning events, ordered by count", () => {
+    const d = summarizeEvents(list.items);
+    expect(d.status).toBe("Warning");
+    expect(d.evidence).toHaveLength(2);
+    expect(d.evidence[0]).toContain("BackOff x12"); // highest count first
+    expect(d.evidence.join(" ")).not.toContain("Pulled"); // Normal dropped
+  });
+
+  it("reports OK with no warnings", () => {
+    const d = summarizeEvents([{ type: "Normal", reason: "Pulled" }]);
+    expect(d.status).toBe("OK");
+    expect(d.evidence).toHaveLength(0);
+  });
+});
+
+describe("diagnoseDeployment", () => {
+  it("flags a degraded deployment (fixtures/kubectl/deployment-degraded.json)", () => {
+    const dep = JSON.parse(
+      readFileSync(join(fixtures, "deployment-degraded.json"), "utf8"),
+    ) as KubeResource;
+    const d = diagnoseDeployment(dep);
+    expect(d.status).toBe("Degraded");
+    expect(d.evidence[0]).toBe("1/3 replicas ready");
+    expect(d.evidence.join(" ")).toContain("Available=False");
+  });
+
+  it("reports Available when replicas are satisfied", () => {
+    const dep: KubeResource = {
+      metadata: { name: "ok", namespace: "default" },
+      spec: { replicas: 2 },
+      status: { replicas: 2, readyReplicas: 2, availableReplicas: 2 },
+    };
+    expect(diagnoseDeployment(dep).status).toBe("Available");
   });
 });

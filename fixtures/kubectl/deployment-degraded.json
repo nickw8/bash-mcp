@@ -1,0 +1,19 @@
+{
+  "kind": "Deployment",
+  "metadata": { "name": "api", "namespace": "default" },
+  "spec": { "replicas": 3 },
+  "status": {
+    "replicas": 3,
+    "readyReplicas": 1,
+    "availableReplicas": 1,
+    "unavailableReplicas": 2,
+    "conditions": [
+      {
+        "type": "Available",
+        "status": "False",
+        "reason": "MinimumReplicasUnavailable",
+        "message": "Deployment does not have minimum availability."
+      }
+    ]
+  }
+}

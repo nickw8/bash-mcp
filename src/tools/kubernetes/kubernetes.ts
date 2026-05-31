@@ -13,6 +13,7 @@ import { err, ok } from "#response";
 import { defineTool } from "#tool";
 import { parseJsonishOutput } from "../../parsers/json-output.js";
 import { applyBudget, budgetSchema } from "../../parsers/schemas.js";
+import { registerKubeDiagnosticTools } from "./diagnostics.js";
 import {
   type KubeList,
   parseContexts,
@@ -266,4 +267,7 @@ export function registerKubernetesTools(server: McpServer) {
       return ok(parseContexts(result.stdout));
     },
   );
+
+  // ── Higher-level diagnostics ────────────────────────────────────────
+  registerKubeDiagnosticTools(server);
 }

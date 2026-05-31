@@ -1,0 +1,29 @@
+{
+  "kind": "List",
+  "apiVersion": "v1",
+  "items": [
+    {
+      "type": "Warning",
+      "reason": "FailedScheduling",
+      "message": "0/3 nodes are available: 3 Insufficient cpu.",
+      "involvedObject": { "kind": "Pod", "name": "pend-1" },
+      "count": 5,
+      "lastTimestamp": "2024-01-01T00:00:00Z"
+    },
+    {
+      "type": "Warning",
+      "reason": "BackOff",
+      "message": "Back-off restarting failed container=app",
+      "involvedObject": { "kind": "Pod", "name": "crash-1" },
+      "count": 12,
+      "lastTimestamp": "2024-01-01T00:01:00Z"
+    },
+    {
+      "type": "Normal",
+      "reason": "Pulled",
+      "message": "Container image already present on machine",
+      "involvedObject": { "kind": "Pod", "name": "web-7d9f" },
+      "count": 1
+    }
+  ]
+}

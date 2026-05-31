@@ -20,6 +20,16 @@ export interface Diagnosis {
   evidence: string[];
 }
 
+/** A Kubernetes event from `kubectl get events -o json`. */
+export interface KubeEvent {
+  type?: string;
+  reason?: string;
+  message?: string;
+  count?: number;
+  lastTimestamp?: string;
+  involvedObject?: { kind?: string; name?: string };
+}
+
 interface FailureRule {
   /** Short machine reason (also used as the overall status when primary). */
   reason: string;
@@ -138,4 +148,71 @@ export function diagnosePod(pod: KubeResource): Diagnosis {
   }
 
   return { status, likelyCauses, suggestedNextCommands, evidence };
+}
+
+/** Summarize `kubectl get events` into the warning-focused diagnostic shape. */
+export function summarizeEvents(events: KubeEvent[]): Diagnosis {
+  const warnings = events
+    .filter((e) => e.type === "Warning")
+    .sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
+
+  const evidence = warnings.map((e) => {
+    const obj = e.involvedObject
+      ? `${e.involvedObject.kind ?? "?"}/${e.involvedObject.name ?? "?"}`
+      : "cluster";
+    const times = e.count && e.count > 1 ? ` x${e.count}` : "";
+    return `${e.reason ?? "Warning"}${times} on ${obj}: ${e.message ?? ""}`.trim();
+  });
+
+  return {
+    status: warnings.length ? "Warning" : "OK",
+    likelyCauses: warnings.length
+      ? [
+          "Warning events point at scheduling, image-pull, or crash issues on the named objects.",
+        ]
+      : [],
+    suggestedNextCommands: warnings.length
+      ? ["kube_pod_failure_summary", "kube_diagnose_pod"]
+      : [],
+    evidence,
+  };
+}
+
+/** Diagnose a Deployment's rollout health from its replica counts/conditions. */
+export function diagnoseDeployment(dep: KubeResource): Diagnosis {
+  const desired = dep.spec?.replicas ?? 0;
+  const ready = dep.status?.readyReplicas ?? 0;
+  const available = dep.status?.availableReplicas ?? 0;
+  const ns = dep.metadata?.namespace ?? "default";
+
+  const evidence: string[] = [`${ready}/${desired} replicas ready`];
+  const likelyCauses: string[] = [];
+  let status = "Available";
+
+  if (ready < desired || available < desired) {
+    status = "Degraded";
+    likelyCauses.push(
+      "Not all replicas are available; inspect the failing pods.",
+    );
+  }
+
+  const badCond = dep.status?.conditions?.find(
+    (c) =>
+      (c.type === "Available" && c.status === "False") ||
+      (c.type === "Progressing" && c.status === "False"),
+  );
+  if (badCond) {
+    status = "Degraded";
+    const reason = badCond.reason ? ` (${badCond.reason})` : "";
+    const msg = badCond.message ? `: ${badCond.message}` : "";
+    evidence.push(`${badCond.type}=False${reason}${msg}`);
+  }
+
+  return {
+    status,
+    likelyCauses,
+    suggestedNextCommands:
+      status === "Degraded" ? [`kube_pod_failure_summary namespace=${ns}`] : [],
+    evidence,
+  };
 }
