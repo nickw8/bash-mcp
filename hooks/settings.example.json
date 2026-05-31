@@ -1,0 +1,21 @@
+{
+  "//": "Recommended Claude Code hooks for bash-mcp. Copy the PreToolUse entry into",
+  "//1": "your project .claude/settings.json or your global ~/.claude/settings.json.",
+  "//2": "$CLAUDE_PROJECT_DIR resolves to the repo root; for a global install use an",
+  "//3": "absolute path to the script instead.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/hooks/bash-mcp-redirect.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking for bash-mcp alternatives..."
+          }
+        ]
+      }
+    ]
+  }
+}
