@@ -66,6 +66,12 @@
     "budget": 49
   },
   {
+    "id": "rg_extract",
+    "command": "rg process.env (→ rg only/replace)",
+    "weight": 3,
+    "budget": 60
+  },
+  {
     "id": "outline",
     "command": "cat full file (→ outline)",
     "weight": 8,

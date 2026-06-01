@@ -12,7 +12,7 @@ import { exec } from "#exec";
 import type { ListFormat } from "#format";
 import { err, okList } from "#response";
 import { defineTool } from "#tool";
-import { windowMatchText } from "./window.js";
+import { parseRgJson } from "./parse.js";
 
 /** Register all search tools on the MCP server. */
 export function registerSearchTools(server: McpServer) {
@@ -24,21 +24,45 @@ export function registerSearchTools(server: McpServer) {
       title: "Ripgrep search",
       description:
         "Search file contents with ripgrep. Returns structured matches with file, line number, and matched text. Far more compact than raw rg output. " +
-        "Use glob to filter by file type (e.g. '*.ts'), ignoreCase for case-insensitive search, " +
-        "filesOnly for just filenames, or countPerFile for match counts per file.",
+        "Use glob (string or array, '!' to exclude) to filter files, ignoreCase for case-insensitive search, " +
+        "filesOnly for just filenames, countPerFile for match counts per file, maxPerFile to cap hits per file. " +
+        "For 'collect all X' tasks use only:true to return just the matched substrings (one row per hit) — add replace ($1 capture groups) to extract structured values.",
       inputSchema: {
         pattern: z.string().describe("Regex pattern to search for"),
         path: z
           .string()
           .optional()
           .describe("Directory or file to search (default: cwd)"),
-        glob: z.string().optional().describe("File glob filter (e.g. '*.ts')"),
+        glob: z
+          .union([z.string(), z.array(z.string())])
+          .optional()
+          .describe(
+            "File glob filter(s); a string or array. Prefix with '!' to exclude (e.g. ['*.ts','!*.test.ts'])",
+          ),
         ignoreCase: z.boolean().optional().describe("Case-insensitive search"),
         maxResults: z
           .number()
           .optional()
           .default(100)
-          .describe("Max results to return (default 100)"),
+          .describe("Max results to return across all files (default 100)"),
+        maxPerFile: z
+          .number()
+          .optional()
+          .describe(
+            "Cap matches per file (rg --max-count), independent of maxResults — keeps one hot file from dominating",
+          ),
+        only: z
+          .boolean()
+          .optional()
+          .describe(
+            "Return only the matched substring(s), not the whole line — one row per match. Best for collecting tokens (versions, names, URLs)",
+          ),
+        replace: z
+          .string()
+          .optional()
+          .describe(
+            "Rewrite each match with this template ($1, $2 capture groups) and return the result; implies only-match extraction",
+          ),
         context: z
           .number()
           .optional()
@@ -101,6 +125,9 @@ export function registerSearchTools(server: McpServer) {
       glob,
       ignoreCase,
       maxResults,
+      maxPerFile,
+      only,
+      replace,
       context,
       filesOnly,
       countPerFile,
@@ -110,12 +137,16 @@ export function registerSearchTools(server: McpServer) {
       fields,
     }) => {
       const limit = maxResults ?? 100;
+      const globs = glob ? (Array.isArray(glob) ? glob : [glob]) : [];
+      const pushGlobs = (args: string[]) => {
+        for (const g of globs) args.push("-g", g);
+      };
 
       if (countPerFile) {
         const fmt = (format ?? "tsv") as ListFormat;
         const args = ["--count-matches", "--no-heading"];
         if (ignoreCase) args.push("-i");
-        if (glob) args.push("-g", glob);
+        pushGlobs(args);
         if (fixedStrings) args.push("-F");
         args.push(pattern);
         if (path) args.push(path);
@@ -164,7 +195,7 @@ export function registerSearchTools(server: McpServer) {
         const fmt = (format ?? "bare") as ListFormat;
         const args = ["--files-with-matches", "--no-heading"];
         if (ignoreCase) args.push("-i");
-        if (glob) args.push("-g", glob);
+        pushGlobs(args);
         if (fixedStrings) args.push("-F");
         args.push(pattern);
         if (path) args.push(path);
@@ -189,12 +220,17 @@ export function registerSearchTools(server: McpServer) {
 
       const fmt = (format ?? "grouped") as ListFormat;
       const maxLen = maxLineLength ?? 0;
+      // Extract mode: emit matched substrings (or capture-group rewrites)
+      // instead of whole lines. `replace` implies extraction.
+      const extract = only === true || replace !== undefined;
+      const perFileCap = maxPerFile ?? Math.min(limit, 500);
 
-      const args = ["--json", `--max-count=${Math.min(limit, 500)}`];
+      const args = ["--json", `--max-count=${perFileCap}`];
       if (ignoreCase) args.push("-i");
-      if (glob) args.push("-g", glob);
-      if (context) args.push("-C", String(context));
+      pushGlobs(args);
+      if (context && !extract) args.push("-C", String(context));
       if (fixedStrings) args.push("-F");
+      if (replace !== undefined) args.push("-r", replace);
       args.push(pattern);
       if (path) args.push(path);
 
@@ -211,58 +247,16 @@ export function registerSearchTools(server: McpServer) {
       }
 
       // Collect matches and (when requested) context lines, in rg's emit order.
-      const entries: {
-        file: string;
-        line: number;
-        text: string;
-        kind: "match" | "context";
-      }[] = [];
-      const filesSeen = new Set<string>();
-      let matchCount = 0;
-
-      for (const line of result.stdout.split("\n").filter(Boolean)) {
-        let msg: { type?: string; data?: Record<string, unknown> };
-        try {
-          msg = JSON.parse(line);
-        } catch {
-          continue; // skip malformed lines
-        }
-        const data = msg.data as
-          | {
-              path?: { text?: string };
-              line_number?: number;
-              lines?: { text?: string };
-              submatches?: { start: number; end: number }[];
-            }
-          | undefined;
-        if (!data?.path?.text || data.lines?.text === undefined) continue;
-
-        if (msg.type === "match") {
-          filesSeen.add(data.path.text);
-          if (matchCount >= limit) continue;
-          matchCount++;
-          const sub = data.submatches?.[0];
-          const text = sub
-            ? windowMatchText(data.lines.text, sub.start, sub.end, maxLen)
-            : data.lines.text.trim();
-          entries.push({
-            file: data.path.text,
-            line: data.line_number ?? 0,
-            text,
-            kind: "match",
-          });
-        } else if (msg.type === "context" && context) {
-          entries.push({
-            file: data.path.text,
-            line: data.line_number ?? 0,
-            text: windowMatchText(data.lines.text, 0, 0, maxLen),
-            kind: "context",
-          });
-        }
-      }
+      const { entries, matchCount, fileCount } = parseRgJson(result.stdout, {
+        limit,
+        extract,
+        replace,
+        context,
+        maxLen,
+      });
 
       const truncated = matchCount >= limit;
-      const withContext = Boolean(context);
+      const withContext = Boolean(context) && !extract;
 
       // structuredContent keeps numeric lines; carry `kind` only when context
       // was requested (otherwise every entry is a match — keep the lean shape).
@@ -282,14 +276,14 @@ export function registerSearchTools(server: McpServer) {
 
       const structured = {
         matches,
-        fileCount: filesSeen.size,
+        fileCount,
         matchCount,
         truncated,
       };
       return okList(
         structured,
         textRows,
-        { fileCount: filesSeen.size, matchCount, truncated },
+        { fileCount, matchCount, truncated },
         fmt,
         { fields },
       );

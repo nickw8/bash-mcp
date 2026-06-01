@@ -1,0 +1,9 @@
+src/config.ts
+3:const dbUrl = process.env.DATABASE_URL ?? "http://localhost:5432";
+4:const port = Number(process.env.PORT ?? 3000);
+9:if (process.env.NODE_ENV === "production") connectTls(process.env.TLS_CERT_PATH);
+12:const region = process.env.AWS_REGION;
+
+src/worker.ts
+5:const queue = process.env.QUEUE_NAME ?? "default";
+8:const retries = Number(process.env.MAX_RETRIES ?? "3");
