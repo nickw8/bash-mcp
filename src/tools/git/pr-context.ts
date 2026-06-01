@@ -23,6 +23,11 @@ export function registerGitPrContextTool(server: McpServer) {
     "git_pr_context",
     {
       title: "Git PR context",
+      equivalentCommands: [
+        "git log <base>..<head>",
+        "git diff --name-status <base>...<head>",
+        "git diff --stat <base>...<head>",
+      ],
       description:
         "Collect the commits and file changes of a branch vs a base ref (for writing a PR " +
         "description): commit list, changed files with status, and a diffstat over base...head.",

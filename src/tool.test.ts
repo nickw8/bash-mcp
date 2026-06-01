@@ -12,7 +12,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { describe, expect, it } from "vitest";
 import type { Logger, WideEvent } from "./logger.js";
 import { err, ok } from "./response.js";
-import { defineTool } from "./tool.js";
+import { defineTool, getRegisteredTools, resetRegistry } from "./tool.js";
 
 type Handler = (...args: unknown[]) => Promise<any>;
 type Captured = { name: string; config: unknown; handler: Handler };
@@ -47,7 +47,65 @@ describe("defineTool", () => {
     };
     defineTool(server, "t", config, async () => ok({ x: 1 }), logger);
     expect(captured[0]!.name).toBe("t");
-    expect(captured[0]!.config).toBe(config);
+    // config is rebuilt (equivalentCommands folded into _meta), so compare by value.
+    expect(captured[0]!.config).toEqual(config);
+  });
+
+  it("folds equivalentCommands into _meta, preserving caller _meta", () => {
+    const { server, captured } = fakeServer();
+    const { logger } = capturingLogger();
+    defineTool(
+      server,
+      "t",
+      {
+        inputSchema: {},
+        _meta: { foo: "bar" },
+        equivalentCommands: ["kubectl get pods -o json"],
+      },
+      async () => ok({}),
+      logger,
+    );
+    const cfg = captured[0]!.config as Record<string, unknown>;
+    expect(cfg._meta).toEqual({
+      foo: "bar",
+      equivalentCommands: ["kubectl get pods -o json"],
+    });
+    // equivalentCommands is not leaked as a top-level config field.
+    expect(cfg.equivalentCommands).toBeUndefined();
+  });
+
+  it("omits _meta entirely when no caller _meta or equivalentCommands", () => {
+    const { server, captured } = fakeServer();
+    const { logger } = capturingLogger();
+    defineTool(server, "t", { inputSchema: {} }, async () => ok({}), logger);
+    expect("_meta" in (captured[0]!.config as object)).toBe(false);
+  });
+
+  it("captures a flattened registry record (incl. equivalentCommands)", () => {
+    const { server } = fakeServer();
+    const { logger } = capturingLogger();
+    resetRegistry();
+    defineTool(
+      server,
+      "t",
+      {
+        title: "T",
+        description: "d",
+        annotations: { readOnlyHint: true },
+        inputSchema: {},
+        equivalentCommands: ["git status"],
+      },
+      async () => ok({}),
+      logger,
+    );
+    const record = getRegisteredTools().find((r) => r.name === "t");
+    expect(record).toMatchObject({
+      name: "t",
+      title: "T",
+      readOnlyHint: true,
+      equivalentCommands: ["git status"],
+    });
+    resetRegistry();
   });
 
   it("preserves a successful result and logs a success event once", async () => {

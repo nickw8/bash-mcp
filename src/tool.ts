@@ -36,6 +36,45 @@ interface ToolConfig<
   outputSchema?: OutputArgs;
   annotations?: ToolAnnotations;
   _meta?: Record<string, unknown>;
+  /**
+   * Raw CLI command(s) this structured tool approximates. Folded into the tool's
+   * MCP `_meta` (so clients can show "here is what I would have run") and captured
+   * in the tool registry for the generated reference (`docs/tools.md`).
+   */
+  equivalentCommands?: string[];
+}
+
+/**
+ * A flattened record of a registered tool, captured as a side effect of
+ * `defineTool` for doc generation. Read via `getRegisteredTools()`; the live
+ * server ignores it. See `src/registry.ts` for `buildRegistry()`.
+ */
+export interface ToolRecord {
+  name: string;
+  title?: string;
+  description?: string;
+  readOnlyHint?: boolean;
+  equivalentCommands?: string[];
+  inputSchema?: ZodRawShape;
+  outputSchema?: ZodRawShape;
+  /**
+   * README category, assigned by `buildRegistry()` from the tool group's label
+   * (not set by `defineTool`, which is group-agnostic). Drives the grouped
+   * "## Tools" section in README.md.
+   */
+  category?: string;
+}
+
+const registry: ToolRecord[] = [];
+
+/** Tools registered via `defineTool` since the last reset (insertion order). */
+export function getRegisteredTools(): ToolRecord[] {
+  return registry;
+}
+
+/** Clear the registry — call before re-registering to avoid duplicates. */
+export function resetRegistry(): void {
+  registry.length = 0;
 }
 
 /** Minimal shape we read off a handler result for outcome classification. */
@@ -100,9 +139,27 @@ export function defineTool<
     }
   };
 
+  // Fold equivalentCommands into _meta (preserving any caller _meta) and keep it
+  // out of the config the SDK sees. Capture a flattened record for doc gen.
+  const { equivalentCommands, ...rest } = config;
+  const meta = equivalentCommands
+    ? { ...config._meta, equivalentCommands }
+    : config._meta;
+  const registerConfig = meta ? { ...rest, _meta: meta } : rest;
+
+  registry.push({
+    name,
+    title: config.title,
+    description: config.description,
+    readOnlyHint: config.annotations?.readOnlyHint,
+    equivalentCommands,
+    inputSchema: config.inputSchema,
+    outputSchema: config.outputSchema,
+  });
+
   server.registerTool(
     name,
-    config,
+    registerConfig,
     wrapped as unknown as ToolCallback<InputArgs>,
   );
 }

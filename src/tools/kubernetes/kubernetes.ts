@@ -30,6 +30,7 @@ export function registerKubernetesTools(server: McpServer) {
     "kube_get",
     {
       title: "Kubectl get resources",
+      equivalentCommands: ["kubectl get <resource> -o json"],
       description:
         "Get Kubernetes resources as structured data. Wraps kubectl get -o json and returns a compact summary by default. " +
         "Use the jq param to extract specific fields from the raw JSON (e.g. '.spec.template.spec.containers[].env') instead of the summary.",

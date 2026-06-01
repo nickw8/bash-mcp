@@ -27,6 +27,20 @@ npm install && npm run build
 npm link
 ```
 
+## Verify your setup
+
+Run the built-in preflight check before wiring bash-mcp into a client:
+
+```bash
+npx -y @nickw8/bash-mcp --doctor   # or: bash-mcp --doctor (global install)
+```
+
+It reports your Node version, whether the MCP SDK loads, which CLIs are
+available (versions included), and the resolved `BASH_MCP_MODE` — then exits
+non-zero if a critical check fails (Node too old or the SDK can't load). Missing
+CLIs are advisory, not failures. Without `--doctor`, the binary starts the MCP
+server as usual.
+
 ## Claude Code Setup
 
 Add bash-mcp to your Claude Code settings. For **all projects** (recommended), edit `~/.claude/settings.json`. For a **single project**, edit `.claude/settings.json` in the project root.
@@ -38,11 +52,18 @@ Add bash-mcp to your Claude Code settings. For **all projects** (recommended), e
   "mcpServers": {
     "bash-mcp": {
       "command": "npx",
-      "args": ["-y", "@nickw8/bash-mcp"]
+      "args": ["-y", "@nickw8/bash-mcp"],
+      "env": {
+        "BASH_MCP_MODE": "readOnly"
+      }
     }
   }
 }
 ```
+
+> **Safe by default:** an unset `BASH_MCP_MODE` resolves to `readOnly`, which
+> blocks mutating `run`/`batch` commands. The examples set it explicitly for
+> clarity. For trusted local use, set `BASH_MCP_MODE=off` to allow writes.
 
 **With global install**:
 
@@ -50,7 +71,10 @@ Add bash-mcp to your Claude Code settings. For **all projects** (recommended), e
 {
   "mcpServers": {
     "bash-mcp": {
-      "command": "bash-mcp"
+      "command": "bash-mcp",
+      "env": {
+        "BASH_MCP_MODE": "readOnly"
+      }
     }
   }
 }
@@ -61,7 +85,7 @@ To verify it's working, start Claude Code and check that bash-mcp tools (like `c
 You can also add it from the CLI:
 
 ```bash
-claude mcp add bash-mcp -- npx -y @nickw8/bash-mcp
+claude mcp add bash-mcp -e BASH_MCP_MODE=readOnly -- npx -y @nickw8/bash-mcp
 ```
 
 ## Claude Desktop Setup
@@ -74,7 +98,10 @@ Windows: `%APPDATA%\Claude\`) and add the same `mcpServers` entry:
   "mcpServers": {
     "bash-mcp": {
       "command": "npx",
-      "args": ["-y", "@nickw8/bash-mcp"]
+      "args": ["-y", "@nickw8/bash-mcp"],
+      "env": {
+        "BASH_MCP_MODE": "readOnly"
+      }
     }
   }
 }
@@ -91,7 +118,10 @@ Add bash-mcp to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (per-project
   "mcpServers": {
     "bash-mcp": {
       "command": "npx",
-      "args": ["-y", "@nickw8/bash-mcp"]
+      "args": ["-y", "@nickw8/bash-mcp"],
+      "env": {
+        "BASH_MCP_MODE": "readOnly"
+      }
     }
   }
 }
@@ -137,131 +167,165 @@ See [docs/token-benchmarks.md](docs/token-benchmarks.md) for measured savings (e
 Read-only tools carry the MCP `readOnlyHint` annotation. `run`/`batch` can be gated with
 `BASH_MCP_MODE` (see [Configuration](#configuration)).
 
+## Which tool should I use?
+
+Pick the structured tool that matches your intent instead of reaching for a raw command.
+The `list_guidance` tool returns this same index as JSON (filter by `intent` or `category`),
+so agents can self-select without the README.
+
+<!-- BEGIN GENERATED: which-tool -->
+
+| I want to… | Use this | Instead of |
+|------------|----------|------------|
+| diagnose a crashing or failing Kubernetes pod | `kube_diagnose_pod` | `kubectl describe pod`, `kubectl logs` |
+| find all not-ready or failing pods in a namespace | `kube_pod_failure_summary` | `kubectl get pods`, `kubectl get pods \| grep` |
+| check a deployment's rollout health | `kube_deployment_status` | `kubectl rollout status`, `kubectl get deployment` |
+| understand recent cluster events | `kube_events_summary` | `kubectl get events` |
+| summarize the changes in a Terraform plan | `tf_plan_summary` | `terraform plan`, `terraform show` |
+| review the current feature branch before a PR | `git_pr_context` | `git diff`, `git log`, `git status` |
+| understand the overall state of a repository | `repo_health_summary` | `git status`, `git log --oneline` |
+| read a file's structure without loading the full body | `outline` | `cat (entire file)`, `cat` |
+| search for exact code references or symbols | `rg` | `grep -r`, `rg` |
+| triage why a Helm release is unhealthy | `helm_release_triage` | `helm status`, `helm get values` |
+| check whether an ArgoCD app is healthy and in sync | `argo_app_health_summary` | `argocd app get`, `argocd app list` |
+| discover which CLIs are installed before calling a tool | `check_environment` | `which`, `<tool> --version` |
+
+<!-- END GENERATED: which-tool -->
+
 ## Tools
+
+> 📖 **[Full tool reference → `docs/tools.md`](docs/tools.md)** — generated from the
+> registered tools (inputs, outputs, and the raw command each one approximates).
+> Regenerate with `npm run docs:tools`.
+
+<!-- BEGIN GENERATED: tools -->
 
 ### Environment
 
 | Tool | Description |
 |------|-------------|
-| `check_environment` | Discover which CLIs are installed/authenticated (node, kubectl + context, terraform/tofu, helm, argocd, jq, yq, rg, git, dotnet, ruff, mypy, pytest) — probes are client-only and never hang |
+| `check_environment` | Report which CLIs are installed (and their versions) so you can pick the right tool before calling it. |
+| `list_guidance` | Return an intent → preferred-tool index so you can pick the right bash-mcp tool for a goal. |
 
 ### Filesystem
 
 | Tool | Description |
 |------|-------------|
-| `ls` | List directory entries with type, size, permissions |
-| `tree` | Directory tree as structured nodes |
-| `du` | Disk usage with human-readable sizes |
-| `find_files` | Find files by name pattern, type, or modification time |
+| `ls` | List files in a directory. |
+| `tree` | Show directory structure as a compact tree. |
+| `du` | Show disk usage for paths. |
+| `find_files` | Find files by name pattern, type, or modification time. |
 
 ### Search
 
 | Tool | Description |
 |------|-------------|
-| `rg` | Ripgrep search with structured matches (file, line, text) |
-| `glob` | Find files matching a glob pattern |
+| `rg` | Search file contents with ripgrep. |
+| `glob` | Find files matching a glob pattern. |
 
 ### File
 
 | Tool | Description |
 |------|-------------|
-| `cat` | Read file contents with line numbers, smart truncation, and metadata |
-| `outline` | Structural outline of a file — function/class names, imports, constants (no bodies) |
+| `cat` | Read one or more files with line numbers and smart truncation. |
+| `outline` | Show the structural outline of a file — function/class names, top-level comments, imports. |
 
 ### Git
 
 | Tool | Description |
 |------|-------------|
-| `git_status` | Branch, staged/unstaged/untracked files, ahead/behind counts |
-| `git_log` | Commit history with hash, author, date, message |
-| `git_diff` | Diff summary with per-file insertion/deletion counts |
-| `git_diff_content` | Structured diff with parsed hunks per file (actual code changes) |
-| `git_branches` | Branch list with current marker and last commit |
-| `repo_health_summary` | One-call repo overview: branch/ahead-behind, recent commits, change stats |
-| `git_pr_context` | Branch-vs-base PR context: commits, changed files, diff stats |
+| `git_status` | Structured git status: branch, staged/unstaged/untracked files. |
+| `git_log` | Structured git log: commit hash, author, date, message. |
+| `git_diff` | Structured git diff: files changed with insertions/deletions counts. |
+| `git_branches` | List git branches with current branch marker and last commit info. |
+| `repo_health_summary` | One-call snapshot of a git working tree: branch, ahead/behind vs upstream, staged/unstaged/untracked counts, recent commits, and the uncommitted diffstat. |
+| `git_pr_context` | Collect the commits and file changes of a branch vs a base ref (for writing a PR description): commit list, changed files with status, and a diffstat over base...head. |
+| `git_diff_content` | Show git diff with structured patch content. |
 
 ### Kubernetes
 
 | Tool | Description |
 |------|-------------|
-| `kube_get` | Get resources as structured summaries (pods, deployments, etc.) |
-| `kube_logs` | Pod logs with parsed timestamps |
-| `kube_contexts` | List kubectl contexts with current marker |
-| `kube_diagnose_pod` | One-call pod triage: status, likely causes, suggested next commands, evidence |
-| `kube_pod_failure_summary` | Failed/not-ready pods across a namespace with failure reasons |
-| `kube_deployment_status` | Deployment rollout health: replicas, conditions, likely causes |
-| `kube_events_summary` | Recent warning events grouped and summarized |
+| `kube_get` | Get Kubernetes resources as structured data. |
+| `kube_logs` | Get pod logs. |
+| `kube_contexts` | List available kubectl contexts with current context marked. |
+| `kube_diagnose_pod` | Diagnose why a pod is unhealthy in one call. |
+| `kube_pod_failure_summary` | List unhealthy pods in a namespace with their failure reason and evidence — one call instead of get + describe per pod. |
+| `kube_deployment_status` | Report a deployment's rollout health (ready/desired replicas, conditions) as a structured diagnosis. |
+| `kube_events_summary` | Summarize Warning events in a namespace (grouped by reason, ordered by count) instead of scrolling raw kubectl get events. |
 
 ### Terraform
 
 | Tool | Description |
 |------|-------------|
-| `tf_state_list` | Resources in state, grouped by type |
-| `tf_show` | Current state as structured resource summaries |
-| `tf_plan_summary` | Plan output as add/change/destroy counts (or parse a saved `-json` plan) |
-| `tf_workspaces` | Workspace list with current marker |
-| `tf_outputs` | Output values (sensitive ones redacted) |
-| `tf_providers` | Provider dependencies and versions |
-| `tf_validate_summary` | `validate` result as structured diagnostics |
-| `tf_modules_summary` | Installed modules from `.terraform/modules` |
-| `tf_backend_info` | Configured backend type and settings |
-
-All `tf_*` tools accept `binary: "terraform" | "tofu"` (or set `$TF_BINARY`) to run OpenTofu.
+| `tf_state_list` | List resources in Terraform state. |
+| `tf_show` | Show current Terraform state as structured JSON. |
+| `tf_plan_summary` | Run terraform plan and return a structured summary of changes (add/change/destroy counts and affected resources). |
+| `tf_workspaces` | List Terraform workspaces with current workspace marked. |
+| `tf_outputs` | List Terraform/OpenTofu outputs (name, type, value) with sensitive values redacted. |
+| `tf_providers` | List the Terraform/OpenTofu version and selected provider versions for the project. |
+| `tf_validate_summary` | Validate the Terraform/OpenTofu config and return a compact pass/fail summary with diagnostics. |
+| `tf_modules_summary` | List the modules used by an initialized Terraform/OpenTofu project (key, source, version). |
+| `tf_backend_info` | Report the configured backend type and config for an initialized project. |
 
 ### Helm
 
 | Tool | Description |
 |------|-------------|
-| `helm_list` | Releases with status, chart version, app version |
-| `helm_status` | Detailed release status |
-| `helm_values` | Computed values for a release |
-| `helm_release_triage` | One-call release health: status + likely causes + next commands + revision evidence |
+| `helm_list` | List Helm releases with status, chart, and app version. |
+| `helm_status` | Get detailed status of a Helm release. |
+| `helm_values` | Get the computed values for a Helm release as structured data. |
+| `helm_release_triage` | Diagnose a Helm release's health in one call: combines helm status + helm history into current status, likely causes, suggested next commands, and recent-revision evidence. |
 
 ### ArgoCD
 
 | Tool | Description |
 |------|-------------|
-| `argo_apps` | Applications with sync/health status and summary counts |
-| `argo_app_detail` | Detailed app status including resource health |
-| `argo_app_diff` | What's out of sync for an application |
-| `argo_app_health_summary` | One-call app health: sync/health + likely causes + next commands + evidence |
+| `argo_apps` | List ArgoCD applications with sync/health status. |
+| `argo_app_detail` | Get detailed status for a single ArgoCD application including resource health. |
+| `argo_app_diff` | Show what's out of sync for an ArgoCD application. |
+| `argo_app_health_summary` | Diagnose an ArgoCD application's health in one call: overall sync/health, likely causes, suggested next commands, and the unhealthy resources/conditions as evidence. |
 
 ### Data Processing
 
 | Tool | Description |
 |------|-------------|
-| `jq` | Query/transform JSON files or strings with jq expressions |
-| `yq` | Query/transform YAML files or strings with yq expressions |
+| `jq` | Query and transform JSON using jq expressions. |
+| `yq` | Query and transform YAML files using yq expressions (mikefarah/yq). |
 
 ### .NET
 
 | Tool | Description |
 |------|-------------|
-| `dotnet_build` | Structured MSBuild diagnostics with file, line, column, error code |
-| `dotnet_test` | Structured test results via TRX parsing — only failures listed |
+| `dotnet_build` | Run dotnet build and return structured diagnostics with file, line, column, message, and error code. |
+| `dotnet_test` | Run dotnet test and return structured results: pass/fail/skip counts, failure messages. |
 
 ### Node.js
 
 | Tool | Description |
 |------|-------------|
-| `npm_lint` | Structured Biome lint diagnostics |
-| `npm_test` | Structured Vitest results with pass/fail counts |
-| `npm_typecheck` | Structured tsc/tsgo type errors |
+| `npm_lint` | Run biome check and return structured diagnostics with file, line, column, message, and rule. |
+| `npm_test` | Run vitest and return structured test results: suites, pass/fail counts, failure messages. |
+| `npm_typecheck` | Run tsc/tsgo --noEmit and return structured type errors with file, line, column, message, and TS error code. |
 
 ### Python
 
 | Tool | Description |
 |------|-------------|
-| `python_lint` | Structured ruff lint diagnostics with file, line, column, rule |
-| `python_test` | Structured pytest results via JUnit XML — pass/fail counts, failure messages |
-| `python_typecheck` | Structured mypy type errors with file, line, column, error code |
+| `python_lint` | Run ruff check and return structured diagnostics with file, line, column, message, and rule code. |
+| `python_test` | Run pytest and return structured test results: suites, pass/fail counts, failure messages. |
+| `python_typecheck` | Run mypy and return structured type errors with file, line, column, message, and error code. |
 
 ### Execution
 
 | Tool | Description |
 |------|-------------|
-| `run` | Run a command with smart output truncation (keeps last N lines) |
-| `batch` | Run multiple commands in parallel, return all results |
+| `run` | Run a shell command and return structured output with smart truncation. |
+| `batch` | Run multiple shell commands in parallel and return all results. |
+
+<!-- END GENERATED: tools -->
+
+All `tf_*` tools accept `binary: "terraform" | "tofu"` (or set `$TF_BINARY`) to run OpenTofu.
 
 ## Example Agent Workflows
 
@@ -307,7 +371,7 @@ check_environment()
 | Variable | Values | Default | Effect |
 |----------|--------|---------|--------|
 | `BASH_MCP_LOG` | `error` \| `info` \| `off` | `error` | Wide-event JSON logging to **stderr** (one line per tool call). `error` logs only failed calls; `info` adds successes; `off`/`silent` disables. stdout always stays pure MCP. `run`/`batch` commands are redacted (metadata only). |
-| `BASH_MCP_MODE` | `off` \| `readOnly` \| `confirmWrites` | `off` | Gates `run`/`batch`. `off` = no enforcement (today's behavior). `readOnly`/`confirmWrites` block commands classified as mutating. |
+| `BASH_MCP_MODE` | `readOnly` \| `confirmWrites` \| `off` | `readOnly` | Gates `run`/`batch`. Default `readOnly` blocks commands classified as mutating (`confirmWrites` likewise). Set `off` (or `dangerous`) to disable enforcement — recommended only for trusted local use. |
 | `TF_BINARY` | `terraform` \| `tofu` | `terraform` | Default binary for all `tf_*` tools (overridable per-call via `binary`). |
 
 ### Timeouts

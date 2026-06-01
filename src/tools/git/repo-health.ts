@@ -23,6 +23,12 @@ export function registerRepoHealthTool(server: McpServer) {
     "repo_health_summary",
     {
       title: "Repo health summary",
+      equivalentCommands: [
+        "git status",
+        "git rev-list --left-right --count @{u}...HEAD",
+        "git log -n 5",
+        "git diff --stat",
+      ],
       description:
         "One-call snapshot of a git working tree: branch, ahead/behind vs upstream, " +
         "staged/unstaged/untracked counts, recent commits, and the uncommitted diffstat.",

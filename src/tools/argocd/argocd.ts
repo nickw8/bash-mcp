@@ -221,6 +221,7 @@ export function registerArgocdTools(server: McpServer) {
     "argo_app_health_summary",
     {
       title: "ArgoCD app health summary",
+      equivalentCommands: ["argocd app get <name> -o json"],
       description:
         "Diagnose an ArgoCD application's health in one call: overall sync/health, likely causes, " +
         "suggested next commands, and the unhealthy resources/conditions as evidence.",

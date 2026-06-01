@@ -182,6 +182,10 @@ export function registerTerraformTools(server: McpServer) {
     "tf_plan_summary",
     {
       title: "Terraform plan summary",
+      equivalentCommands: [
+        "terraform plan -no-color",
+        "terraform show -json <planfile>",
+      ],
       description:
         "Run terraform plan and return a structured summary of changes (add/change/destroy counts and affected resources).",
       inputSchema: {

@@ -55,6 +55,11 @@ export function registerKubeDiagnosticTools(server: McpServer) {
     "kube_diagnose_pod",
     {
       title: "Diagnose a pod",
+      equivalentCommands: [
+        "kubectl get pod <pod> -n <ns> -o json",
+        "kubectl describe pod <pod> -n <ns>",
+        "kubectl logs <pod> -n <ns>",
+      ],
       description:
         "Diagnose why a pod is unhealthy in one call. Returns status, likely causes, " +
         "suggested next commands, and evidence (CrashLoopBackOff/ImagePullBackOff/OOMKilled/Unschedulable/restarts).",
@@ -95,6 +100,10 @@ export function registerKubeDiagnosticTools(server: McpServer) {
     "kube_pod_failure_summary",
     {
       title: "Summarize failing pods",
+      equivalentCommands: [
+        "kubectl get pods -n <ns> -o json",
+        "kubectl describe pod <pod> -n <ns>",
+      ],
       description:
         "List unhealthy pods in a namespace with their failure reason and evidence — one call instead of get + describe per pod.",
       inputSchema: {
@@ -170,6 +179,10 @@ export function registerKubeDiagnosticTools(server: McpServer) {
     "kube_deployment_status",
     {
       title: "Deployment rollout status",
+      equivalentCommands: [
+        "kubectl rollout status deployment/<name> -n <ns>",
+        "kubectl get deployment <name> -n <ns> -o json",
+      ],
       description:
         "Report a deployment's rollout health (ready/desired replicas, conditions) as a structured diagnosis.",
       inputSchema: {

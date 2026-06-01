@@ -201,6 +201,10 @@ export function registerHelmTools(server: McpServer) {
     "helm_release_triage",
     {
       title: "Helm release triage",
+      equivalentCommands: [
+        "helm status <release> -n <ns>",
+        "helm history <release> -n <ns>",
+      ],
       description:
         "Diagnose a Helm release's health in one call: combines helm status + helm history into " +
         "current status, likely causes, suggested next commands, and recent-revision evidence.",
