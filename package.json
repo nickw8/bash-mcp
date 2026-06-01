@@ -1,6 +1,6 @@
 {
   "name": "@nickw8/bash-mcp",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "MCP server that wraps CLI tools and returns structured JSON instead of raw text output",
   "license": "Apache-2.0",
   "repository": {
@@ -30,6 +30,9 @@
   },
   "files": [
     "dist",
+    "docs",
+    "hooks",
+    "!hooks/**/*.test.ts",
     "README.md",
     "LICENSE"
   ],
@@ -57,6 +60,7 @@
     "build": "tsup",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
+    "docs:tools": "tsx scripts/gen-tool-docs.mjs",
     "prepublishOnly": "npm run build && node scripts/verify-bundle.mjs",
     "lint": "biome check .",
     "lint:fix": "biome check --fix .",
