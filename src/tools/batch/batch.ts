@@ -57,7 +57,7 @@ export function registerBatchTools(server: McpServer) {
 
       const results = await Promise.all(
         commands.map(async (cmd) => {
-          // Safety profile (default OFF): block mutating commands per BASH_MCP_MODE.
+          // Safety profile (default readOnly): block mutating commands per BASH_MCP_MODE.
           const gate = checkCommandAllowed(cmd.command, cmd.args ?? []);
           if (!gate.allowed) {
             return {

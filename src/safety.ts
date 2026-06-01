@@ -1,9 +1,10 @@
 /**
  * Safety profiles for the `run`/`batch` escape-hatch tools.
  *
- * `BASH_MCP_MODE` opts into blocking mutating commands. **Default is OFF**: when
- * unset (or "off"/"dangerous"), `run`/`batch` behave exactly as before — no
- * enforcement. Only `readOnly`/`confirmWrites` block write-classified commands.
+ * `BASH_MCP_MODE` controls blocking of mutating commands. **Default is
+ * readOnly**: when unset (or "readOnly"), write-classified `run`/`batch`
+ * commands are blocked. Set "off" (or "dangerous") to disable enforcement —
+ * `run`/`batch` then behave with no gating.
  *
  * Classification is a best-effort const table (`/arch:node` const dispatch),
  * not a security boundary — it's a guardrail an operator opts into. Unknown
@@ -14,7 +15,7 @@
 
 export type SafetyMode = "off" | "readOnly" | "confirmWrites" | "dangerous";
 
-/** Resolve BASH_MCP_MODE; anything unrecognized (incl. unset) → "off". */
+/** Resolve BASH_MCP_MODE; anything unrecognized (incl. unset) → "readOnly". */
 export function resolveMode(
   raw: string | undefined = process.env.BASH_MCP_MODE,
 ): SafetyMode {
@@ -25,8 +26,10 @@ export function resolveMode(
       return "confirmWrites";
     case "dangerous":
       return "dangerous";
-    default:
+    case "off":
       return "off";
+    default:
+      return "readOnly";
   }
 }
 
@@ -104,7 +107,7 @@ export function checkCommandAllowed(
     const label = `${command} ${args[0] ?? ""}`.trim();
     return {
       allowed: false,
-      reason: `Blocked mutating command '${label}': BASH_MCP_MODE=${mode}. Unset BASH_MCP_MODE to allow writes.`,
+      reason: `Blocked mutating command '${label}': BASH_MCP_MODE=${mode}. Set BASH_MCP_MODE=off to allow writes.`,
     };
   }
   return { allowed: true };

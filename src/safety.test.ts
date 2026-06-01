@@ -6,15 +6,19 @@ import { describe, expect, it } from "vitest";
 import { checkCommandAllowed, classifyCommand, resolveMode } from "./safety.js";
 
 describe("resolveMode", () => {
-  it("defaults to off when unset or unrecognized", () => {
-    expect(resolveMode(undefined)).toBe("off");
-    expect(resolveMode("")).toBe("off");
-    expect(resolveMode("nonsense")).toBe("off");
+  it("defaults to readOnly when unset or unrecognized", () => {
+    expect(resolveMode(undefined)).toBe("readOnly");
+    expect(resolveMode("")).toBe("readOnly");
+    expect(resolveMode("nonsense")).toBe("readOnly");
   });
   it("maps known modes case-insensitively", () => {
     expect(resolveMode("readOnly")).toBe("readOnly");
     expect(resolveMode("confirmwrites")).toBe("confirmWrites");
     expect(resolveMode("DANGEROUS")).toBe("dangerous");
+  });
+  it("maps explicit off (the local opt-out)", () => {
+    expect(resolveMode("off")).toBe("off");
+    expect(resolveMode("OFF")).toBe("off");
   });
 });
 
@@ -43,9 +47,15 @@ describe("classifyCommand", () => {
 });
 
 describe("checkCommandAllowed", () => {
-  it("never blocks when mode is off (default)", () => {
+  it("never blocks when mode is off (the explicit opt-out)", () => {
     expect(checkCommandAllowed("kubectl", ["apply"], "off").allowed).toBe(true);
     expect(checkCommandAllowed("rm", ["-rf", "x"], "off").allowed).toBe(true);
+  });
+
+  it("blocks writes under the resolved default (unset → readOnly)", () => {
+    expect(
+      checkCommandAllowed("rm", ["-rf", "x"], resolveMode(undefined)).allowed,
+    ).toBe(false);
   });
 
   it("never blocks when mode is dangerous", () => {
@@ -62,6 +72,7 @@ describe("checkCommandAllowed", () => {
     );
     expect(r.allowed).toBe(false);
     expect(r.reason).toContain("Blocked");
+    expect(r.reason).toContain("Set BASH_MCP_MODE=off");
     expect(
       checkCommandAllowed("helm", ["uninstall", "r"], "confirmWrites").allowed,
     ).toBe(false);
