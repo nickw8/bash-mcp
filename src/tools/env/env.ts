@@ -55,7 +55,7 @@ export function parseVersion(output: string): string | undefined {
 }
 
 /** One tool's capability status. */
-interface ToolStatus {
+export interface ToolStatus {
   name: string;
   installed: boolean;
   version?: string;
@@ -63,8 +63,12 @@ interface ToolStatus {
   detail?: string;
 }
 
-/** Run a single probe; never throws. Missing binary → installed:false. */
-async function runProbe(p: Probe): Promise<ToolStatus> {
+/**
+ * Run a single probe; never throws. Missing binary → installed:false.
+ * Exported so the `--doctor` CLI (src/doctor.ts) reuses the exact same
+ * client-only, non-blocking probe as `check_environment`.
+ */
+export async function runProbe(p: Probe): Promise<ToolStatus> {
   const res = await exec(p.binary, p.versionArgs, { timeout: PROBE_TIMEOUT });
   if (res.errorCode === "ENOENT") {
     return { name: p.name, installed: false };
