@@ -124,6 +124,44 @@ while true; do
   esac
 done
 
+# Peel binary-level GLOBAL flags that sit between the binary and its subcommand,
+# so the subcommand bubbles to the front for matching
+# (e.g. "git -C /p status" → "git status",
+#       "kubectl --context prod get pods" → "kubectl get pods").
+# Only leading flags are stripped; any pipe/chain tail is preserved so compound
+# detection below still fires. Unknown flags are treated as booleans (drop the
+# flag only). Inline "--flag=value" / "-c k=v" tokens are dropped whole.
+strip_global_flags() {
+  local bin="$1"; shift
+  local valflags=" $* "        # flags that consume a following separate-word value
+  local head rest tok val
+  head="${cmd%%[[:space:]]*}"
+  [[ "$head" != "$bin" ]] && return
+  rest="${cmd#"$head"}"; rest="${rest#"${rest%%[![:space:]]*}"}"
+  while [[ -n "$rest" ]]; do
+    tok="${rest%%[[:space:]]*}"
+    case "$tok" in
+      -*=*)                    # --flag=value / -c=... : single token
+        rest="${rest#"$tok"}"; rest="${rest#"${rest%%[![:space:]]*}"}" ;;
+      -*)
+        rest="${rest#"$tok"}"; rest="${rest#"${rest%%[![:space:]]*}"}"
+        if [[ "$valflags" == *" $tok "* ]]; then   # consumes the next token as its value
+          val="${rest%%[[:space:]]*}"
+          rest="${rest#"$val"}"; rest="${rest#"${rest%%[![:space:]]*}"}"
+        fi ;;
+      *) break ;;              # first non-flag token = the subcommand
+    esac
+  done
+  cmd="$bin $rest"
+}
+
+case "${cmd%%[[:space:]]*}" in
+  git)     strip_global_flags git -C -c --git-dir --work-tree --namespace ;;
+  kubectl) strip_global_flags kubectl --context -n --namespace --kubeconfig --cluster --user --server -s --token --as ;;
+  helm)    strip_global_flags helm -n --namespace --kube-context --kube-apiserver --kubeconfig ;;
+  argocd)  strip_global_flags argocd --server --auth-token ;;
+esac
+
 # Detect compound commands (pipes, chaining, subshells, redirects).
 compound=0
 case "$cmd" in
