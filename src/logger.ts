@@ -17,8 +17,7 @@
  *   - "off" / "silent"       → emit nothing
  */
 
-/** Version reported in the static log context. Keep in sync with package.json. */
-const VERSION = "0.1.0";
+import { VERSION } from "./version.js";
 
 export type LogLevel = "off" | "error" | "info";
 
@@ -80,7 +79,27 @@ export function createLogger(options: LoggerOptions = {}): Logger {
   };
 }
 
+/** Static high-cardinality context merged into every event. */
+const STATIC_CONTEXT = {
+  service: "bash-mcp",
+  version: VERSION,
+  pid: process.pid,
+};
+
 /** Process-wide logger with static context (service, version, pid). */
-export const logger = createLogger({
-  context: { service: "bash-mcp", version: VERSION, pid: process.pid },
-});
+export const logger = createLogger({ context: STATIC_CONTEXT });
+
+/**
+ * Emit a structured lifecycle event (server start / fatal error) to stderr.
+ *
+ * Lifecycle events are not per-call wide events, so they bypass `BASH_MCP_LOG`
+ * gating — server start and fatal errors are always worth recording — but they
+ * share the wide-event JSON shape and static context for consistency
+ * (`/logging-best-practices`: never log unstructured strings).
+ */
+export function logLifecycle(
+  event: { event: string } & Record<string, unknown>,
+  write: (line: string) => void = (line) => process.stderr.write(line),
+): void {
+  write(`${JSON.stringify({ ...STATIC_CONTEXT, ...event })}\n`);
+}

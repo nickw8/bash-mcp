@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createLogger, resolveLevel } from "./logger.js";
+import { createLogger, logLifecycle, resolveLevel } from "./logger.js";
 
 function capturing(level: "off" | "error" | "info") {
   const lines: string[] = [];
@@ -69,5 +69,23 @@ describe("createLogger", () => {
       outcome: "success",
       duration_ms: 5,
     });
+  });
+});
+
+describe("logLifecycle", () => {
+  it("emits a structured JSON event with static context, newline-terminated", () => {
+    const lines: string[] = [];
+    logLifecycle({ event: "server_start", transport: "stdio" }, (s) =>
+      lines.push(s),
+    );
+    expect(lines).toHaveLength(1);
+    expect(lines[0]!.endsWith("\n")).toBe(true);
+    const parsed = JSON.parse(lines[0]!);
+    expect(parsed).toMatchObject({
+      service: "bash-mcp",
+      event: "server_start",
+      transport: "stdio",
+    });
+    expect(typeof parsed.version).toBe("string");
   });
 });

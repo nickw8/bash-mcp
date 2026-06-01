@@ -52,9 +52,9 @@ export function registerRunTools(server: McpServer) {
     async ({ command, args, cwd, timeout, maxLines }) => {
       const start = Date.now();
 
-      // Safety profile (default OFF): block mutating commands when BASH_MCP_MODE
-      // opts in. Unset → no enforcement, identical to prior behavior.
-      const gate = checkCommandAllowed(command, args ?? []);
+      // Safety profile (default readOnly): block mutating commands unless
+      // BASH_MCP_MODE is set to off/dangerous. Unset → readOnly (writes gated).
+      const gate = checkCommandAllowed(command, args);
       if (!gate.allowed) {
         const reason = gate.reason ?? "blocked by BASH_MCP_MODE";
         return err(
@@ -78,7 +78,7 @@ export function registerRunTools(server: McpServer) {
       if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
 
       const totalLines = lines.length;
-      const limit = maxLines ?? 50;
+      const limit = maxLines;
       let truncated = false;
       let stdout: string;
 
