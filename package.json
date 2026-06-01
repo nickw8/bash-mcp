@@ -1,8 +1,16 @@
 {
-  "name": "bash-mcp",
+  "name": "@nickw8/bash-mcp",
   "version": "0.1.0",
   "description": "MCP server that wraps CLI tools and returns structured JSON instead of raw text output",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nickw8/bash-mcp.git"
+  },
+  "homepage": "https://github.com/nickw8/bash-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/nickw8/bash-mcp/issues"
+  },
   "type": "module",
   "keywords": [
     "mcp",

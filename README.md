@@ -15,7 +15,7 @@ No installation needed — just add the MCP config and `npx` will fetch it on fi
 ### Option 2: Global install
 
 ```bash
-npm install -g bash-mcp
+npm install -g @nickw8/bash-mcp
 ```
 
 ### Option 3: Install from source
@@ -38,7 +38,7 @@ Add bash-mcp to your Claude Code settings. For **all projects** (recommended), e
   "mcpServers": {
     "bash-mcp": {
       "command": "npx",
-      "args": ["-y", "bash-mcp"]
+      "args": ["-y", "@nickw8/bash-mcp"]
     }
   }
 }
@@ -61,7 +61,7 @@ To verify it's working, start Claude Code and check that bash-mcp tools (like `c
 You can also add it from the CLI:
 
 ```bash
-claude mcp add bash-mcp -- npx -y bash-mcp
+claude mcp add bash-mcp -- npx -y @nickw8/bash-mcp
 ```
 
 ## Claude Desktop Setup
@@ -74,7 +74,7 @@ Windows: `%APPDATA%\Claude\`) and add the same `mcpServers` entry:
   "mcpServers": {
     "bash-mcp": {
       "command": "npx",
-      "args": ["-y", "bash-mcp"]
+      "args": ["-y", "@nickw8/bash-mcp"]
     }
   }
 }
@@ -91,14 +91,14 @@ Add bash-mcp to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (per-project
   "mcpServers": {
     "bash-mcp": {
       "command": "npx",
-      "args": ["-y", "bash-mcp"]
+      "args": ["-y", "@nickw8/bash-mcp"]
     }
   }
 }
 ```
 
 (Use `"command": "bash-mcp"` with no args if you installed globally.) Any MCP-aware
-client works the same way — point it at the `bash-mcp` binary or `npx -y bash-mcp`.
+client works the same way — point it at the `bash-mcp` binary or `npx -y @nickw8/bash-mcp`.
 
 ## Recommended Hooks
 
