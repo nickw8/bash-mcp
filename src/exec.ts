@@ -11,6 +11,7 @@
  */
 
 import { execFile } from "node:child_process";
+import { checkCommandAllowed } from "#safety";
 import { shellEscape } from "#shell";
 
 /** Raw output from a command execution. */
@@ -160,4 +161,143 @@ export function execWithStdin(
     ["-c", `echo ${shellEscape(stdin)} | ${command} ${escapedArgs}`],
     options,
   );
+}
+
+// ── Output Shaping ──
+
+/** Which end of the output to keep when trimming. */
+export type ShapeMode = "tail" | "head";
+
+/** Controls for {@link shapeOutput}. */
+export interface ShapeOptions {
+  /** Keep the last N lines (tail, default) or the first N (head). */
+  mode?: ShapeMode;
+  /** Max lines to keep; `0`/undefined = unlimited. */
+  maxLines?: number;
+  /** Optional cap on the resulting byte length (UTF-8). */
+  maxBytes?: number;
+}
+
+/** Result of {@link shapeOutput}: trimmed text plus pre-trim line count. */
+export interface ShapedOutput {
+  text: string;
+  /** Line count of the original output (before any trimming). */
+  totalLines: number;
+  /** True when lines and/or bytes were dropped. */
+  truncated: boolean;
+}
+
+/**
+ * Trim command output to a line and/or byte budget. Shared by `run`, `run_seq`
+ * and `bash_test` so the tail/head logic lives in one place. A trailing empty
+ * line from the final newline is always dropped before counting (output usually
+ * ends with `\n`). When lines are dropped a `... (N lines truncated) ...` marker
+ * is inserted on the trimmed side.
+ */
+export function shapeOutput(
+  raw: string,
+  opts: ShapeOptions = {},
+): ShapedOutput {
+  const { mode = "tail", maxLines, maxBytes } = opts;
+
+  const lines = raw.split("\n");
+  // Drop the trailing empty element from a final newline before counting.
+  if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
+  const totalLines = lines.length;
+
+  let truncated = false;
+  let kept = lines;
+  if (maxLines !== undefined && maxLines > 0 && totalLines > maxLines) {
+    truncated = true;
+    kept = mode === "head" ? lines.slice(0, maxLines) : lines.slice(-maxLines);
+  }
+
+  const omitted = totalLines - kept.length;
+  const marker = `... (${omitted} lines truncated) ...`;
+  let text = kept.join("\n");
+  if (omitted > 0) {
+    text = mode === "head" ? `${text}\n${marker}` : `${marker}\n${text}`;
+  }
+
+  // Byte cap applies after line shaping, trimming from the same end.
+  if (maxBytes !== undefined && maxBytes > 0) {
+    const buf = Buffer.from(text, "utf8");
+    if (buf.byteLength > maxBytes) {
+      truncated = true;
+      const sliced =
+        mode === "head"
+          ? buf.subarray(0, maxBytes)
+          : buf.subarray(buf.byteLength - maxBytes);
+      text = sliced.toString("utf8");
+    }
+  }
+
+  return { text, totalLines, truncated };
+}
+
+// ── Guarded Step Runner ──
+
+/** A single command to run through {@link runStep}. */
+export interface RunStepInput {
+  command: string;
+  args?: string[];
+  cwd?: string;
+  timeout?: number;
+  /** Label for this step in the results (defaults to the command name). */
+  label?: string;
+}
+
+/** Result of running one {@link runStep} (shape shared by batch/run_seq). */
+export interface RunStepResult {
+  label: string;
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+  /** Wall-clock execution time in milliseconds (0 when blocked). */
+  elapsed: number;
+  /** True when blocked by BASH_MCP_MODE before executing. */
+  blocked: boolean;
+}
+
+/**
+ * Run one command through the full guarded pipeline:
+ * `checkCommandAllowed` → `exec` → `shapeOutput` → elapsed timing. This is the
+ * single chokepoint for BASH_MCP_MODE gating across the multi-command runners
+ * (`batch`, `run_seq`) so the safety check can't drift between copies. A blocked
+ * command resolves with `exitCode: 126`, `blocked: true`, and the reason in
+ * `stderr` — exactly as `run`/`batch` did inline.
+ */
+export async function runStep(
+  step: RunStepInput,
+  shape: ShapeOptions = {},
+): Promise<RunStepResult> {
+  const args = step.args ?? [];
+  const label = step.label ?? step.command;
+
+  const gate = checkCommandAllowed(step.command, args);
+  if (!gate.allowed) {
+    return {
+      label,
+      exitCode: 126,
+      stdout: "",
+      stderr: gate.reason ?? "blocked by BASH_MCP_MODE",
+      elapsed: 0,
+      blocked: true,
+    };
+  }
+
+  const start = Date.now();
+  const result = await exec(step.command, args, {
+    cwd: step.cwd,
+    timeout: step.timeout,
+  });
+
+  return {
+    label,
+    exitCode: result.exitCode,
+    stdout: shapeOutput(result.stdout, shape).text,
+    stderr: shapeOutput(result.stderr, shape).text,
+    elapsed: Date.now() - start,
+    blocked: false,
+  };
 }

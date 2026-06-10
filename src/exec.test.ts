@@ -6,8 +6,8 @@
  * handle exit codes, stdout/stderr, timeouts, and JSON parsing.
  */
 
-import { describe, expect, it } from "vitest";
-import { exec, execJson } from "./exec.js";
+import { afterEach, describe, expect, it } from "vitest";
+import { exec, execJson, runStep, shapeOutput } from "./exec.js";
 
 describe("exec", () => {
   it("captures stdout from a successful command", async () => {
@@ -93,5 +93,89 @@ describe("execJson", () => {
   it("parses JSON arrays", async () => {
     const result = await execJson<string[]>("echo", ['["a","b","c"]']);
     expect(result.data).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("shapeOutput", () => {
+  const text = "l1\nl2\nl3\nl4\nl5\n";
+
+  it("returns all lines (newline-normalized) when under the limit", () => {
+    const r = shapeOutput(text, { maxLines: 10 });
+    expect(r.text).toBe("l1\nl2\nl3\nl4\nl5");
+    expect(r.totalLines).toBe(5);
+    expect(r.truncated).toBe(false);
+  });
+
+  it("keeps the last N lines in tail mode with a marker", () => {
+    const r = shapeOutput(text, { mode: "tail", maxLines: 2 });
+    expect(r.text).toBe("... (3 lines truncated) ...\nl4\nl5");
+    expect(r.totalLines).toBe(5);
+    expect(r.truncated).toBe(true);
+  });
+
+  it("keeps the first N lines in head mode with a trailing marker", () => {
+    const r = shapeOutput(text, { mode: "head", maxLines: 2 });
+    expect(r.text).toBe("l1\nl2\n... (3 lines truncated) ...");
+    expect(r.truncated).toBe(true);
+  });
+
+  it("treats maxLines 0/undefined as unlimited", () => {
+    expect(shapeOutput(text, { maxLines: 0 }).truncated).toBe(false);
+    expect(shapeOutput(text).truncated).toBe(false);
+  });
+
+  it("caps bytes, keeping the trimmed end per mode", () => {
+    const tail = shapeOutput("abcdefgh", { maxBytes: 3 });
+    expect(tail.text).toBe("fgh");
+    expect(tail.truncated).toBe(true);
+    const head = shapeOutput("abcdefgh", { mode: "head", maxBytes: 3 });
+    expect(head.text).toBe("abc");
+  });
+
+  it("handles empty output", () => {
+    const r = shapeOutput("");
+    expect(r.text).toBe("");
+    expect(r.totalLines).toBe(0);
+    expect(r.truncated).toBe(false);
+  });
+});
+
+describe("runStep", () => {
+  const original = process.env.BASH_MCP_MODE;
+  afterEach(() => {
+    if (original === undefined) delete process.env.BASH_MCP_MODE;
+    else process.env.BASH_MCP_MODE = original;
+  });
+
+  it("runs an allowed command and reports elapsed + label", async () => {
+    process.env.BASH_MCP_MODE = "readOnly";
+    const r = await runStep({ command: "echo", args: ["hi"], label: "greet" });
+    expect(r.blocked).toBe(false);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toBe("hi");
+    expect(r.label).toBe("greet");
+    expect(r.elapsed).toBeGreaterThanOrEqual(0);
+  });
+
+  it("shapes step output through shapeOutput", async () => {
+    process.env.BASH_MCP_MODE = "off";
+    const r = await runStep(
+      { command: "printf", args: ["a\\nb\\nc\\n"] },
+      { mode: "tail", maxLines: 1 },
+    );
+    expect(r.stdout).toBe("... (2 lines truncated) ...\nc");
+  });
+
+  it("blocks a mutating command under readOnly without executing it", async () => {
+    process.env.BASH_MCP_MODE = "readOnly";
+    const r = await runStep({
+      command: "rm",
+      args: ["-rf", "/tmp/bash-mcp-x"],
+    });
+    expect(r.blocked).toBe(true);
+    expect(r.exitCode).toBe(126);
+    expect(r.stdout).toBe("");
+    expect(r.stderr).toContain("BASH_MCP_MODE");
+    expect(r.elapsed).toBe(0);
   });
 });

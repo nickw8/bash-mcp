@@ -8,9 +8,8 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec } from "#exec";
+import { runStep } from "#exec";
 import { ok } from "#response";
-import { checkCommandAllowed } from "#safety";
 import { defineTool } from "#tool";
 
 /** Register the batch tool on the MCP server. */
@@ -55,28 +54,28 @@ export function registerBatchTools(server: McpServer) {
     async ({ commands }) => {
       const start = Date.now();
 
-      const results = await Promise.all(
-        commands.map(async (cmd) => {
-          // Safety profile (default readOnly): block mutating commands per BASH_MCP_MODE.
-          const gate = checkCommandAllowed(cmd.command, cmd.args ?? []);
-          if (!gate.allowed) {
-            return {
-              label: cmd.label ?? cmd.command,
-              exitCode: 126,
-              stdout: "",
-              stderr: gate.reason ?? "blocked by BASH_MCP_MODE",
-            };
-          }
-          const result = await exec(cmd.command, cmd.args ?? [], {
+      // runStep is the shared gate -> exec -> shape pipeline; BASH_MCP_MODE
+      // gating lives there so it can't drift from run/run_seq. batch keeps its
+      // parallel Promise.all semantics and its {label,exitCode,stdout,stderr}
+      // result shape (no per-step elapsed).
+      const stepResults = await Promise.all(
+        commands.map((cmd) =>
+          runStep({
+            command: cmd.command,
+            args: cmd.args ?? [],
             cwd: cmd.cwd,
             timeout: cmd.timeout ?? 30_000,
-          });
-          return {
-            label: cmd.label ?? cmd.command,
-            exitCode: result.exitCode,
-            stdout: result.stdout,
-            stderr: result.stderr,
-          };
+            label: cmd.label,
+          }),
+        ),
+      );
+
+      const results = stepResults.map(
+        ({ label, exitCode, stdout, stderr }) => ({
+          label,
+          exitCode,
+          stdout,
+          stderr,
         }),
       );
 
