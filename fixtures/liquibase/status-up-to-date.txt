@@ -1,0 +1,9 @@
+####################################################
+##  Liquibase Open Source 5.0.3 by Liquibase      ##
+####################################################
+Starting Liquibase at 16:30:12 using Java 26.0.1 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Liquibase Version: 5.0.3
+
+user@conn JDBC Driver for SQL Server;applicationIntent=readwrite; is up to date
+
+Liquibase command 'status' was executed successfully.

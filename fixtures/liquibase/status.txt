@@ -1,0 +1,12 @@
+####################################################
+##  Liquibase Open Source 5.0.3 by Liquibase      ##
+####################################################
+Starting Liquibase at 16:00:48 using Java 26.0.1 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Liquibase Version: 5.0.3
+
+4 changesets have not been applied to user@conn JDBC Driver for SQL Server;applicationIntent=readwrite;
+     databases/ApplicationConfig/database/DBCreation.sql::ApplicationConfigDB-v0.0.5::NWEIGHT
+     databases/ApplicationConfig/data_fixes/feature_flag_toggles/EQ-2949-setFeatureFlag.sql::addFeatureFlag-EQ-2949-enable-v0.0.2::hromau
+     databases/ClaimsManagement/tables/001-EQ-3454.sql::EQ-3454-processclaims-schema-v0.1.0::nickw8
+     security/04_logins/svc_userservice.sql::svc-user-service-grants-v0.1.3::NWEIGHT
+Liquibase command 'status' was executed successfully.
