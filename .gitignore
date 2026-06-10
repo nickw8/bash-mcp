@@ -44,4 +44,6 @@ npm-debug.log*
 # codex
 **/.codex
 
+**/.mise.toml
+
 # Misc AI tooling
