@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit by hand. Regenerate with `npm run docs:tools`. -->
 
-56 tools. Each entry lists inputs, outputs, and (where known) the raw command(s) it approximates.
+57 tools. Each entry lists inputs, outputs, and (where known) the raw command(s) it approximates.
 
 ## `argo_app_detail`
 
@@ -1004,6 +1004,29 @@ Run a shell command and return structured output with smart truncation. Keeps th
 ```sh
 <command> | tail -n N
 <command> | head -n N
+```
+
+## `run_seq`
+
+Run an ordered list of labeled commands one after another, stopping at the first failure by default. Use for dependent steps (e.g. build then test then package) where order matters and a later step is pointless if an earlier one fails. Unlike batch (parallel), run_seq is sequential and short-circuits; set stopOnError=false to run every step regardless.
+
+**Inputs:**
+
+- `steps`: object[] — Ordered steps to run sequentially
+- `stopOnError`: boolean _(optional)_ — Stop at the first step with a non-zero exit code (default true).
+- `maxLines`: number _(optional)_ — Max stdout/stderr lines to keep per step. 0 = unlimited.
+
+**Outputs:**
+
+- `steps`: object[]
+- `exitCode`: number — 0 if every step succeeded, else the first failure's code
+- `failedAt`: number — Index of the first failing step, or null if all passed
+- `elapsed`: number — Total wall-clock time in milliseconds
+
+**Equivalent commands:**
+
+```sh
+cmd1 && cmd2 && cmd3
 ```
 
 ## `tf_backend_info`

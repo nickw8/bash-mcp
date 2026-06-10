@@ -34,6 +34,7 @@ import { registerLiquibaseTools } from "./tools/liquibase/liquibase.js";
 import { registerNpmTools } from "./tools/npm/npm.js";
 import { registerPythonTools } from "./tools/python/python.js";
 import { registerRunTools } from "./tools/run/run.js";
+import { registerRunSeqTools } from "./tools/run/seq.js";
 import { registerSearchTools } from "./tools/search/search.js";
 import { registerTerraformTools } from "./tools/terraform/terraform.js";
 import { registerYamlTools } from "./tools/yaml/yaml.js";
@@ -65,6 +66,7 @@ const GROUPS: readonly ToolGroup[] = [
   { category: "Data Processing", register: registerYamlTools },
   { category: "File", register: registerFileTools },
   { category: "Execution", register: registerRunTools },
+  { category: "Execution", register: registerRunSeqTools },
   { category: "Execution", register: registerBatchTools },
   { category: "Git", register: registerGitDiffContentTools },
   { category: "Node.js", register: registerNpmTools },
