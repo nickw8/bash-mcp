@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit by hand. Regenerate with `npm run docs:tools`. -->
 
-53 tools. Each entry lists inputs, outputs, and (where known) the raw command(s) it approximates.
+56 tools. Each entry lists inputs, outputs, and (where known) the raw command(s) it approximates.
 
 ## `argo_app_detail`
 
@@ -649,6 +649,93 @@ List unhealthy pods in a namespace with their failure reason and evidence — on
 ```sh
 kubectl get pods -n <ns> -o json
 kubectl describe pod <pod> -n <ns>
+```
+
+## `liquibase_status`
+
+`read-only`
+
+List Liquibase changesets not yet applied to the target database, as structured JSON. Reports up-to-date vs a pending list. liquibase is on PATH — no mise/wrapper needed.
+
+**Inputs:**
+
+- `cwd`: string _(optional)_ — Directory to run liquibase in (where the defaults file / changelog live).
+- `defaultsFile`: string _(optional)_ — Path to the Liquibase defaults file (--defaults-file), e.g. db-dev.properties. Usually carries the JDBC URL, credentials, and changelog path.
+- `changelogFile`: string _(optional)_ — Changelog path (--changelog-file); usually set in the defaults file instead.
+- `labels`: string _(optional)_ — Label expression to filter changesets (--labels).
+- `contexts`: string _(optional)_ — Context expression to filter changesets (--contexts).
+- `extraArgs`: string[] _(optional)_ — Additional raw arguments appended to the liquibase invocation.
+
+**Outputs:**
+
+- `upToDate`: boolean
+- `pendingCount`: number
+- `pending`: object[]
+
+**Equivalent commands:**
+
+```sh
+liquibase status --verbose
+```
+
+## `liquibase_update_sql`
+
+`read-only`
+
+Render the SQL Liquibase would run for pending changesets (updateSQL) as structured per-changeset summaries with a SQL-Server batch lint. Does NOT apply changes. SQL bodies are omitted unless includeRaw or changesetId is set. liquibase is on PATH — no mise/wrapper needed.
+
+**Inputs:**
+
+- `cwd`: string _(optional)_ — Directory to run liquibase in (where the defaults file / changelog live).
+- `defaultsFile`: string _(optional)_ — Path to the Liquibase defaults file (--defaults-file), e.g. db-dev.properties. Usually carries the JDBC URL, credentials, and changelog path.
+- `changelogFile`: string _(optional)_ — Changelog path (--changelog-file); usually set in the defaults file instead.
+- `labels`: string _(optional)_ — Label expression to filter changesets (--labels).
+- `contexts`: string _(optional)_ — Context expression to filter changesets (--contexts).
+- `extraArgs`: string[] _(optional)_ — Additional raw arguments appended to the liquibase invocation.
+- `changesetId`: string _(optional)_ — Return only this changeset's full rendered SQL (matches the changeset id).
+- `batchLint`: boolean _(optional)_ — Lint each changeset for the SQL-Server 'routine DDL must lead its GO-batch' rule (default true).
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
+- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
+- `includeRaw`: boolean _(optional)_ — Include raw/verbose fields where supported.
+
+**Outputs:**
+
+- `changesetCount`: number
+- `changesets`: object[]
+- `total`: number _(optional)_
+- `truncated`: boolean _(optional)_
+
+**Equivalent commands:**
+
+```sh
+liquibase updateSQL
+```
+
+## `liquibase_validate`
+
+`read-only`
+
+Validate a Liquibase changelog and return a structured pass/fail result with per-changeset errors (duplicate ids, checksum drift). Much more compact than raw output. liquibase is on PATH — no mise/wrapper needed.
+
+**Inputs:**
+
+- `cwd`: string _(optional)_ — Directory to run liquibase in (where the defaults file / changelog live).
+- `defaultsFile`: string _(optional)_ — Path to the Liquibase defaults file (--defaults-file), e.g. db-dev.properties. Usually carries the JDBC URL, credentials, and changelog path.
+- `changelogFile`: string _(optional)_ — Changelog path (--changelog-file); usually set in the defaults file instead.
+- `labels`: string _(optional)_ — Label expression to filter changesets (--labels).
+- `contexts`: string _(optional)_ — Context expression to filter changesets (--contexts).
+- `extraArgs`: string[] _(optional)_ — Additional raw arguments appended to the liquibase invocation.
+
+**Outputs:**
+
+- `valid`: boolean
+- `errorCount`: number
+- `errors`: object[]
+
+**Equivalent commands:**
+
+```sh
+liquibase validate
 ```
 
 ## `list_guidance`

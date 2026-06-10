@@ -47,6 +47,7 @@ describe("PROBES", () => {
       "yq",
       "rg",
       "dotnet",
+      "liquibase",
       "ruff",
       "mypy",
       "pytest",

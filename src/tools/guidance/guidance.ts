@@ -122,6 +122,29 @@ export const INTENTS = [
     reason: "Summarizes health/sync with degraded resources surfaced.",
   },
   {
+    intent: "validate a Liquibase changelog for errors",
+    preferredTool: "liquibase_validate",
+    category: "liquibase",
+    avoid: ["run: liquibase validate"],
+    reason:
+      "Returns a structured pass/fail with per-changeset errors instead of raw text.",
+  },
+  {
+    intent: "preview the SQL Liquibase would run for pending changesets",
+    preferredTool: "liquibase_update_sql",
+    category: "liquibase",
+    avoid: ["run: liquibase updateSQL", "run: liquibase updateSQL | grep"],
+    reason:
+      "Per-changeset summaries with a SQL-Server batch lint, without applying changes.",
+  },
+  {
+    intent: "list Liquibase changesets not yet applied to the database",
+    preferredTool: "liquibase_status",
+    category: "liquibase",
+    avoid: ["run: liquibase status --verbose"],
+    reason: "Reports up-to-date vs a structured pending list, not raw output.",
+  },
+  {
     intent: "discover which CLIs are installed before calling a tool",
     preferredTool: "check_environment",
     category: "environment",

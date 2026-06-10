@@ -43,6 +43,7 @@ export const PROBES: Probe[] = [
   { name: "yq", binary: "yq", versionArgs: ["--version"] },
   { name: "rg", binary: "rg", versionArgs: ["--version"] },
   { name: "dotnet", binary: "dotnet", versionArgs: ["--version"] },
+  { name: "liquibase", binary: "liquibase", versionArgs: ["--version"] },
   { name: "ruff", binary: "ruff", versionArgs: ["--version"] },
   { name: "mypy", binary: "mypy", versionArgs: ["--version"] },
   { name: "pytest", binary: "pytest", versionArgs: ["--version"] },

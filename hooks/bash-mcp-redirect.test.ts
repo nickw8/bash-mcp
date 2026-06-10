@@ -131,6 +131,15 @@ describe("bash-mcp-redirect: implemented tools BLOCK", () => {
     expectBlock("mypy src", "mcp__bash-mcp__python_typecheck");
   });
 
+  it("liquibase tooling", () => {
+    expectBlock("liquibase validate", "mcp__bash-mcp__liquibase_validate");
+    expectBlock("liquibase updateSQL", "mcp__bash-mcp__liquibase_update_sql");
+    expectBlock(
+      "liquibase status --verbose",
+      "mcp__bash-mcp__liquibase_status",
+    );
+  });
+
   it("capability discovery (graduated: check_environment now exists)", () => {
     expectBlock("which kubectl", "check_environment");
     expectBlock("command -v jq", "check_environment");

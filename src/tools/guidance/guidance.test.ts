@@ -22,6 +22,9 @@ const KNOWN_TOOLS = new Set([
   "rg",
   "helm_release_triage",
   "argo_app_health_summary",
+  "liquibase_validate",
+  "liquibase_update_sql",
+  "liquibase_status",
   "check_environment",
 ]);
 

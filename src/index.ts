@@ -33,6 +33,7 @@ const server = new McpServer(
       "running shell commands (run), parallel tool execution (batch),",
       "JSON/YAML processing (jq, yq), npm tasks (test, lint, typecheck),",
       "dotnet builds (build, test), Python tasks (lint, test, typecheck),",
+      "Liquibase (validate, update_sql, status),",
       "and infrastructure: Kubernetes (kube_get, kube_logs, kube_contexts, plus diagnostics",
       "kube_diagnose_pod, kube_pod_failure_summary, kube_deployment_status,",
       "kube_events_summary),",

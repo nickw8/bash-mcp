@@ -30,6 +30,7 @@ import {
 import { registerHelmTools } from "./tools/helm/helm.js";
 import { registerJsonTools } from "./tools/json/json.js";
 import { registerKubernetesTools } from "./tools/kubernetes/kubernetes.js";
+import { registerLiquibaseTools } from "./tools/liquibase/liquibase.js";
 import { registerNpmTools } from "./tools/npm/npm.js";
 import { registerPythonTools } from "./tools/python/python.js";
 import { registerRunTools } from "./tools/run/run.js";
@@ -68,6 +69,7 @@ const GROUPS: readonly ToolGroup[] = [
   { category: "Git", register: registerGitDiffContentTools },
   { category: "Node.js", register: registerNpmTools },
   { category: ".NET", register: registerDotnetTools },
+  { category: "Liquibase", register: registerLiquibaseTools },
   { category: "Python", register: registerPythonTools },
   { category: "Environment", register: registerEnvTools },
   { category: "Environment", register: registerGuidanceTools },
@@ -251,6 +253,7 @@ const CATEGORY_ORDER = [
   "ArgoCD",
   "Data Processing",
   ".NET",
+  "Liquibase",
   "Node.js",
   "Python",
   "Execution",

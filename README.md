@@ -188,6 +188,9 @@ so agents can self-select without the README.
 | search for exact code references or symbols | `rg` | `grep -r`, `rg` |
 | triage why a Helm release is unhealthy | `helm_release_triage` | `helm status`, `helm get values` |
 | check whether an ArgoCD app is healthy and in sync | `argo_app_health_summary` | `argocd app get`, `argocd app list` |
+| validate a Liquibase changelog for errors | `liquibase_validate` | `liquibase validate` |
+| preview the SQL Liquibase would run for pending changesets | `liquibase_update_sql` | `liquibase updateSQL`, `liquibase updateSQL \| grep` |
+| list Liquibase changesets not yet applied to the database | `liquibase_status` | `liquibase status --verbose` |
 | discover which CLIs are installed before calling a tool | `check_environment` | `which`, `<tool> --version` |
 
 <!-- END GENERATED: which-tool -->
@@ -299,6 +302,14 @@ so agents can self-select without the README.
 |------|-------------|
 | `dotnet_build` | Run dotnet build and return structured diagnostics with file, line, column, message, and error code. |
 | `dotnet_test` | Run dotnet test and return structured results: pass/fail/skip counts, failure messages. |
+
+### Liquibase
+
+| Tool | Description |
+|------|-------------|
+| `liquibase_validate` | Validate a Liquibase changelog and return a structured pass/fail result with per-changeset errors (duplicate ids, checksum drift). |
+| `liquibase_update_sql` | Render the SQL Liquibase would run for pending changesets (updateSQL) as structured per-changeset summaries with a SQL-Server batch lint. |
+| `liquibase_status` | List Liquibase changesets not yet applied to the target database, as structured JSON. |
 
 ### Node.js
 
@@ -515,6 +526,7 @@ The following CLI tools must be installed for their respective tool groups to wo
 - **JSON**: `jq`
 - **YAML**: `yq` (mikefarah/yq)
 - **.NET**: `dotnet` (.NET SDK)
+- **Liquibase**: `liquibase`
 - **Python**: `ruff` (lint), `mypy` (typecheck), `pytest` (test)
 
 Tools gracefully return errors if their underlying CLI is not installed.
