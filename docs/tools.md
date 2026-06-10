@@ -978,7 +978,7 @@ Search file contents with ripgrep. Returns structured matches with file, line nu
 
 ## `run`
 
-Run a shell command and return structured output with smart truncation. Keeps the last N lines of output (where errors typically appear). Use for build, test, and lint commands where you need exit code and error details, not full verbose output.
+Run a shell command and return structured output with smart truncation. Keeps the last N lines of output by default (where errors typically appear), or the first N with mode='head'. Use for build, test, and lint commands where you need exit code and error details, not full verbose output.
 
 **Inputs:**
 
@@ -986,7 +986,9 @@ Run a shell command and return structured output with smart truncation. Keeps th
 - `args`: string[] _(optional)_ — Command arguments (e.g. ['test'])
 - `cwd`: string _(optional)_ — Working directory
 - `timeout`: number _(optional)_ — Timeout in ms
-- `maxLines`: number _(optional)_ — Max stdout lines to keep (last N). 0 = unlimited.
+- `maxLines`: number _(optional)_ — Max stdout/stderr lines to keep. 0 = unlimited.
+- `mode`: "tail" | "head" _(optional)_ — Keep the last N lines (tail, default) or the first N (head).
+- `maxBytes`: number _(optional)_ — Optional cap on stdout/stderr byte length (UTF-8).
 
 **Outputs:**
 
@@ -996,6 +998,13 @@ Run a shell command and return structured output with smart truncation. Keeps th
 - `stdoutLines`: number
 - `truncated`: boolean
 - `elapsed`: number — Wall-clock execution time in milliseconds
+
+**Equivalent commands:**
+
+```sh
+<command> | tail -n N
+<command> | head -n N
+```
 
 ## `tf_backend_info`
 

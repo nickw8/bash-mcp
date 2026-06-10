@@ -9,7 +9,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec } from "#exec";
+import { exec, shapeOutput } from "#exec";
 import { err, ok } from "#response";
 import { checkCommandAllowed } from "#safety";
 import { defineTool } from "#tool";
@@ -22,7 +22,8 @@ export function registerRunTools(server: McpServer) {
     {
       title: "Run a command",
       description:
-        "Run a shell command and return structured output with smart truncation. Keeps the last N lines of output (where errors typically appear). Use for build, test, and lint commands where you need exit code and error details, not full verbose output.",
+        "Run a shell command and return structured output with smart truncation. Keeps the last N lines of output by default (where errors typically appear), or the first N with mode='head'. Use for build, test, and lint commands where you need exit code and error details, not full verbose output.",
+      equivalentCommands: ["<command> | tail -n N", "<command> | head -n N"],
       inputSchema: {
         command: z.string().describe("The command to run (e.g. 'npm')"),
         args: z
@@ -36,7 +37,18 @@ export function registerRunTools(server: McpServer) {
           .number()
           .optional()
           .default(50)
-          .describe("Max stdout lines to keep (last N). 0 = unlimited."),
+          .describe("Max stdout/stderr lines to keep. 0 = unlimited."),
+        mode: z
+          .enum(["tail", "head"])
+          .optional()
+          .default("tail")
+          .describe(
+            "Keep the last N lines (tail, default) or the first N (head).",
+          ),
+        maxBytes: z
+          .number()
+          .optional()
+          .describe("Optional cap on stdout/stderr byte length (UTF-8)."),
       },
       outputSchema: {
         exitCode: z.number(),
@@ -49,7 +61,7 @@ export function registerRunTools(server: McpServer) {
           .describe("Wall-clock execution time in milliseconds"),
       },
     },
-    async ({ command, args, cwd, timeout, maxLines }) => {
+    async ({ command, args, cwd, timeout, maxLines, mode, maxBytes }) => {
       const start = Date.now();
 
       // Safety profile (default readOnly): block mutating commands unless
@@ -73,29 +85,18 @@ export function registerRunTools(server: McpServer) {
 
       const result = await exec(command, args, { cwd, timeout });
 
-      const lines = result.stdout.split("\n");
-      // Remove trailing empty line from split (stdout often ends with \n)
-      if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
-
-      const totalLines = lines.length;
-      const limit = maxLines;
-      let truncated = false;
-      let stdout: string;
-
-      if (limit > 0 && totalLines > limit) {
-        truncated = true;
-        const kept = lines.slice(-limit);
-        stdout = `... (${totalLines - limit} lines truncated) ...\n${kept.join("\n")}`;
-      } else {
-        stdout = lines.join("\n");
-      }
+      // shapeOutput is the shared tail/head/byte trimmer (see #exec); stderr is
+      // trimmed with the same policy so a noisy failure can't blow the budget.
+      const shape = { mode, maxLines, maxBytes };
+      const stdout = shapeOutput(result.stdout, shape);
+      const stderr = shapeOutput(result.stderr, shape);
 
       return ok({
         exitCode: result.exitCode,
-        stdout,
-        stderr: result.stderr,
-        stdoutLines: totalLines,
-        truncated,
+        stdout: stdout.text,
+        stderr: stderr.text,
+        stdoutLines: stdout.totalLines,
+        truncated: stdout.truncated || stderr.truncated,
         elapsed: Date.now() - start,
       });
     },
