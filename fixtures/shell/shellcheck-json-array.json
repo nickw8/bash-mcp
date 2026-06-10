@@ -1,1 +1,13 @@
-[{"file":"legacy.sh","line":4,"endLine":4,"column":1,"endColumn":3,"level":"style","code":2006,"message":"Use $(...) notation instead of legacy backticks `...`.","fix":null}]
+[
+  {
+    "file": "legacy.sh",
+    "line": 4,
+    "endLine": 4,
+    "column": 1,
+    "endColumn": 3,
+    "level": "style",
+    "code": 2006,
+    "message": "Use $(...) notation instead of legacy backticks `...`.",
+    "fix": null
+  }
+]
