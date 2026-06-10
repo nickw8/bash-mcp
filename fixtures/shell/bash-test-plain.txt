@@ -1,0 +1,3 @@
+Setting up environment
+Deploying release candidate
+All done, everything looks fine

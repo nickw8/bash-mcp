@@ -1,0 +1,5 @@
+TAP version 13
+1..3
+ok 1 - adds numbers
+not ok 2 - subtracts numbers
+ok 3 - skips when disabled # SKIP not configured
