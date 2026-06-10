@@ -26,6 +26,8 @@ const KNOWN_TOOLS = new Set([
   "liquibase_update_sql",
   "liquibase_status",
   "check_environment",
+  "bash_lint",
+  "bash_test",
 ]);
 
 describe("INTENTS", () => {

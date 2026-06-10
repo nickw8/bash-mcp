@@ -33,18 +33,38 @@ const PASSED_FAILED = /(\d+)\s+passed(?:,\s+(\d+)\s+failed)?/i;
  */
 export function parseBashTest(text: string): BashTestParse {
   const tests: TestResult[] = [];
+  let last: TestResult | undefined;
 
   for (const raw of text.split("\n")) {
-    const match = raw.trim().match(TAP_LINE);
-    if (!match) continue;
+    const trimmed = raw.trim();
+    const match = trimmed.match(TAP_LINE);
 
-    const name = match[2]?.trim() || `test ${tests.length + 1}`;
-    const status: TestResult["status"] = TAP_DIRECTIVE.test(name)
-      ? "skipped"
-      : match[1] === "ok"
-        ? "passed"
-        : "failed";
-    tests.push({ name, status, duration: 0 });
+    if (match) {
+      const desc = match[2]?.trim() ?? "";
+      // A `# skip`/`# todo` directive on the line marks the case skipped; the
+      // visible name drops any trailing `# …` directive/comment (bats emits
+      // e.g. `ok 3 name # skip reason`).
+      const status: TestResult["status"] = TAP_DIRECTIVE.test(desc)
+        ? "skipped"
+        : match[1] === "ok"
+          ? "passed"
+          : "failed";
+      const name =
+        desc.replace(/\s*#.*$/, "").trim() || `test ${tests.length + 1}`;
+      last = { name, status, duration: 0 };
+      tests.push(last);
+      continue;
+    }
+
+    // TAP diagnostic comments after a `not ok` line carry the failure detail
+    // (bats: `# (in test file …, line N)` then `#   \`…' failed`). Attach them
+    // to the failing case so callers see why it failed, not just that it did.
+    if (last?.status === "failed" && trimmed.startsWith("#")) {
+      const msg = trimmed.replace(/^#\s?/, "");
+      last.failureMessage = last.failureMessage
+        ? `${last.failureMessage}\n${msg}`
+        : msg;
+    }
   }
 
   if (tests.length > 0) {

@@ -29,6 +29,25 @@ describe("parseBashTest", () => {
     expect(summary).toEqual({ passed: 1, failed: 1, total: 3 });
   });
 
+  it("parses real bats --tap output: failure detail + inline skip directive", () => {
+    const { summary, tests } = parseBashTest(load("bash-test-bats.txt"));
+    expect(tests).toHaveLength(3);
+    expect(tests[0]).toEqual({
+      name: "adds numbers",
+      status: "passed",
+      duration: 0,
+    });
+    // bats diagnostic lines after "not ok" become the failureMessage.
+    expect(tests[1]?.status).toBe("failed");
+    expect(tests[1]?.name).toBe("subtracts numbers (intentionally wrong)");
+    expect(tests[1]?.failureMessage).toContain("line 8");
+    expect(tests[1]?.failureMessage).toContain("failed");
+    // Inline "# skip" directive → skipped, with the directive stripped from name.
+    expect(tests[2]?.status).toBe("skipped");
+    expect(tests[2]?.name).toBe("skipped example");
+    expect(summary).toEqual({ passed: 1, failed: 1, total: 3 });
+  });
+
   it("parses a 'N tests, M failures' summary line (no TAP)", () => {
     const { summary, tests } = parseBashTest(load("bash-test-summary.txt"));
     expect(tests).toEqual([]);

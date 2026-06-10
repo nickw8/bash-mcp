@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit by hand. Regenerate with `npm run docs:tools`. -->
 
-57 tools. Each entry lists inputs, outputs, and (where known) the raw command(s) it approximates.
+60 tools. Each entry lists inputs, outputs, and (where known) the raw command(s) it approximates.
 
 ## `argo_app_detail`
 
@@ -82,6 +82,82 @@ List ArgoCD applications with sync/health status. Structured summary instead of 
 - `apps`: object[]
 - `count`: number
 - `summary`: object
+
+## `bash_lint`
+
+`read-only`
+
+Run shellcheck and return structured diagnostics with file, line, column, message, and SC rule code. Much more compact than raw shellcheck output. Use minSeverity to filter by severity level.
+
+**Inputs:**
+
+- `files`: string[] — Shell script paths to lint
+- `minSeverity`: "error" | "warning" | "info" _(optional)_ — Minimum severity to include (e.g. 'error' drops warnings and info)
+- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text format: grouped (default, file header once then line:col rule message), tsv, or json
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']); structuredContent keeps all
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
+- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
+
+**Outputs:**
+
+- `errors`: object[]
+- `errorCount`: number
+- `warningCount`: number
+
+**Equivalent commands:**
+
+```sh
+shellcheck -f json1 script.sh
+```
+
+## `bash_syntax_check`
+
+`read-only`
+
+Check shell scripts for syntax errors with `bash -n` and return structured diagnostics (file, line, message). Parses without executing, so it is safe on untrusted scripts. Reports valid:true when no errors are found.
+
+**Inputs:**
+
+- `files`: string[] — Shell script paths to check
+- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text format: grouped (default, file header once then line:col rule message), tsv, or json
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']); structuredContent keeps all
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
+- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
+
+**Outputs:**
+
+- `errors`: object[]
+- `errorCount`: number
+- `valid`: boolean
+
+**Equivalent commands:**
+
+```sh
+bash -n script.sh
+```
+
+## `bash_test`
+
+Run a shell test script — bats `.bats` files via `--tap`, or a plain `.sh` harness — and return structured results: per-case pass/fail plus a summary parsed from TAP or `N tests, M failures` output, falling back to exit-code-only when the format is unrecognized. Executes the script, so it is gated by BASH_MCP_MODE.
+
+**Inputs:**
+
+- `file`: string — Test script path (.bats or .sh)
+- `cwd`: string _(optional)_ — Working directory
+- `timeout`: number _(optional)_ — Timeout in ms
+
+**Outputs:**
+
+- `summary`: object
+- `tests`: object[]
+- `exitCode`: number
+
+**Equivalent commands:**
+
+```sh
+bats --tap test.bats
+bash test.sh
+```
 
 ## `batch`
 

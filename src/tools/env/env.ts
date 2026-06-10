@@ -47,6 +47,8 @@ export const PROBES: Probe[] = [
   { name: "ruff", binary: "ruff", versionArgs: ["--version"] },
   { name: "mypy", binary: "mypy", versionArgs: ["--version"] },
   { name: "pytest", binary: "pytest", versionArgs: ["--version"] },
+  { name: "shellcheck", binary: "shellcheck", versionArgs: ["--version"] },
+  { name: "bats", binary: "bats", versionArgs: ["--version"] },
 ];
 
 /** Extract the first semver-like token from CLI version output. */

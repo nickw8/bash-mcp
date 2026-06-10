@@ -36,6 +36,7 @@ import { registerPythonTools } from "./tools/python/python.js";
 import { registerRunTools } from "./tools/run/run.js";
 import { registerRunSeqTools } from "./tools/run/seq.js";
 import { registerSearchTools } from "./tools/search/search.js";
+import { registerShellTools } from "./tools/shell/shell.js";
 import { registerTerraformTools } from "./tools/terraform/terraform.js";
 import { registerYamlTools } from "./tools/yaml/yaml.js";
 
@@ -73,6 +74,7 @@ const GROUPS: readonly ToolGroup[] = [
   { category: ".NET", register: registerDotnetTools },
   { category: "Liquibase", register: registerLiquibaseTools },
   { category: "Python", register: registerPythonTools },
+  { category: "Shell", register: registerShellTools },
   { category: "Environment", register: registerEnvTools },
   { category: "Environment", register: registerGuidanceTools },
 ];
@@ -258,6 +260,7 @@ const CATEGORY_ORDER = [
   "Liquibase",
   "Node.js",
   "Python",
+  "Shell",
   "Execution",
 ];
 

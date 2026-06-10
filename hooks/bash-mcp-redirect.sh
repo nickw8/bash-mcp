@@ -99,6 +99,11 @@ RULES=(
   "pytest|block|mcp__bash-mcp__python_test"
   "mypy|block|mcp__bash-mcp__python_typecheck"
 
+  # ── Shell (shellcheck/bats/bash -n) ──
+  "shellcheck|block|mcp__bash-mcp__bash_lint"
+  "bats|block|mcp__bash-mcp__bash_test"
+  "bash -n|block|mcp__bash-mcp__bash_syntax_check"
+
   # ── Capability discovery ──
   "which|block|mcp__bash-mcp__check_environment"
   "command -v|block|mcp__bash-mcp__check_environment"

@@ -145,6 +145,21 @@ export const INTENTS = [
     reason: "Reports up-to-date vs a structured pending list, not raw output.",
   },
   {
+    intent: "lint a shell script for bugs and quoting issues",
+    preferredTool: "bash_lint",
+    category: "shell",
+    avoid: ["run: shellcheck", "run: shellcheck -f json1"],
+    reason:
+      "Returns structured diagnostics with SC rule codes instead of raw shellcheck text.",
+  },
+  {
+    intent: "run a bats or shell test suite",
+    preferredTool: "bash_test",
+    category: "shell",
+    avoid: ["run: bats", "run: bash test.sh"],
+    reason: "Parses TAP/summary output into per-case pass/fail plus a summary.",
+  },
+  {
     intent: "discover which CLIs are installed before calling a tool",
     preferredTool: "check_environment",
     category: "environment",

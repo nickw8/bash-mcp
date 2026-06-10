@@ -131,6 +131,12 @@ describe("bash-mcp-redirect: implemented tools BLOCK", () => {
     expectBlock("mypy src", "mcp__bash-mcp__python_typecheck");
   });
 
+  it("shell tooling", () => {
+    expectBlock("shellcheck script.sh", "mcp__bash-mcp__bash_lint");
+    expectBlock("bats test/demo.bats", "mcp__bash-mcp__bash_test");
+    expectBlock("bash -n script.sh", "mcp__bash-mcp__bash_syntax_check");
+  });
+
   it("liquibase tooling", () => {
     expectBlock("liquibase validate", "mcp__bash-mcp__liquibase_validate");
     expectBlock("liquibase updateSQL", "mcp__bash-mcp__liquibase_update_sql");

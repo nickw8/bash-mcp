@@ -51,6 +51,8 @@ describe("PROBES", () => {
       "ruff",
       "mypy",
       "pytest",
+      "shellcheck",
+      "bats",
     ]) {
       expect(names).toContain(expected);
     }

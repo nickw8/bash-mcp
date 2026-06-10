@@ -191,6 +191,8 @@ so agents can self-select without the README.
 | validate a Liquibase changelog for errors | `liquibase_validate` | `liquibase validate` |
 | preview the SQL Liquibase would run for pending changesets | `liquibase_update_sql` | `liquibase updateSQL`, `liquibase updateSQL \| grep` |
 | list Liquibase changesets not yet applied to the database | `liquibase_status` | `liquibase status --verbose` |
+| lint a shell script for bugs and quoting issues | `bash_lint` | `shellcheck`, `shellcheck -f json1` |
+| run a bats or shell test suite | `bash_test` | `bats`, `bash test.sh` |
 | discover which CLIs are installed before calling a tool | `check_environment` | `which`, `<tool> --version` |
 
 <!-- END GENERATED: which-tool -->
@@ -326,6 +328,14 @@ so agents can self-select without the README.
 | `python_lint` | Run ruff check and return structured diagnostics with file, line, column, message, and rule code. |
 | `python_test` | Run pytest and return structured test results: suites, pass/fail counts, failure messages. |
 | `python_typecheck` | Run mypy and return structured type errors with file, line, column, message, and error code. |
+
+### Shell
+
+| Tool | Description |
+|------|-------------|
+| `bash_syntax_check` | Check shell scripts for syntax errors with `bash -n` and return structured diagnostics (file, line, message). |
+| `bash_lint` | Run shellcheck and return structured diagnostics with file, line, column, message, and SC rule code. |
+| `bash_test` | Run a shell test script — bats `.bats` files via `--tap`, or a plain `.sh` harness — and return structured results: per-case pass/fail plus a summary parsed from TAP or `N tests, M failures` output, falling back to exit-code-only when the format is unrecognized. |
 
 ### Execution
 
