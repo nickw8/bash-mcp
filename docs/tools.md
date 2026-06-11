@@ -219,13 +219,14 @@ _no inputs_
 
 ## `dotnet_build`
 
-Run dotnet build and return structured diagnostics with file, line, column, message, and error code. Much more compact than raw MSBuild output.
+Run dotnet build and return structured diagnostics with file, line, column, message, and error code. Much more compact than raw MSBuild output. Warnings are omitted by default; pass includeWarnings:true (or detailLevel:'full') to include them.
 
 **Inputs:**
 
 - `cwd`: string — Project root directory
 - `project`: string _(optional)_ — Path to .csproj or .sln file (default: auto-detected in cwd)
 - `configuration`: string _(optional)_ — Build configuration (e.g. Debug, Release)
+- `includeWarnings`: boolean _(optional)_ — Include warnings in the response (default: errors only, even on a successful build)
 - `format`: "grouped" | "tsv" | "json" _(optional)_ — Text format: grouped (default, file header once then line:col rule message), tsv, or json
 - `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']); structuredContent keeps all
 - `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
