@@ -275,7 +275,9 @@ export function registerFileTools(server: McpServer) {
         "Pass `path` for a single file, or `paths` to read several in one call (returns { files, count }) — " +
         "collapsing what would otherwise be multiple round-trips. " +
         "For large files, use startLine/endLine or maxLines to limit output. " +
-        "Use ref to read from a git branch/commit instead of disk (e.g. ref='main').",
+        "Use ref to read from a git branch/commit instead of disk (e.g. ref='main'). " +
+        'NOTE: reading with cat does NOT satisfy the built-in Edit/Write "must read first" guard ' +
+        "(it tracks only the built-in Read tool) — run the built-in Read on a file immediately before editing it.",
       inputSchema: {
         path: z.string().optional().describe("Path to a single file"),
         paths: z
@@ -310,7 +312,8 @@ export function registerFileTools(server: McpServer) {
           .boolean()
           .optional()
           .describe(
-            "Prepend line numbers to each line (useful before editing)",
+            "Prepend line numbers to each line (useful when locating a line). " +
+              "Does not register the file as read for the built-in Edit — use the built-in Read right before editing.",
           ),
       },
       outputSchema: {

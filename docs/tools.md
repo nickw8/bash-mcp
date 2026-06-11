@@ -176,7 +176,7 @@ Run multiple shell commands in parallel and return all results. Use when you nee
 
 `read-only`
 
-Read one or more files with line numbers and smart truncation. Returns structured output with metadata. Pass `path` for a single file, or `paths` to read several in one call (returns { files, count }) — collapsing what would otherwise be multiple round-trips. For large files, use startLine/endLine or maxLines to limit output. Use ref to read from a git branch/commit instead of disk (e.g. ref='main').
+Read one or more files with line numbers and smart truncation. Returns structured output with metadata. Pass `path` for a single file, or `paths` to read several in one call (returns { files, count }) — collapsing what would otherwise be multiple round-trips. For large files, use startLine/endLine or maxLines to limit output. Use ref to read from a git branch/commit instead of disk (e.g. ref='main'). NOTE: reading with cat does NOT satisfy the built-in Edit/Write "must read first" guard (it tracks only the built-in Read tool) — run the built-in Read on a file immediately before editing it.
 
 **Inputs:**
 
@@ -186,7 +186,7 @@ Read one or more files with line numbers and smart truncation. Returns structure
 - `startLine`: number _(optional)_ — Start reading from this line (1-based)
 - `endLine`: number _(optional)_ — Stop reading at this line (inclusive)
 - `maxLines`: number _(optional)_ — Max lines to return per file (default 200, use 0 for unlimited)
-- `lineNumbers`: boolean _(optional)_ — Prepend line numbers to each line (useful before editing)
+- `lineNumbers`: boolean _(optional)_ — Prepend line numbers to each line (useful when locating a line). Does not register the file as read for the built-in Edit — use the built-in Read right before editing.
 
 **Outputs:**
 
