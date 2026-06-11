@@ -537,7 +537,7 @@ Get the computed values for a Helm release as structured data.
 
 `read-only`
 
-Query and transform JSON using jq expressions. Accepts a file path or raw JSON string. Returns parsed, structured output — far more compact than reading a full JSON file.
+Query and transform JSON using jq expressions. Accepts a file path or raw JSON string. Returns parsed, structured output — far more compact than reading a full JSON file. The filter is passed directly to jq (no shell), so shell-style escaping such as backslash-escaped quotes is neither needed nor supported — write the filter exactly as jq expects it.
 
 **Inputs:**
 
