@@ -11,6 +11,7 @@ import { z } from "zod";
 import { exec } from "#exec";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
+import { stringOrArray, toArray } from "../../parsers/schemas.js";
 
 /** Parse unified diff output into structured per-file sections with hunks. */
 export function parseDiff(raw: string) {
@@ -90,7 +91,8 @@ export function registerGitDiffContentTools(server: McpServer) {
       description:
         "Show git diff with structured patch content. Returns parsed hunks per file instead of raw unified diff text. " +
         "Use this when you need to see actual code changes, not just file-level stats. " +
-        "Use base+ref for two-ref comparison (e.g. base='main', ref='feature').",
+        "Use base+ref for two-ref comparison (e.g. base='main', ref='feature'). " +
+        "Use path to scope to one or more files or directories.",
       inputSchema: {
         cwd: z.string().optional().describe("Working directory (git repo)"),
         ref: z
@@ -110,10 +112,9 @@ export function registerGitDiffContentTools(server: McpServer) {
           .optional()
           .default(false)
           .describe("Show staged changes (--cached)"),
-        path: z
-          .string()
-          .optional()
-          .describe("Limit diff to a specific file or directory"),
+        path: stringOrArray(
+          "Limit diff to one or more files or directories (string or array)",
+        ),
         context: z
           .number()
           .optional()
@@ -150,10 +151,8 @@ export function registerGitDiffContentTools(server: McpServer) {
       } else if (ref) {
         args.push(ref);
       }
-      if (path) {
-        args.push("--");
-        args.push(path);
-      }
+      const paths = toArray(path);
+      if (paths.length) args.push("--", ...paths);
 
       const result = await exec("git", args, cwd ? { cwd } : {});
 

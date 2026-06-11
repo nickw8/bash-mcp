@@ -3,6 +3,7 @@ import { z } from "zod";
 import { exec } from "#exec";
 import { ok } from "#response";
 import { defineTool } from "#tool";
+import { stringOrArray, toArray } from "../../parsers/schemas.js";
 
 /** Register the git_diff tool for structured file-level diff statistics. */
 export function registerGitDiffSummaryTool(server: McpServer) {
@@ -14,7 +15,7 @@ export function registerGitDiffSummaryTool(server: McpServer) {
       description:
         "Structured git diff: files changed with insertions/deletions counts. " +
         "Use base+ref for two-ref comparison (e.g. base='main', ref='feature'). " +
-        "Use path to scope to a specific file or directory.",
+        "Use path to scope to one or more files or directories.",
       inputSchema: {
         cwd: z.string().optional().describe("Repository path"),
         ref: z
@@ -28,10 +29,9 @@ export function registerGitDiffSummaryTool(server: McpServer) {
             "Base ref for two-ref comparison. When both ref and base are set, runs git diff <base> <ref>",
           ),
         staged: z.boolean().optional().describe("Show staged changes"),
-        path: z
-          .string()
-          .optional()
-          .describe("Limit diff to a specific file or directory"),
+        path: stringOrArray(
+          "Limit diff to one or more files or directories (string or array)",
+        ),
       },
       outputSchema: {
         files: z.array(
@@ -55,10 +55,8 @@ export function registerGitDiffSummaryTool(server: McpServer) {
       } else if (ref) {
         args.push(ref);
       }
-      if (path) {
-        args.push("--");
-        args.push(path);
-      }
+      const paths = toArray(path);
+      if (paths.length) args.push("--", ...paths);
 
       const result = await exec("git", args, cwd ? { cwd } : {});
 

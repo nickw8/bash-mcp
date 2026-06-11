@@ -321,7 +321,7 @@ List git branches with current branch marker and last commit info.
 
 `read-only`
 
-Structured git diff: files changed with insertions/deletions counts. Use base+ref for two-ref comparison (e.g. base='main', ref='feature'). Use path to scope to a specific file or directory.
+Structured git diff: files changed with insertions/deletions counts. Use base+ref for two-ref comparison (e.g. base='main', ref='feature'). Use path to scope to one or more files or directories.
 
 **Inputs:**
 
@@ -329,7 +329,7 @@ Structured git diff: files changed with insertions/deletions counts. Use base+re
 - `ref`: string _(optional)_ — Ref to diff against (e.g. 'main', 'HEAD~3')
 - `base`: string _(optional)_ — Base ref for two-ref comparison. When both ref and base are set, runs git diff <base> <ref>
 - `staged`: boolean _(optional)_ — Show staged changes
-- `path`: string _(optional)_ — Limit diff to a specific file or directory
+- `path`: string | string[] _(optional)_ — Limit diff to one or more files or directories (string or array)
 
 **Outputs:**
 
@@ -342,7 +342,7 @@ Structured git diff: files changed with insertions/deletions counts. Use base+re
 
 `read-only`
 
-Show git diff with structured patch content. Returns parsed hunks per file instead of raw unified diff text. Use this when you need to see actual code changes, not just file-level stats. Use base+ref for two-ref comparison (e.g. base='main', ref='feature').
+Show git diff with structured patch content. Returns parsed hunks per file instead of raw unified diff text. Use this when you need to see actual code changes, not just file-level stats. Use base+ref for two-ref comparison (e.g. base='main', ref='feature'). Use path to scope to one or more files or directories.
 
 **Inputs:**
 
@@ -350,7 +350,7 @@ Show git diff with structured patch content. Returns parsed hunks per file inste
 - `ref`: string _(optional)_ — Diff against this ref (e.g. 'HEAD~1', 'main', a commit hash)
 - `base`: string _(optional)_ — Base ref for two-ref comparison. When both ref and base are set, runs git diff <base> <ref>
 - `staged`: boolean _(optional)_ — Show staged changes (--cached)
-- `path`: string _(optional)_ — Limit diff to a specific file or directory
+- `path`: string | string[] _(optional)_ — Limit diff to one or more files or directories (string or array)
 - `context`: number _(optional)_ — Number of context lines around changes (passed as -U<n>)
 
 **Outputs:**

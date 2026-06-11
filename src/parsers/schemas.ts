@@ -8,6 +8,24 @@
 import { z } from "zod";
 import type { BudgetParams, Diagnostic } from "./types.js";
 
+/**
+ * Zod fragment for a param that accepts either a single string or an array of
+ * strings, normalized with {@link toArray} in the handler. Mirrors rg's `glob`
+ * multi-value pattern so callers can pass one value or many.
+ */
+export function stringOrArray(description: string) {
+  return z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .describe(description);
+}
+
+/** Normalize an optional string|string[] param into an array (empty if unset). */
+export function toArray<T>(value: T | T[] | undefined): T[] {
+  if (value === undefined) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
 export const diagnosticSchema = z.object({
   file: z.string(),
   line: z.number(),

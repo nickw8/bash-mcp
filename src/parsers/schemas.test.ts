@@ -7,7 +7,12 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { applyBudget, budgetSchema } from "./schemas.js";
+import {
+  applyBudget,
+  budgetSchema,
+  stringOrArray,
+  toArray,
+} from "./schemas.js";
 
 const rows = Array.from({ length: 250 }, (_, i) => ({ i }));
 
@@ -56,5 +61,43 @@ describe("applyBudget", () => {
       "includeRaw",
       "maxItems",
     ]);
+  });
+});
+
+describe("toArray", () => {
+  it("undefined → empty array", () => {
+    expect(toArray(undefined)).toEqual([]);
+  });
+
+  it("single value → one-element array", () => {
+    expect(toArray("src")).toEqual(["src"]);
+  });
+
+  it("array → returned as-is", () => {
+    expect(toArray(["src", "test"])).toEqual(["src", "test"]);
+  });
+
+  it("empty array → empty array", () => {
+    expect(toArray([])).toEqual([]);
+  });
+});
+
+describe("stringOrArray", () => {
+  const schema = stringOrArray("paths");
+
+  it("accepts a single string", () => {
+    expect(schema.parse("src")).toBe("src");
+  });
+
+  it("accepts an array of strings", () => {
+    expect(schema.parse(["src", "test"])).toEqual(["src", "test"]);
+  });
+
+  it("accepts undefined (optional)", () => {
+    expect(schema.parse(undefined)).toBeUndefined();
+  });
+
+  it("rejects a non-string element", () => {
+    expect(() => schema.parse([1])).toThrow();
   });
 });
