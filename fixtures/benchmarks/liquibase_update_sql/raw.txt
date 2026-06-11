@@ -1,0 +1,71 @@
+####################################################
+##  Liquibase Open Source 5.0.3 by Liquibase      ##
+####################################################
+Starting Liquibase at 15:58:07 using Java 26.0.1 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Liquibase Version: 5.0.3
+
+-- Lock Database
+UPDATE DATABASECHANGELOGLOCK SET LOCKED = 1, LOCKEDBY = 'HOST (10.0.0.1)', LOCKGRANTED = GETDATE() WHERE ID = 1 AND LOCKED = 0
+GO
+
+-- *********************************************************************
+-- Update Database Script
+-- *********************************************************************
+-- Change Log: changelog.xml
+-- Ran at: 6/10/26, 3:58 PM
+-- Against: user@conn JDBC Driver for SQL Server;applicationIntent=readwrite;
+-- Liquibase version: 5.0.3
+-- *********************************************************************
+
+USE CICD;
+GO
+
+-- Changeset databases/ApplicationConfig/database/DBCreation.sql::ApplicationConfigDB-v0.0.5::NWEIGHT
+-- /* Create the ApplicationConfig database */
+CREATE DATABASE [ApplicationConfig]
+  CONTAINMENT = NONE;
+GO
+
+INSERT INTO DATABASECHANGELOG (ID, AUTHOR, FILENAME, DATEEXECUTED, ORDEREXECUTED, MD5SUM, DESCRIPTION, COMMENTS, EXECTYPE, CONTEXTS, LABELS, LIQUIBASE, DEPLOYMENT_ID) VALUES ('ApplicationConfigDB-v0.0.5', 'NWEIGHT', 'databases/ApplicationConfig/database/DBCreation.sql', GETDATE(), 608, '9:b206f9460cd48f26c6acefa6b91f97ca', 'sql', '/* Create the ApplicationConfig database */', 'EXECUTED', NULL, 'ps-3457', '5.0.3', '1128687362')
+GO
+
+-- Changeset databases/ApplicationConfig/data_fixes/feature_flag_toggles/EQ-2949-setFeatureFlag.sql::addFeatureFlag-EQ-2949-enable-v0.0.2::hromau
+-- /* EQ-2949: enable feature toggle */
+UPDATE ApplicationConfig.dbo.FeatureFlags
+SET IsEnabled = 1
+WHERE FlagKey = N'EQ-2949';
+GO
+
+INSERT INTO DATABASECHANGELOG (ID, AUTHOR, FILENAME, DATEEXECUTED, ORDEREXECUTED, MD5SUM, DESCRIPTION, COMMENTS, EXECTYPE, CONTEXTS, LABELS, LIQUIBASE, DEPLOYMENT_ID) VALUES ('addFeatureFlag-EQ-2949-enable-v0.0.2', 'hromau', 'databases/ApplicationConfig/data_fixes/feature_flag_toggles/EQ-2949-setFeatureFlag.sql', GETDATE(), 609, '9:4c4f8dbf016f8ca6e299c841797a3ada', 'sql', '/* EQ-2949: enable feature toggle */', 'EXECUTED', NULL, 'eq-2949', '5.0.3', '1128687362')
+GO
+
+-- Changeset databases/ClaimsManagement/procedures/EQ-4070_Rebate_SP.sql::GetDataForRebateFalloutReport-EQ-4070-v0.0.5::praveen_kalikota
+-- /* New SP for Rebate Fallout Report */
+USE [ClaimsManagement];
+GO
+
+SET ANSI_NULLS ON;
+GO
+
+SET QUOTED_IDENTIFIER ON;
+GO
+
+CREATE OR ALTER PROCEDURE GetDataForRebateFalloutReport
+AS
+  BEGIN
+    SELECT 1 AS Placeholder;
+  END;
+GO
+
+INSERT INTO DATABASECHANGELOG (ID, AUTHOR, FILENAME, DATEEXECUTED, ORDEREXECUTED, MD5SUM, DESCRIPTION, COMMENTS, EXECTYPE, CONTEXTS, LABELS, LIQUIBASE, DEPLOYMENT_ID) VALUES ('GetDataForRebateFalloutReport-EQ-4070-v0.0.5', 'praveen_kalikota', 'databases/ClaimsManagement/procedures/EQ-4070_Rebate_SP.sql', GETDATE(), 691, '9:1234567890abcdef1234567890abcdef', 'sql', '/* New SP for Rebate Fallout Report */', 'EXECUTED', NULL, 'eq-4070', '5.0.3', '1128687362')
+GO
+
+-- Changeset security/04_logins/svc_userservice.sql::svc-user-service-grants-v0.1.3::NWEIGHT
+UPDATE DATABASECHANGELOG SET COMMENTS = '/* sql service account for user-services */', CONTEXTS = NULL, DATEEXECUTED = GETDATE(), DEPLOYMENT_ID = '1128687362', DESCRIPTION = 'sql', EXECTYPE = 'RERAN', LABELS = 'security', LIQUIBASE = '5.0.3', MD5SUM = '9:f3370ee3f3a18f60445885153ef0472e', ORDEREXECUTED = 795 WHERE ID = 'svc-user-service-grants-v0.1.3' AND AUTHOR = 'NWEIGHT' AND FILENAME = 'security/04_logins/svc_userservice.sql'
+GO
+
+-- Release Database Lock
+UPDATE DATABASECHANGELOGLOCK SET LOCKED = 0, LOCKEDBY = NULL, LOCKGRANTED = NULL WHERE ID = 1
+GO
+
+Liquibase command 'updateSql' was executed successfully.

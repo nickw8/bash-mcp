@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestRun id="b1e2c3d4-0000-4a1b-9c2d-000000000001" name="user@host 2026-06-10 16:20:00" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Results>
+    <UnitTestResult executionId="00000000-0000-0000-0000-000000000001" testId="00000000-0000-0000-0000-000000000101" testName="MyApp.Tests.AuthTests.AcceptsValidToken" computerName="host" duration="00:00:00.0120000" outcome="Passed" />
+    <UnitTestResult executionId="00000000-0000-0000-0000-000000000002" testId="00000000-0000-0000-0000-000000000102" testName="MyApp.Tests.AuthTests.RejectsMalformedToken" computerName="host" duration="00:00:00.0080000" outcome="Passed" />
+    <UnitTestResult executionId="00000000-0000-0000-0000-000000000003" testId="00000000-0000-0000-0000-000000000103" testName="MyApp.Tests.UserTests.CreatesUser" computerName="host" duration="00:00:00.0150000" outcome="Passed" />
+    <UnitTestResult executionId="00000000-0000-0000-0000-000000000004" testId="00000000-0000-0000-0000-000000000104" testName="MyApp.Tests.UserTests.UpdatesUser" computerName="host" duration="00:00:00.0110000" outcome="Passed" />
+    <UnitTestResult executionId="00000000-0000-0000-0000-000000000005" testId="00000000-0000-0000-0000-000000000105" testName="MyApp.Tests.UserTests.DeletesUser" computerName="host" duration="00:00:00.0090000" outcome="Passed" />
+    <UnitTestResult executionId="00000000-0000-0000-0000-000000000006" testId="00000000-0000-0000-0000-000000000106" testName="MyApp.Tests.OrderTests.CalculatesTotal" computerName="host" duration="00:00:00.0200000" outcome="Passed" />
+    <UnitTestResult executionId="00000000-0000-0000-0000-000000000007" testId="00000000-0000-0000-0000-000000000107" testName="MyApp.Tests.OrderTests.AppliesDiscount" computerName="host" duration="00:00:00.0130000" outcome="Passed" />
+    <UnitTestResult executionId="00000000-0000-0000-0000-000000000008" testId="00000000-0000-0000-0000-000000000108" testName="MyApp.Tests.OrderTests.RejectsEmptyOrder" computerName="host" duration="00:00:00.0070000" outcome="Passed" />
+    <UnitTestResult executionId="00000000-0000-0000-0000-000000000009" testId="00000000-0000-0000-0000-000000000109" testName="MyApp.Tests.OrderTests.SupportsRefunds" computerName="host" duration="00:00:00.0000000" outcome="NotExecuted" />
+    <UnitTestResult executionId="00000000-0000-0000-0000-000000000010" testId="00000000-0000-0000-0000-000000000110" testName="MyApp.Tests.AuthTests.RejectsExpiredToken" computerName="host" duration="00:00:00.0050000" outcome="Failed">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.True() Failure
+Expected: True
+Actual:   False</Message>
+          <StackTrace>   at MyApp.Tests.AuthTests.RejectsExpiredToken() in /src/MyApp.Tests/AuthTests.cs:line 42</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <ResultSummary outcome="Failed">
+    <Counters total="10" executed="9" passed="8" failed="1" />
+  </ResultSummary>
+</TestRun>

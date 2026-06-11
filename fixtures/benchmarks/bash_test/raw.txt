@@ -1,0 +1,6 @@
+1..3
+ok 1 adds numbers
+not ok 2 subtracts numbers (intentionally wrong)
+# (in test file test/demo.bats, line 8)
+#   `[ "$result" -eq 99 ]' failed
+ok 3 skipped example # skip not ready yet

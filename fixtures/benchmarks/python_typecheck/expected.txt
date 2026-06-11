@@ -1,0 +1,7 @@
+errorCount	3
+---
+src/app.py:
+10:5	assignment	Incompatible types in assignment (expression has type "str", variable has type "int")
+42:12	arg-type	Argument 1 to "save" has incompatible type "None"; expected "User"
+src/models.py:
+8:1	no-untyped-def	Function is missing a return type annotation

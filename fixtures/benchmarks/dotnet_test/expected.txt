@@ -1,0 +1,1 @@
+{"exitCode":1,"passed":8,"failed":1,"skipped":1,"total":10,"failures":[{"name":"AuthTests.RejectsExpiredToken","status":"failed","duration":0,"failureMessage":"Assert.True() Failure\nExpected: True\nActual:   False\n   at MyApp.Tests.AuthTests.RejectsExpiredToken() in /src/MyApp.Tests/AuthTests.cs:line 42"}],"summary":"8 passed, 1 failed, 1 skipped"}

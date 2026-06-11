@@ -1,0 +1,7 @@
+errorCount	1
+warningCount	1
+---
+sample.sh:
+2:6	warning	SC2154	unquoted is referenced but not assigned.
+2:6	info	SC2086	Double quote to prevent globbing and word splitting.
+3:6	error	SC1009	The mentioned syntax error was in this if expression.

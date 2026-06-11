@@ -1,0 +1,4 @@
+errorCount	1
+---
+e1.sh:
+3:0	syntax error near unexpected token `echo'
