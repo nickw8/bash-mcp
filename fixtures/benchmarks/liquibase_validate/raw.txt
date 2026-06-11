@@ -6,7 +6,7 @@ Liquibase Version: 5.0.3
 
 Unexpected error running Liquibase: Validation Failed:
      2 changesets had duplicate identifiers
-          databases/ApplicationConfig/data_fixes/feature_flags/EQ-3849.sql::ReferralDecisionsStates_Rx_Len450-v0.0.2::hromau
-          databases/ApplicationConfig/data_fixes/feature_flags/EQ-3857.sql::ReferralDecisionsStates_Rx_Len450-v0.0.2::hromau
+          databases/ApplicationConfig/data_fixes/feature_flags/XX-0001.sql::DecisionsStates_Len450-v0.0.2::DEVUSER
+          databases/ApplicationConfig/data_fixes/feature_flags/XX-0002.sql::DecisionsStates_Len450-v0.0.2::DEVUSER
      1 changesets check sum
-          databases/ClaimsManagement/tables/001-EQ-3454.sql::EQ-3454-processclaims-schema-v0.1.0::nickw8 was: 9:abc123 but is now: 9:def456
+          databases/DataManagement/tables/001-XX-0003.sql::XX-0003-processdata-schema-v0.1.0::DEVUSER was: 9:abc123 but is now: 9:def456

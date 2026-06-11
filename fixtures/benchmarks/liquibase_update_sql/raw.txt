@@ -1,71 +1,269 @@
 ####################################################
-##  Liquibase Open Source 5.0.3 by Liquibase      ##
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ##
+##  Get documentation at docs.liquibase.com       ##
+##  Get certified courses at learn.liquibase.com  ##
+##                                                ##
 ####################################################
-Starting Liquibase at 15:58:07 using Java 26.0.1 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Starting Liquibase at 11:45:49 using Java 26.0.1 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
 Liquibase Version: 5.0.3
 
 -- Lock Database
-UPDATE DATABASECHANGELOGLOCK SET LOCKED = 1, LOCKEDBY = 'HOST (10.0.0.1)', LOCKGRANTED = GETDATE() WHERE ID = 1 AND LOCKED = 0
+UPDATE DATABASECHANGELOGLOCK SET LOCKED = 1, LOCKEDBY = 'BUILDHOST (10.0.0.1)', LOCKGRANTED = GETDATE() WHERE ID = 1 AND LOCKED = 0
 GO
 
 -- *********************************************************************
 -- Update Database Script
 -- *********************************************************************
 -- Change Log: changelog.xml
--- Ran at: 6/10/26, 3:58 PM
--- Against: user@conn JDBC Driver for SQL Server;applicationIntent=readwrite;
+-- Ran at: 6/11/26, 11:45 AM
+-- Against: dbuser@jdbc:sqlserver://db.example.test:1433;databaseName=CICD;encrypt=true;trustServerCertificate=true;applicationName=Microsoft JDBC Driver for SQL Server;applicationIntent=readwrite;
 -- Liquibase version: 5.0.3
 -- *********************************************************************
 
 USE CICD;
 GO
 
--- Changeset databases/ApplicationConfig/database/DBCreation.sql::ApplicationConfigDB-v0.0.5::NWEIGHT
--- /* Create the ApplicationConfig database */
-CREATE DATABASE [ApplicationConfig]
-  CONTAINMENT = NONE;
-GO
-
-INSERT INTO DATABASECHANGELOG (ID, AUTHOR, FILENAME, DATEEXECUTED, ORDEREXECUTED, MD5SUM, DESCRIPTION, COMMENTS, EXECTYPE, CONTEXTS, LABELS, LIQUIBASE, DEPLOYMENT_ID) VALUES ('ApplicationConfigDB-v0.0.5', 'NWEIGHT', 'databases/ApplicationConfig/database/DBCreation.sql', GETDATE(), 608, '9:b206f9460cd48f26c6acefa6b91f97ca', 'sql', '/* Create the ApplicationConfig database */', 'EXECUTED', NULL, 'ps-3457', '5.0.3', '1128687362')
-GO
-
--- Changeset databases/ApplicationConfig/data_fixes/feature_flag_toggles/EQ-2949-setFeatureFlag.sql::addFeatureFlag-EQ-2949-enable-v0.0.2::hromau
--- /* EQ-2949: enable feature toggle */
-UPDATE ApplicationConfig.dbo.FeatureFlags
-SET IsEnabled = 1
-WHERE FlagKey = N'EQ-2949';
-GO
-
-INSERT INTO DATABASECHANGELOG (ID, AUTHOR, FILENAME, DATEEXECUTED, ORDEREXECUTED, MD5SUM, DESCRIPTION, COMMENTS, EXECTYPE, CONTEXTS, LABELS, LIQUIBASE, DEPLOYMENT_ID) VALUES ('addFeatureFlag-EQ-2949-enable-v0.0.2', 'hromau', 'databases/ApplicationConfig/data_fixes/feature_flag_toggles/EQ-2949-setFeatureFlag.sql', GETDATE(), 609, '9:4c4f8dbf016f8ca6e299c841797a3ada', 'sql', '/* EQ-2949: enable feature toggle */', 'EXECUTED', NULL, 'eq-2949', '5.0.3', '1128687362')
-GO
-
--- Changeset databases/ClaimsManagement/procedures/EQ-4070_Rebate_SP.sql::GetDataForRebateFalloutReport-EQ-4070-v0.0.5::praveen_kalikota
--- /* New SP for Rebate Fallout Report */
-USE [ClaimsManagement];
-GO
-
-SET ANSI_NULLS ON;
-GO
-
-SET QUOTED_IDENTIFIER ON;
-GO
-
-CREATE OR ALTER PROCEDURE GetDataForRebateFalloutReport
+-- Changeset databases/CICD/procedures/091_usp_purge_run_audit.sql::create-usp-purge-run-audit-v0.0.1::devuser
+-- /* batched retention purge of the *_Run/*_RunDetail audit logs (DemoRefresh, PIIMasking, PIIAnonymization); keeps the newest @KeepRuns runs per family, child-first; OBJECT_ID-guarded so it no-ops where a family's tables are absent */
+CREATE OR ALTER PROCEDURE dbo.usp_purge_run_audit
+    @KeepRuns     int = 10,
+    @BatchSize    int = 5000,
+    @PauseSeconds int = 1,
+    @DryRun       bit = 0
 AS
-  BEGIN
-    SELECT 1 AS Placeholder;
-  END;
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    IF @KeepRuns  < 0 SET @KeepRuns  = 0;
+    IF @BatchSize < 1 SET @BatchSize = 5000;
+
+    DECLARE @pause    varchar(8) = CONVERT(varchar(8), DATEADD(SECOND, @PauseSeconds, '00:00:00'), 108);
+    DECLARE @cutoffId bigint;
+    DECLARE @deleted  int;
+
+
+
+
+    IF OBJECT_ID(N'CICD.dbo.DemoRefreshRun', N'U') IS NOT NULL
+    BEGIN
+        SET @cutoffId = NULL;
+        SELECT @cutoffId = MIN(k.Id)
+        FROM (SELECT TOP (@KeepRuns) DemoRefreshRunId AS Id
+              FROM CICD.dbo.DemoRefreshRun ORDER BY DemoRefreshRunId DESC) k;
+
+        IF @cutoffId IS NOT NULL
+        BEGIN
+            IF @DryRun = 1
+                SELECT N'DemoRefresh' AS Family,
+                       (SELECT COUNT(*) FROM CICD.dbo.DemoRefreshRun       WHERE DemoRefreshRunId < @cutoffId) AS RunsToDelete,
+                       (SELECT COUNT(*) FROM CICD.dbo.DemoRefreshRunDetail WHERE DemoRefreshRunId < @cutoffId) AS DetailRowsToDelete;
+            ELSE
+            BEGIN
+                WHILE 1 = 1
+                BEGIN
+                    DELETE TOP (@BatchSize) FROM CICD.dbo.DemoRefreshRunDetail WHERE DemoRefreshRunId < @cutoffId;
+                    SET @deleted = @@ROWCOUNT; IF @deleted = 0 BREAK; WAITFOR DELAY @pause;
+                END;
+                WHILE 1 = 1
+                BEGIN
+                    DELETE TOP (@BatchSize) FROM CICD.dbo.DemoRefreshRun WHERE DemoRefreshRunId < @cutoffId;
+                    SET @deleted = @@ROWCOUNT; IF @deleted = 0 BREAK; WAITFOR DELAY @pause;
+                END;
+            END
+        END
+    END;
+
+
+
+
+    IF OBJECT_ID(N'CICD.dbo.PIIMaskingRun', N'U') IS NOT NULL
+    BEGIN
+        SET @cutoffId = NULL;
+        SELECT @cutoffId = MIN(k.Id)
+        FROM (SELECT TOP (@KeepRuns) PIIMaskingRunId AS Id
+              FROM CICD.dbo.PIIMaskingRun ORDER BY PIIMaskingRunId DESC) k;
+
+        IF @cutoffId IS NOT NULL
+        BEGIN
+            IF @DryRun = 1
+                SELECT N'PIIMasking' AS Family,
+                       (SELECT COUNT(*) FROM CICD.dbo.PIIMaskingRun       WHERE PIIMaskingRunId < @cutoffId) AS RunsToDelete,
+                       (SELECT COUNT(*) FROM CICD.dbo.PIIMaskingRunDetail WHERE PIIMaskingRunId < @cutoffId) AS DetailRowsToDelete;
+            ELSE
+            BEGIN
+                WHILE 1 = 1
+                BEGIN
+                    DELETE TOP (@BatchSize) FROM CICD.dbo.PIIMaskingRunDetail WHERE PIIMaskingRunId < @cutoffId;
+                    SET @deleted = @@ROWCOUNT; IF @deleted = 0 BREAK; WAITFOR DELAY @pause;
+                END;
+                WHILE 1 = 1
+                BEGIN
+                    DELETE TOP (@BatchSize) FROM CICD.dbo.PIIMaskingRun WHERE PIIMaskingRunId < @cutoffId;
+                    SET @deleted = @@ROWCOUNT; IF @deleted = 0 BREAK; WAITFOR DELAY @pause;
+                END;
+            END
+        END
+    END;
+
+
+
+
+    IF OBJECT_ID(N'CICD.dbo.PIIAnonymizationRun', N'U') IS NOT NULL
+    BEGIN
+        SET @cutoffId = NULL;
+        SELECT @cutoffId = MIN(k.Id)
+        FROM (SELECT TOP (@KeepRuns) PIIAnonymizationRunId AS Id
+              FROM CICD.dbo.PIIAnonymizationRun ORDER BY PIIAnonymizationRunId DESC) k;
+
+        IF @cutoffId IS NOT NULL
+        BEGIN
+            IF @DryRun = 1
+                SELECT N'PIIAnonymization' AS Family,
+                       (SELECT COUNT(*) FROM CICD.dbo.PIIAnonymizationRun       WHERE PIIAnonymizationRunId < @cutoffId) AS RunsToDelete,
+                       (SELECT COUNT(*) FROM CICD.dbo.PIIAnonymizationRunDetail WHERE PIIAnonymizationRunId < @cutoffId) AS DetailRowsToDelete;
+            ELSE
+            BEGIN
+                WHILE 1 = 1
+                BEGIN
+                    DELETE TOP (@BatchSize) FROM CICD.dbo.PIIAnonymizationRunDetail WHERE PIIAnonymizationRunId < @cutoffId;
+                    SET @deleted = @@ROWCOUNT; IF @deleted = 0 BREAK; WAITFOR DELAY @pause;
+                END;
+                WHILE 1 = 1
+                BEGIN
+                    DELETE TOP (@BatchSize) FROM CICD.dbo.PIIAnonymizationRun WHERE PIIAnonymizationRunId < @cutoffId;
+                    SET @deleted = @@ROWCOUNT; IF @deleted = 0 BREAK; WAITFOR DELAY @pause;
+                END;
+            END
+        END
+    END;
+END;
 GO
 
-INSERT INTO DATABASECHANGELOG (ID, AUTHOR, FILENAME, DATEEXECUTED, ORDEREXECUTED, MD5SUM, DESCRIPTION, COMMENTS, EXECTYPE, CONTEXTS, LABELS, LIQUIBASE, DEPLOYMENT_ID) VALUES ('GetDataForRebateFalloutReport-EQ-4070-v0.0.5', 'praveen_kalikota', 'databases/ClaimsManagement/procedures/EQ-4070_Rebate_SP.sql', GETDATE(), 691, '9:1234567890abcdef1234567890abcdef', 'sql', '/* New SP for Rebate Fallout Report */', 'EXECUTED', NULL, 'eq-4070', '5.0.3', '1128687362')
+INSERT INTO DATABASECHANGELOG (ID, AUTHOR, FILENAME, DATEEXECUTED, ORDEREXECUTED, MD5SUM, DESCRIPTION, COMMENTS, EXECTYPE, CONTEXTS, LABELS, LIQUIBASE, DEPLOYMENT_ID) VALUES ('create-usp-purge-run-audit-v0.0.1', 'devuser', 'databases/CICD/procedures/091_usp_purge_run_audit.sql', GETDATE(), 260, '9:ff49bd19090940f62238277e415f1e8b', 'sql', '/* batched retention purge of the *_Run/*_RunDetail audit logs (DemoRefresh, PIIMasking, PIIAnonymization); keeps the newest @KeepRuns runs per family, child-first; OBJECT_ID-guarded so it no-ops where a family''s tables are absent */', 'EXECUTED', '(dev,qa,uat)', 'data-refresh', '5.0.3', '1199948848')
 GO
 
--- Changeset security/04_logins/svc_userservice.sql::svc-user-service-grants-v0.1.3::NWEIGHT
-UPDATE DATABASECHANGELOG SET COMMENTS = '/* sql service account for user-services */', CONTEXTS = NULL, DATEEXECUTED = GETDATE(), DEPLOYMENT_ID = '1128687362', DESCRIPTION = 'sql', EXECTYPE = 'RERAN', LABELS = 'security', LIQUIBASE = '5.0.3', MD5SUM = '9:f3370ee3f3a18f60445885153ef0472e', ORDEREXECUTED = 795 WHERE ID = 'svc-user-service-grants-v0.1.3' AND AUTHOR = 'NWEIGHT' AND FILENAME = 'security/04_logins/svc_userservice.sql'
+-- Changeset databases/CICD/jobs/020_purge_run_audit_job.sql::create-purge-run-audit-job-v0.0.1::devuser
+-- /* SQL Agent job — daily retention purge of the *_Run/*_RunDetail audit logs. Created DISABLED on purpose; a DBA enables it per environment after sign-off. */
+DECLARE @job_name      sysname = N'Purge Run Audit History';
+DECLARE @schedule_name sysname = N'Daily-3AM';
+DECLARE @owner         sysname = SUSER_SNAME();
+
+
+
+
+
+BEGIN TRY
+    EXEC msdb.dbo.sp_add_job
+         @job_name          = @job_name,
+         @enabled           = 0,
+         @owner_login_name  = @owner,
+         @description       = N'Runs CICD.dbo.usp_purge_run_audit to keep the newest 10 runs of the DemoRefresh / PIIMasking / PIIAnonymization audit logs (batched, child-first).';
+END TRY
+BEGIN CATCH
+    EXEC msdb.dbo.sp_update_job
+         @job_name          = @job_name,
+         @description       = N'Runs CICD.dbo.usp_purge_run_audit to keep the newest 10 runs of the DemoRefresh / PIIMasking / PIIAnonymization audit logs (batched, child-first).';
+END CATCH;
+
+
+
+
+BEGIN TRY
+    EXEC msdb.dbo.sp_add_jobstep
+         @job_name          = @job_name,
+         @step_id           = 1,
+         @step_name         = N'Run purge procedure',
+         @subsystem         = N'TSQL',
+         @database_name     = N'CICD',
+         @command           = N'EXEC CICD.dbo.usp_purge_run_audit;',
+         @on_success_action = 1;
+END TRY
+BEGIN CATCH
+    EXEC msdb.dbo.sp_update_jobstep
+         @job_name          = @job_name,
+         @step_id           = 1,
+         @step_name         = N'Run purge procedure',
+         @subsystem         = N'TSQL',
+         @database_name     = N'CICD',
+         @command           = N'EXEC CICD.dbo.usp_purge_run_audit;',
+         @on_success_action = 1;
+END CATCH;
+
+
+
+
+BEGIN TRY
+    EXEC msdb.dbo.sp_add_schedule
+         @schedule_name          = @schedule_name,
+         @enabled                = 1,
+         @freq_type              = 4,
+         @freq_interval          = 1,
+         @freq_subday_type       = 1,
+         @freq_subday_interval   = 0,
+         @active_start_time      = 30000;
+END TRY
+BEGIN CATCH
+    BEGIN TRY
+        EXEC msdb.dbo.sp_update_schedule
+             @name                   = @schedule_name,
+             @enabled                = 1,
+             @freq_type              = 4,
+             @freq_interval          = 1,
+             @freq_subday_type       = 1,
+             @freq_subday_interval   = 0,
+             @active_start_time      = 30000;
+    END TRY
+    BEGIN CATCH
+        EXEC msdb.dbo.sp_add_schedule
+             @schedule_name          = @schedule_name,
+             @enabled                = 1,
+             @freq_type              = 4,
+             @freq_interval          = 1,
+             @freq_subday_type       = 1,
+             @freq_subday_interval   = 0,
+             @active_start_time      = 30000;
+    END CATCH
+END CATCH;
+
+
+
+
+BEGIN TRY
+    EXEC msdb.dbo.sp_attach_schedule
+         @job_name      = @job_name,
+         @schedule_name = @schedule_name;
+END TRY
+BEGIN CATCH
+
+END CATCH;
+
+
+
+
+BEGIN TRY
+    EXEC msdb.dbo.sp_add_jobserver
+         @job_name    = @job_name,
+         @server_name = @@SERVERNAME;
+END TRY
+BEGIN CATCH
+
+END CATCH;
+GO
+
+INSERT INTO DATABASECHANGELOG (ID, AUTHOR, FILENAME, DATEEXECUTED, ORDEREXECUTED, MD5SUM, DESCRIPTION, COMMENTS, EXECTYPE, CONTEXTS, LABELS, LIQUIBASE, DEPLOYMENT_ID) VALUES ('create-purge-run-audit-job-v0.0.1', 'devuser', 'databases/CICD/jobs/020_purge_run_audit_job.sql', GETDATE(), 261, '9:4a5816391ca75e68a99d554c3bded5ea', 'sql', N'/* SQL Agent job — daily retention purge of the *_Run/*_RunDetail audit logs. Created DISABLED on purpose; a DBA enables it per environment after sign-off. */', 'EXECUTED', '(dev,qa,uat)', 'data-refresh', '5.0.3', '1199948848')
 GO
 
 -- Release Database Lock
 UPDATE DATABASECHANGELOGLOCK SET LOCKED = 0, LOCKEDBY = NULL, LOCKGRANTED = NULL WHERE ID = 1
 GO
 
-Liquibase command 'updateSql' was executed successfully.
+Liquibase command 'update-sql' was executed successfully.

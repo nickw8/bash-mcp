@@ -189,19 +189,19 @@
     "id": "liquibase_status",
     "command": "liquibase status (→ liquibase_status)",
     "weight": 2,
-    "budget": 185
+    "budget": 969
   },
   {
     "id": "liquibase_validate",
     "command": "liquibase validate (→ liquibase_validate)",
     "weight": 1,
-    "budget": 178
+    "budget": 170
   },
   {
     "id": "liquibase_update_sql",
     "command": "liquibase updateSQL (→ liquibase_update_sql)",
     "weight": 1,
-    "budget": 289
+    "budget": 200
   },
   {
     "id": "dotnet_test",
