@@ -6,6 +6,8 @@
  * fixture-tested; never throws on missing fields.
  */
 
+import type { Triage } from "#parsers";
+
 /** One entry from `helm history -o json`. */
 export interface HelmHistoryEntry {
   revision?: number;
@@ -26,20 +28,12 @@ export interface HelmStatusInfo {
 
 /**
  * Triage a release from its current status and revision history.
- * Returns an inline (anonymous) object type so it composes with ok().
+ * Returns the shared triage envelope plus helm-specific revision fields.
  */
 export function triageRelease(
   current: HelmStatusInfo,
   history: HelmHistoryEntry[],
-): {
-  status: string;
-  healthy: boolean;
-  revision: number;
-  revisions: number;
-  likelyCauses: string[];
-  suggestedNextCommands: string[];
-  evidence: string[];
-} {
+): Triage & { healthy: boolean; revision: number; revisions: number } {
   const status = current.info?.status ?? "unknown";
   const healthy = status === "deployed";
   const ns = current.namespace ?? "default";

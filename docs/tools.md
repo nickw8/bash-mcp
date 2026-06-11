@@ -53,9 +53,9 @@ Diagnose an ArgoCD application's health in one call: overall sync/health, likely
 **Outputs:**
 
 - `name`: string
-- `status`: string
 - `syncStatus`: string
 - `healthy`: boolean
+- `status`: string
 - `likelyCauses`: string[]
 - `suggestedNextCommands`: string[]
 - `evidence`: string[]
@@ -480,10 +480,10 @@ Diagnose a Helm release's health in one call: combines helm status + helm histor
 
 **Outputs:**
 
-- `status`: string
 - `healthy`: boolean
 - `revision`: number
 - `revisions`: number
+- `status`: string
 - `likelyCauses`: string[]
 - `suggestedNextCommands`: string[]
 - `evidence`: string[]

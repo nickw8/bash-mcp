@@ -11,6 +11,7 @@ import { z } from "zod";
 import { exec, execJson, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
+import { triageSchema } from "../../parsers/schemas.js";
 import { type ArgoAppHealth, summarizeAppHealth } from "./health.js";
 
 /** Register all ArgoCD tools on the MCP server. */
@@ -230,12 +231,9 @@ export function registerArgocdTools(server: McpServer) {
       },
       outputSchema: {
         name: z.string(),
-        status: z.string(),
         syncStatus: z.string(),
         healthy: z.boolean(),
-        likelyCauses: z.array(z.string()),
-        suggestedNextCommands: z.array(z.string()),
-        evidence: z.array(z.string()),
+        ...triageSchema,
       },
       annotations: { readOnlyHint: true },
     },

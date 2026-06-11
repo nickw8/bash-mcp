@@ -10,6 +10,7 @@ import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
+import { triageSchema } from "../../parsers/schemas.js";
 import {
   type HelmHistoryEntry,
   type HelmStatusInfo,
@@ -218,13 +219,10 @@ export function registerHelmTools(server: McpServer) {
         context: z.string().optional().describe("Kubectl context"),
       },
       outputSchema: {
-        status: z.string(),
         healthy: z.boolean(),
         revision: z.number(),
         revisions: z.number(),
-        likelyCauses: z.array(z.string()),
-        suggestedNextCommands: z.array(z.string()),
-        evidence: z.array(z.string()),
+        ...triageSchema,
       },
       annotations: { readOnlyHint: true },
     },
@@ -257,7 +255,7 @@ export function registerHelmTools(server: McpServer) {
         { timeout: TIMEOUT.INFRA },
       );
 
-      return ok(triageRelease(statusRes.data, histRes.data ?? []));
+      return ok({ ...triageRelease(statusRes.data, histRes.data ?? []) });
     },
   );
 }

@@ -45,6 +45,25 @@ export interface TestResult {
   failureMessage?: string;
 }
 
+/**
+ * Diagnostic/triage envelope shared by the "what's wrong?" tools
+ * (kube_diagnose_pod, helm_release_triage, argo_app_health_summary, …): a
+ * one-call answer of overall status plus the likely causes, suggested next
+ * commands, and the evidence behind them. Tool-specific fields (healthy, name,
+ * revision, pods, …) extend this base; the four fields here stay identical
+ * across tool groups.
+ */
+export interface Triage {
+  /** Overall status string (failure reason, phase, or "Healthy"/"Unknown"). */
+  status: string;
+  /** Human-readable hypotheses for what is wrong. */
+  likelyCauses: string[];
+  /** Tool invocations the agent should run next to dig deeper. */
+  suggestedNextCommands: string[];
+  /** Concrete observations supporting the status/causes. */
+  evidence: string[];
+}
+
 /** Aggregated results for a single test file or suite. */
 export interface TestSuite {
   /** Path to the test file. */

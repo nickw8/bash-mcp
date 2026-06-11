@@ -66,6 +66,21 @@ export const budgetSchema = {
     .describe("Include raw/verbose fields where supported."),
 };
 
+/**
+ * Shared output-schema fragment for diagnostic/triage tools. Spread into a
+ * tool's `outputSchema` so the { status, likelyCauses, suggestedNextCommands,
+ * evidence } envelope stays identical across kube/helm/argo; add tool-specific
+ * fields (healthy, name, revision, pods, …) alongside the spread:
+ *   outputSchema: { healthy: z.boolean(), ...triageSchema }
+ * Matches the {@link Triage} interface in types.ts.
+ */
+export const triageSchema = {
+  status: z.string(),
+  likelyCauses: z.array(z.string()),
+  suggestedNextCommands: z.array(z.string()),
+  evidence: z.array(z.string()),
+};
+
 /** Default item caps per detailLevel; full (and unset) means no cap. */
 const DETAIL_CAPS = { summary: 20, normal: 100, full: Infinity } as const;
 

@@ -10,15 +10,11 @@
  * diagnostic shape. Never throws on malformed input.
  */
 
+import type { Triage } from "#parsers";
 import type { KubeResource } from "./parse.js";
 
 /** The shared diagnostic answer shape returned by all kube diagnostics. */
-export interface Diagnosis {
-  status: string;
-  likelyCauses: string[];
-  suggestedNextCommands: string[];
-  evidence: string[];
-}
+export type Diagnosis = Triage;
 
 /** A Kubernetes event from `kubectl get events -o json`. */
 export interface KubeEvent {

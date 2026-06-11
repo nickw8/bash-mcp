@@ -6,6 +6,8 @@
  * this app OK and if not, why" picture in one call. Pure, fixture-tested.
  */
 
+import type { Triage } from "#parsers";
+
 /** Subset of an ArgoCD application needed for health triage. */
 export interface ArgoAppHealth {
   metadata?: { name?: string };
@@ -24,16 +26,10 @@ export interface ArgoAppHealth {
   };
 }
 
-/** Summarize an app's health. Returns an inline type so it composes with ok(). */
-export function summarizeAppHealth(app: ArgoAppHealth): {
-  name: string;
-  status: string;
-  syncStatus: string;
-  healthy: boolean;
-  likelyCauses: string[];
-  suggestedNextCommands: string[];
-  evidence: string[];
-} {
+/** Summarize an app's health: the shared triage envelope plus argo-specific fields. */
+export function summarizeAppHealth(
+  app: ArgoAppHealth,
+): Triage & { name: string; syncStatus: string; healthy: boolean } {
   const health = app.status?.health?.status ?? "Unknown";
   const sync = app.status?.sync?.status ?? "Unknown";
   const healthy = health === "Healthy" && sync === "Synced";

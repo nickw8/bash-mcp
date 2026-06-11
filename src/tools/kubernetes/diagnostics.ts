@@ -15,6 +15,7 @@ import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
 import { ok } from "#response";
 import { defineTool } from "#tool";
+import { triageSchema } from "../../parsers/schemas.js";
 import {
   type Diagnosis,
   diagnoseDeployment,
@@ -24,14 +25,6 @@ import {
 } from "./diagnose.js";
 import type { KubeList, KubeResource } from "./parse.js";
 
-/** Shared diagnostic output shape (raw Zod shape for spreading into outputSchema). */
-const diagnosisSchema = {
-  status: z.string(),
-  likelyCauses: z.array(z.string()),
-  suggestedNextCommands: z.array(z.string()),
-  evidence: z.array(z.string()),
-};
-
 /** Return a Diagnosis as an MCP response (explicit literal for ok()'s type). */
 function okDiagnosis(d: Diagnosis) {
   return ok({
@@ -40,6 +33,23 @@ function okDiagnosis(d: Diagnosis) {
     suggestedNextCommands: d.suggestedNextCommands,
     evidence: d.evidence,
   });
+}
+
+/**
+ * Partial-result diagnosis for a failed kubectl probe: an "Unknown" status
+ * carrying the failure as evidence (plus any follow-up commands) so the agent
+ * still gets something actionable instead of a hard error.
+ */
+function unknownDiagnosis(
+  evidence: string,
+  suggestedNextCommands: string[] = [],
+): Diagnosis {
+  return {
+    status: "Unknown",
+    likelyCauses: [],
+    suggestedNextCommands,
+    evidence: [evidence],
+  };
 }
 
 /** Build kubectl args with an optional --context. */
@@ -72,7 +82,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
           .describe("Namespace"),
         context: z.string().optional().describe("Kubectl context"),
       },
-      outputSchema: diagnosisSchema,
+      outputSchema: triageSchema,
       annotations: { readOnlyHint: true },
     },
     async ({ pod, namespace, context }) => {
@@ -83,12 +93,11 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         { timeout: TIMEOUT.INFRA },
       );
       if (res.error) {
-        return ok({
-          status: "Unknown",
-          likelyCauses: [],
-          suggestedNextCommands: [`kube_events_summary namespace=${ns}`],
-          evidence: [`kubectl get pod failed: ${res.error}`],
-        });
+        return okDiagnosis(
+          unknownDiagnosis(`kubectl get pod failed: ${res.error}`, [
+            `kube_events_summary namespace=${ns}`,
+          ]),
+        );
       }
       return okDiagnosis(diagnosePod(res.data ?? {}));
     },
@@ -116,7 +125,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         context: z.string().optional().describe("Kubectl context"),
       },
       outputSchema: {
-        ...diagnosisSchema,
+        ...triageSchema,
         pods: z.array(
           z.object({
             name: z.string(),
@@ -138,10 +147,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       );
       if (res.error) {
         return ok({
-          status: "Unknown",
-          likelyCauses: [],
-          suggestedNextCommands: [],
-          evidence: [`kubectl get pods failed: ${res.error}`],
+          ...unknownDiagnosis(`kubectl get pods failed: ${res.error}`),
           pods: [],
         });
       }
@@ -194,7 +200,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
           .describe("Namespace"),
         context: z.string().optional().describe("Kubectl context"),
       },
-      outputSchema: diagnosisSchema,
+      outputSchema: triageSchema,
       annotations: { readOnlyHint: true },
     },
     async ({ name, namespace, context }) => {
@@ -208,12 +214,9 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         { timeout: TIMEOUT.INFRA },
       );
       if (res.error) {
-        return ok({
-          status: "Unknown",
-          likelyCauses: [],
-          suggestedNextCommands: [],
-          evidence: [`kubectl get deployment failed: ${res.error}`],
-        });
+        return okDiagnosis(
+          unknownDiagnosis(`kubectl get deployment failed: ${res.error}`),
+        );
       }
       return okDiagnosis(diagnoseDeployment(res.data ?? {}));
     },
@@ -236,7 +239,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         allNamespaces: z.boolean().optional().describe("Search all namespaces"),
         context: z.string().optional().describe("Kubectl context"),
       },
-      outputSchema: diagnosisSchema,
+      outputSchema: triageSchema,
       annotations: { readOnlyHint: true },
     },
     async ({ namespace, allNamespaces, context }) => {
@@ -248,12 +251,9 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         { timeout: TIMEOUT.INFRA },
       );
       if (res.error) {
-        return ok({
-          status: "Unknown",
-          likelyCauses: [],
-          suggestedNextCommands: [],
-          evidence: [`kubectl get events failed: ${res.error}`],
-        });
+        return okDiagnosis(
+          unknownDiagnosis(`kubectl get events failed: ${res.error}`),
+        );
       }
       return okDiagnosis(summarizeEvents(res.data?.items ?? []));
     },
