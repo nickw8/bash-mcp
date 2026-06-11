@@ -15,7 +15,11 @@ import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
 import { ok } from "#response";
 import { defineTool } from "#tool";
-import { triageSchema } from "../../parsers/schemas.js";
+import {
+  applyBudget,
+  budgetSchema,
+  triageSchema,
+} from "../../parsers/schemas.js";
 import {
   type Diagnosis,
   diagnoseDeployment,
@@ -123,6 +127,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
           .describe("Namespace"),
         allNamespaces: z.boolean().optional().describe("Search all namespaces"),
         context: z.string().optional().describe("Kubectl context"),
+        ...budgetSchema,
       },
       outputSchema: {
         ...triageSchema,
@@ -134,10 +139,12 @@ export function registerKubeDiagnosticTools(server: McpServer) {
             evidence: z.array(z.string()),
           }),
         ),
+        total: z.number().optional(),
+        truncated: z.boolean().optional(),
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ namespace, allNamespaces, context }) => {
+    async ({ namespace, allNamespaces, context, detailLevel, maxItems }) => {
       const ns = namespace ?? "default";
       const scope = allNamespaces ? ["--all-namespaces"] : ["-n", ns];
       const res = await execJson<KubeList>(
@@ -153,7 +160,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       }
 
       const healthy = new Set(["Running", "Succeeded"]);
-      const pods = (res.data?.items ?? [])
+      const allPods = (res.data?.items ?? [])
         .map((p) => ({ p, d: diagnosePod(p) }))
         .filter(({ d }) => !healthy.has(d.status) || d.evidence.length > 0)
         .map(({ p, d }) => ({
@@ -163,19 +170,31 @@ export function registerKubeDiagnosticTools(server: McpServer) {
           evidence: d.evidence,
         }));
 
-      return ok({
-        status: pods.length ? "Unhealthy" : "Healthy",
-        likelyCauses: pods.length
+      const hasBudget = detailLevel !== undefined || maxItems !== undefined;
+      const {
+        items: pods,
+        truncated,
+        total,
+      } = applyBudget(allPods, {
+        detailLevel,
+        maxItems,
+      });
+
+      // status/causes reflect the full set; evidence + pods are the budgeted view.
+      const base = {
+        status: allPods.length ? "Unhealthy" : "Healthy",
+        likelyCauses: allPods.length
           ? ["One or more pods are failing; see per-pod status and evidence."]
           : [],
-        suggestedNextCommands: pods.length
+        suggestedNextCommands: allPods.length
           ? [
               `kube_diagnose_pod pod=${pods[0]?.name} namespace=${pods[0]?.namespace}`,
             ]
           : [],
         evidence: pods.map((p) => `${p.namespace}/${p.name}: ${p.status}`),
         pods,
-      });
+      };
+      return ok(hasBudget ? { ...base, total, truncated } : base);
     },
   );
 
@@ -238,11 +257,16 @@ export function registerKubeDiagnosticTools(server: McpServer) {
           .describe("Namespace"),
         allNamespaces: z.boolean().optional().describe("Search all namespaces"),
         context: z.string().optional().describe("Kubectl context"),
+        ...budgetSchema,
       },
-      outputSchema: triageSchema,
+      outputSchema: {
+        ...triageSchema,
+        total: z.number().optional(),
+        truncated: z.boolean().optional(),
+      },
       annotations: { readOnlyHint: true },
     },
-    async ({ namespace, allNamespaces, context }) => {
+    async ({ namespace, allNamespaces, context, detailLevel, maxItems }) => {
       const ns = namespace ?? "default";
       const scope = allNamespaces ? ["--all-namespaces"] : ["-n", ns];
       const res = await execJson<{ items: KubeEvent[] }>(
@@ -255,7 +279,18 @@ export function registerKubeDiagnosticTools(server: McpServer) {
           unknownDiagnosis(`kubectl get events failed: ${res.error}`),
         );
       }
-      return okDiagnosis(summarizeEvents(res.data?.items ?? []));
+      const diag = summarizeEvents(res.data?.items ?? []);
+      const hasBudget = detailLevel !== undefined || maxItems !== undefined;
+      const {
+        items: evidence,
+        truncated,
+        total,
+      } = applyBudget(diag.evidence, {
+        detailLevel,
+        maxItems,
+      });
+      const base = { ...diag, evidence };
+      return ok(hasBudget ? { ...base, total, truncated } : base);
     },
   );
 }

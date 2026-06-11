@@ -634,6 +634,9 @@ Summarize Warning events in a namespace (grouped by reason, ordered by count) in
 - `namespace`: string _(optional)_ — Namespace
 - `allNamespaces`: boolean _(optional)_ — Search all namespaces
 - `context`: string _(optional)_ — Kubectl context
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
+- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
+- `includeRaw`: boolean _(optional)_ — Include raw/verbose fields where supported.
 
 **Outputs:**
 
@@ -641,6 +644,8 @@ Summarize Warning events in a namespace (grouped by reason, ordered by count) in
 - `likelyCauses`: string[]
 - `suggestedNextCommands`: string[]
 - `evidence`: string[]
+- `total`: number _(optional)_
+- `truncated`: boolean _(optional)_
 
 ## `kube_get`
 
@@ -712,6 +717,9 @@ List unhealthy pods in a namespace with their failure reason and evidence — on
 - `namespace`: string _(optional)_ — Namespace
 - `allNamespaces`: boolean _(optional)_ — Search all namespaces
 - `context`: string _(optional)_ — Kubectl context
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
+- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
+- `includeRaw`: boolean _(optional)_ — Include raw/verbose fields where supported.
 
 **Outputs:**
 
@@ -720,6 +728,8 @@ List unhealthy pods in a namespace with their failure reason and evidence — on
 - `suggestedNextCommands`: string[]
 - `evidence`: string[]
 - `pods`: object[]
+- `total`: number _(optional)_
+- `truncated`: boolean _(optional)_
 
 **Equivalent commands:**
 
