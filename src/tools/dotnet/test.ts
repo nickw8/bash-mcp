@@ -20,7 +20,7 @@ import { err, ok } from "#response";
 import { defineTool } from "#tool";
 import { testResultSchema } from "../../parsers/schemas.js";
 import { detectSolution } from "./detect.js";
-import { parseTrxResults } from "./parsers/trx.js";
+import { aggregateTrx } from "./parsers/trx.js";
 
 /** Register the dotnet_test tool for structured test results. */
 export function registerDotnetTestTool(server: McpServer) {
@@ -75,13 +75,12 @@ export function registerDotnetTestTool(server: McpServer) {
         timeout: TIMEOUT.BUILD,
       });
 
-      // Find and parse the TRX file
-      let trxContent: string | undefined;
+      // Find and read every TRX file (one per test project in a multi-project run)
+      let trxContents: string[] = [];
       try {
-        const [firstTrx] = findTrxFiles(resultsDir);
-        if (firstTrx) {
-          trxContent = readFileSync(firstTrx, "utf8");
-        }
+        trxContents = findTrxFiles(resultsDir).map((f) =>
+          readFileSync(f, "utf8"),
+        );
       } catch {
         // TRX dir may not exist if dotnet test failed before producing output
       } finally {
@@ -93,7 +92,7 @@ export function registerDotnetTestTool(server: McpServer) {
         }
       }
 
-      if (!trxContent) {
+      if (trxContents.length === 0) {
         const output = `${result.stdout}\n${result.stderr}`.trim();
         return err(output.slice(0, 500) || "No test output received", {
           exitCode: result.exitCode,
@@ -107,7 +106,7 @@ export function registerDotnetTestTool(server: McpServer) {
       }
 
       const { results, passed, failed, skipped, total } =
-        parseTrxResults(trxContent);
+        aggregateTrx(trxContents);
 
       const parts: string[] = [];
       if (passed > 0) parts.push(`${passed} passed`);
@@ -128,7 +127,7 @@ export function registerDotnetTestTool(server: McpServer) {
   );
 }
 
-/** Find .trx files in a directory, sorted by modification time (newest first). */
+/** Find all .trx files in a directory (one per test project), in readdir order. */
 function findTrxFiles(dir: string): string[] {
   try {
     return readdirSync(dir)
