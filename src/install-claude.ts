@@ -77,10 +77,7 @@ function defaultRepoRoot(): string {
 }
 
 /** The two assets, anchored at a package root and a target ~/.claude dir. */
-export function defaultAssets(
-  repoRoot: string,
-  claudeDir: string,
-): AssetSpec[] {
+function defaultAssets(repoRoot: string, claudeDir: string): AssetSpec[] {
   return [
     {
       label: "rules file",
@@ -152,7 +149,7 @@ export function installClaudeAssets(deps: InstallDeps = {}): InstallResult {
 }
 
 /** The PreToolUse(Bash) hook block to paste into ~/.claude/settings.json. */
-export function hookSnippet(hookDest: string): string {
+function hookSnippet(hookDest: string): string {
   return JSON.stringify(
     {
       hooks: {

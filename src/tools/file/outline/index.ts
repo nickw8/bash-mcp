@@ -20,7 +20,7 @@ import { extractTsJs } from "./typescript.js";
 import { extractXml } from "./xml.js";
 import { extractYaml } from "./yaml.js";
 
-export type { ExtractResult, Language };
+export type { Language };
 
 const EXT_MAP: Record<string, Language> = {
   sh: "bash",

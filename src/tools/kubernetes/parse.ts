@@ -92,7 +92,7 @@ export function summarizeResource(item: KubeResource) {
 }
 
 /** Infer a simple status string from Kubernetes conditions when phase is absent. */
-export function inferStatus(
+function inferStatus(
   conditions?: Array<{ type: string; status: string }>,
 ): string {
   if (!conditions?.length) return "Unknown";
@@ -103,7 +103,7 @@ export function inferStatus(
 }
 
 /** Format a creation timestamp into a compact age string (e.g. "3d", "2h"). */
-export function formatAge(date: Date): string {
+function formatAge(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);
