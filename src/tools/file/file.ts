@@ -77,17 +77,9 @@ interface CatParams {
   lineNumbers?: boolean;
 }
 
-/**
- * Read a single file (from disk, or from a git ref) with line-range/maxLines
- * truncation and optional line numbers. Returns a CatResult; on failure the
- * `error` field is set rather than throwing, so batch reads can report
- * per-file failures without aborting the whole call.
- */
-async function readFileContent(
-  path: string,
-  { ref, startLine, endLine, maxLines, lineNumbers }: CatParams,
-): Promise<CatResult> {
-  const empty: CatResult = {
+/** An empty CatResult for `path`; spread with an `error` field on failure. */
+function emptyCat(path: string): CatResult {
+  return {
     path,
     totalLines: 0,
     size: 0,
@@ -96,72 +88,111 @@ async function readFileContent(
     range: [0, 0],
     truncated: false,
   };
+}
 
-  // When ref is provided, read from git and apply line range/truncation
-  if (ref) {
-    const gitDir = await findGitRoot(path);
-    if (!gitDir) return { ...empty, error: `Not in a git repo: ${path}` };
-    const relPath = path.startsWith(gitDir)
-      ? path.slice(gitDir.length + 1)
-      : path;
-    const showResult = await exec("git", [
-      "-C",
-      gitDir,
-      "show",
-      `${ref}:${relPath}`,
-    ]);
-    if (showResult.exitCode !== 0) {
-      return {
-        ...empty,
-        error: showResult.stderr || `Cannot read ${ref}:${relPath}`,
-      };
-    }
+/** Prefix each line with a right-aligned 1-based number (`rangeStart` + index). */
+export function applyLineNumbers(content: string, rangeStart: number): string {
+  return content
+    .split("\n")
+    .map((line, i) => `${String(rangeStart + i).padStart(6)}\t${line}`)
+    .join("\n");
+}
 
-    let allLines = showResult.stdout;
-    if (allLines.endsWith("\n")) allLines = allLines.slice(0, -1);
-    const lines = allLines.split("\n");
-    const totalLines = lines.length;
-    const limit = maxLines === 0 ? totalLines : (maxLines ?? 200);
-    const rangeStart = Math.max(1, startLine ?? 1);
-    let rangeEnd =
-      endLine !== undefined
-        ? Math.min(endLine, totalLines)
-        : Math.min(rangeStart + limit - 1, totalLines);
-    let truncated = false;
-    if (limit > 0 && rangeEnd - rangeStart + 1 > limit) {
-      rangeEnd = rangeStart + limit - 1;
-      truncated = true;
-    } else {
-      truncated = rangeEnd < totalLines && endLine === undefined;
-    }
+/**
+ * Resolve a 1-based [start, end] line window + truncation flag from the request.
+ * Pure arithmetic shared by the git-ref and on-disk readers, so both apply one
+ * set of rules: `maxLines` defaults to 200 (0 = unlimited); an explicit
+ * `endLine` is honoured as-is (never implicitly truncated), while an open-ended
+ * read longer than the limit is clamped and flagged `truncated`.
+ */
+export function computeRange({
+  totalLines,
+  startLine,
+  endLine,
+  maxLines,
+}: { totalLines: number } & Pick<
+  CatParams,
+  "startLine" | "endLine" | "maxLines"
+>): { rangeStart: number; rangeEnd: number; truncated: boolean } {
+  const limit = maxLines === 0 ? totalLines : (maxLines ?? 200);
+  const rangeStart = Math.max(1, startLine ?? 1);
+  let rangeEnd =
+    endLine !== undefined
+      ? Math.min(endLine, totalLines)
+      : Math.min(rangeStart + limit - 1, totalLines);
+  let truncated: boolean;
+  if (limit > 0 && rangeEnd - rangeStart + 1 > limit) {
+    rangeEnd = rangeStart + limit - 1;
+    truncated = true;
+  } else {
+    truncated = rangeEnd < totalLines && endLine === undefined;
+  }
+  return { rangeStart, rangeEnd, truncated };
+}
 
-    let content = lines.slice(rangeStart - 1, rangeEnd).join("\n");
-    if (lineNumbers) {
-      content = content
-        .split("\n")
-        .map((line, i) => `${String(rangeStart + i).padStart(6)}\t${line}`)
-        .join("\n");
-    }
-
+/** Read file content from a git ref (`git show ref:path`) and apply the window. */
+async function readFromRef(
+  path: string,
+  ref: string,
+  { startLine, endLine, maxLines, lineNumbers }: CatParams,
+): Promise<CatResult> {
+  const gitDir = await findGitRoot(path);
+  if (!gitDir)
+    return { ...emptyCat(path), error: `Not in a git repo: ${path}` };
+  const relPath = path.startsWith(gitDir)
+    ? path.slice(gitDir.length + 1)
+    : path;
+  const showResult = await exec("git", [
+    "-C",
+    gitDir,
+    "show",
+    `${ref}:${relPath}`,
+  ]);
+  if (showResult.exitCode !== 0) {
     return {
-      path,
-      totalLines,
-      size: showResult.stdout.length,
-      mtime: 0,
-      content,
-      range: [rangeStart, rangeEnd],
-      truncated,
+      ...emptyCat(path),
+      error: showResult.stderr || `Cannot read ${ref}:${relPath}`,
     };
   }
 
-  // Get file size and mtime in one stat call
+  let allLines = showResult.stdout;
+  if (allLines.endsWith("\n")) allLines = allLines.slice(0, -1);
+  const lines = allLines.split("\n");
+  const totalLines = lines.length;
+  const { rangeStart, rangeEnd, truncated } = computeRange({
+    totalLines,
+    startLine,
+    endLine,
+    maxLines,
+  });
+
+  let content = lines.slice(rangeStart - 1, rangeEnd).join("\n");
+  if (lineNumbers) content = applyLineNumbers(content, rangeStart);
+
+  return {
+    path,
+    totalLines,
+    size: showResult.stdout.length,
+    mtime: 0,
+    content,
+    range: [rangeStart, rangeEnd],
+    truncated,
+  };
+}
+
+/** Read file content from disk (stat + wc for metadata) and apply the window. */
+async function readFromDisk(
+  path: string,
+  { startLine, endLine, maxLines, lineNumbers }: CatParams,
+): Promise<CatResult> {
+  // Size + mtime in one stat call.
   const statResult = await exec(
     "stat",
     IS_MACOS ? ["-f", "%z %m", path] : ["--format=%s %Y", path],
   );
   if (statResult.exitCode !== 0) {
     return {
-      ...empty,
+      ...emptyCat(path),
       error: statResult.stderr || `Cannot stat file: ${path}`,
     };
   }
@@ -169,88 +200,46 @@ async function readFileContent(
   const size = parseInt(sizeStr ?? "0", 10);
   const mtime = parseInt(mtimeStr ?? "0", 10);
 
-  // Get total line count
   const wcResult = await exec("wc", ["-l", path]);
   if (wcResult.exitCode !== 0) {
-    return { ...empty, error: wcResult.stderr || `Cannot read file: ${path}` };
+    return {
+      ...emptyCat(path),
+      error: wcResult.stderr || `Cannot read file: ${path}`,
+    };
   }
   const totalLines = parseInt(
     wcResult.stdout.trim().split(/\s+/)[0] ?? "0",
     10,
   );
 
-  let content: string;
-  let rangeStart: number;
-  let rangeEnd: number;
-  let truncated: boolean;
+  const { rangeStart, rangeEnd, truncated } = computeRange({
+    totalLines,
+    startLine,
+    endLine,
+    maxLines,
+  });
 
-  if (startLine !== undefined || endLine !== undefined) {
-    // Explicit range requested
-    rangeStart = Math.max(1, startLine ?? 1);
-    rangeEnd =
-      endLine !== undefined ? Math.min(endLine, totalLines) : totalLines;
-
-    if (
-      maxLines !== undefined &&
-      maxLines > 0 &&
-      rangeEnd - rangeStart + 1 > maxLines
-    ) {
-      rangeEnd = rangeStart + maxLines - 1;
-      truncated = true;
-    } else {
-      truncated = rangeEnd < totalLines && endLine === undefined;
-    }
-
-    const sedResult = await exec("sed", [
-      "-n",
-      `${rangeStart},${rangeEnd}p`,
-      path,
-    ]);
-    if (sedResult.exitCode !== 0) {
-      return {
-        ...empty,
-        error: sedResult.stderr || `Cannot read file: ${path}`,
-      };
-    }
-    content = sedResult.stdout;
-  } else if (maxLines === 0) {
-    // Unlimited — read the whole file
-    const catResult = await exec("cat", [path]);
-    if (catResult.exitCode !== 0) {
-      return {
-        ...empty,
-        error: catResult.stderr || `Cannot read file: ${path}`,
-      };
-    }
-    content = catResult.stdout;
-    rangeStart = 1;
-    rangeEnd = totalLines;
-    truncated = false;
+  // Pick the lightest command that yields exactly [rangeStart, rangeEnd]:
+  // cat for the whole file, head when anchored at line 1, else sed.
+  let readResult: Awaited<ReturnType<typeof exec>>;
+  if (rangeStart === 1 && rangeEnd >= totalLines) {
+    readResult = await exec("cat", [path]);
+  } else if (rangeStart === 1) {
+    readResult = await exec("head", ["-n", String(rangeEnd), path]);
   } else {
-    // Default: head with maxLines
-    const limit = maxLines ?? 200;
-    const headResult = await exec("head", ["-n", String(limit), path]);
-    if (headResult.exitCode !== 0) {
-      return {
-        ...empty,
-        error: headResult.stderr || `Cannot read file: ${path}`,
-      };
-    }
-    content = headResult.stdout;
-    rangeStart = 1;
-    rangeEnd = Math.min(limit, totalLines);
-    truncated = totalLines > limit;
+    readResult = await exec("sed", ["-n", `${rangeStart},${rangeEnd}p`, path]);
+  }
+  if (readResult.exitCode !== 0) {
+    return {
+      ...emptyCat(path),
+      error: readResult.stderr || `Cannot read file: ${path}`,
+    };
   }
 
-  // Strip trailing newline to avoid an empty last "line"
+  // Strip the trailing newline to avoid an empty last "line".
+  let content = readResult.stdout;
   if (content.endsWith("\n")) content = content.slice(0, -1);
-
-  if (lineNumbers) {
-    const lines = content.split("\n");
-    content = lines
-      .map((line, i) => `${String(rangeStart + i).padStart(6)}\t${line}`)
-      .join("\n");
-  }
+  if (lineNumbers) content = applyLineNumbers(content, rangeStart);
 
   return {
     path,
@@ -261,6 +250,21 @@ async function readFileContent(
     range: [rangeStart, rangeEnd],
     truncated,
   };
+}
+
+/**
+ * Read a single file (from disk, or from a git ref) with line-range/maxLines
+ * truncation and optional line numbers. Returns a CatResult; on failure the
+ * `error` field is set rather than throwing, so batch reads can report
+ * per-file failures without aborting the whole call.
+ */
+export async function readFileContent(
+  path: string,
+  params: CatParams,
+): Promise<CatResult> {
+  return params.ref
+    ? readFromRef(path, params.ref, params)
+    : readFromDisk(path, params);
 }
 
 /** Register all file tools on the MCP server. */
