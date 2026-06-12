@@ -1,12 +1,12 @@
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { getEncoding } from "js-tiktoken";
 import { describe, expect, it } from "vitest";
 import {
   aggregates,
   computeRows,
+  docPath,
   extractRegion,
+  fixturesRoot,
   loadCases,
   renderAggregatesTable,
   renderResultsTable,
@@ -39,10 +39,6 @@ import {
  * through formatList to guard the formatter *code path*, which static fixtures
  * can't. This file guards the per-tool standard and the doc.
  */
-const here = dirname(fileURLToPath(import.meta.url));
-const fixturesRoot = join(here, "..", "fixtures", "benchmarks");
-const docPath = join(here, "..", "docs", "token-benchmarks.md");
-
 const enc = getEncoding("o200k_base");
 const tok = (s: string) => enc.encode(s).length;
 

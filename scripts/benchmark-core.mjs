@@ -10,7 +10,16 @@
  * tables are rendered from these — never hand-edited — so they can't drift.
  */
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Repo-root-anchored paths shared by the benchmark script and the fixture test.
+// This file lives in scripts/, so the package root is two dirs up. Pure path
+// work — the tokenizer stays out of core (see header), so each consumer keeps
+// its own js-tiktoken encoder and only the paths are deduped here.
+const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+export const fixturesRoot = join(repoRoot, "fixtures", "benchmarks");
+export const docPath = join(repoRoot, "docs", "token-benchmarks.md");
 
 /** Read the manifest and inline each case's raw/expected fixture text. */
 export function loadCases(root) {
@@ -104,15 +113,15 @@ export function renderAggregatesTable(rows) {
 // Synthetic, homogeneous terraform state list of N resources — used by the
 // scaling section to show how the flat-list gap closes toward ~0% as rows grow
 // (bare per-row cost equals the raw address; only the fixed meta is overhead).
-export const SCALING_N = [5, 50, 200, 1000];
+const SCALING_N = [5, 50, 200, 1000];
 
-export const tfStateListRaw = (n) =>
+const tfStateListRaw = (n) =>
   Array.from(
     { length: n },
     (_, i) => `module.network.aws_subnet.public[${i}]`,
   ).join("\n");
 
-export const tfStateListStructured = (n) =>
+const tfStateListStructured = (n) =>
   `count\t${n}\nbyType\t${JSON.stringify({ aws_subnet: n })}\n---\n${tfStateListRaw(n)}`;
 
 export async function scalingRows(count) {

@@ -20,12 +20,12 @@
  *   USE_CLAUDE_TOKENIZER=1 ANTHROPIC_API_KEY=sk-... node scripts/token-benchmark.mjs
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { getEncoding } from "js-tiktoken";
 import {
   aggregates,
   computeRows,
+  docPath,
+  fixturesRoot,
   label,
   loadCases,
   renderAggregatesTable,
@@ -34,10 +34,6 @@ import {
   replaceRegion,
   scalingRows,
 } from "./benchmark-core.mjs";
-
-const here = dirname(fileURLToPath(import.meta.url));
-const fixturesRoot = join(here, "..", "fixtures", "benchmarks");
-const docPath = join(here, "..", "docs", "token-benchmarks.md");
 
 const enc = getEncoding("o200k_base");
 const proxyCount = (s) => enc.encode(s).length;
