@@ -96,6 +96,16 @@ RULES=(
   "pytest|block|mcp__bash-mcp__python_test"
   "mypy|block|mcp__bash-mcp__python_typecheck"
 
+  # ── Shell scripting ──
+  "shellcheck|block|mcp__bash-mcp__bash_lint"
+  "bats|block|mcp__bash-mcp__bash_test"
+  "bash -n|block|mcp__bash-mcp__bash_syntax_check"
+
+  # ── Liquibase ──
+  "liquibase validate|block|mcp__bash-mcp__liquibase_validate"
+  "liquibase updateSQL|block|mcp__bash-mcp__liquibase_update_sql"
+  "liquibase status|block|mcp__bash-mcp__liquibase_status"
+
   # ── Capability discovery ──
   "which|block|mcp__bash-mcp__check_environment"
   "command -v|block|mcp__bash-mcp__check_environment"
@@ -165,16 +175,23 @@ esac
 # Detect compound commands (pipes, chaining, subshells, redirects).
 compound=0
 case "$cmd" in
-  *'|'* | *'&&'* | *'||'* | *';'* | *'$('* | *'`'* | *'>'* | *'<'*) compound=1 ;;
+  *'|'* | *'&&'* | *';'* | *'$('* | *'`'* | *'>'* | *'<'*) compound=1 ;;  # '||' ⊂ '|'
 esac
 
+# jq (guaranteed available by the guard above) builds the JSON so reason/message
+# strings are always correctly escaped, even if a rule ever embeds " \ or newline.
 emit_block() {
-  printf '{"decision":"block","reason":"%s"}\n' "$1"
+  jq -nc --arg reason "$1" '{decision:"block",reason:$reason}'
   exit 0
 }
 emit_warn() {
-  printf '{"systemMessage":"%s"}\n' "$1"
+  jq -nc --arg msg "$1" '{systemMessage:$msg}'
   exit 0
+}
+# Block a simple invocation; demote to a non-blocking warn inside a compound
+# command. $1 = block reason, $2 = warn message.
+emit_demote() {
+  if [[ "$compound" -eq 0 ]]; then emit_block "$1"; else emit_warn "$2"; fi
 }
 
 # ── Targeted overrides (more specific than the generic RULES below) ─────────
@@ -185,11 +202,9 @@ case "$cmd" in
   "kubectl get "*)
     case "$cmd" in
       *"status.phase=Failed"*)
-        if [[ "$compound" -eq 0 ]]; then
-          emit_block "Use mcp__bash-mcp__kube_pod_failure_summary instead of 'kubectl get … --field-selector=status.phase=Failed' — structured triage, fewer tokens. (bash-mcp-redirect hook)"
-        else
-          emit_warn "bash-mcp: prefer mcp__bash-mcp__kube_pod_failure_summary over 'kubectl get … status.phase=Failed'"
-        fi
+        emit_demote \
+          "Use mcp__bash-mcp__kube_pod_failure_summary instead of 'kubectl get … --field-selector=status.phase=Failed' — structured triage, fewer tokens. (bash-mcp-redirect hook)" \
+          "bash-mcp: prefer mcp__bash-mcp__kube_pod_failure_summary over 'kubectl get … status.phase=Failed'"
         ;;
     esac
     ;;
@@ -204,10 +219,12 @@ for rule in "${RULES[@]}"; do
 
   # Word-boundary prefix match: "git log ..." matches "git log", not "git logx".
   if [[ "$cmd " == "$pattern "* ]]; then
-    if [[ "$action" == "block" && "$compound" -eq 0 ]]; then
-      emit_block "Use $tool instead of '$pattern' — structured JSON, fewer tokens. (bash-mcp-redirect hook)"
+    if [[ "$action" == "block" ]]; then
+      emit_demote \
+        "Use $tool instead of '$pattern' — structured JSON, fewer tokens. (bash-mcp-redirect hook)" \
+        "bash-mcp: prefer $tool over '$pattern'"
     else
-      # roadmap tool, or a compound command we won't hard-block
+      # roadmap tool (action=warn): advisory only
       emit_warn "bash-mcp: prefer $tool over '$pattern'"
     fi
   fi
