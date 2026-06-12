@@ -2,12 +2,20 @@
  * Tests for the run/batch safety profiles (BASH_MCP_MODE).
  */
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { checkCommandAllowed, classifyCommand, resolveMode } from "./safety.js";
+
+// resolveMode() falls back to process.env.BASH_MCP_MODE, so tests that exercise
+// the "unset" default must control the env explicitly — otherwise a dev session
+// exporting BASH_MCP_MODE=off makes them fail. Restore after each test.
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("resolveMode", () => {
   it("defaults to readOnly when unset or unrecognized", () => {
-    expect(resolveMode(undefined)).toBe("readOnly");
+    vi.stubEnv("BASH_MCP_MODE", undefined); // unset → default param resolves to readOnly
+    expect(resolveMode()).toBe("readOnly");
     expect(resolveMode("")).toBe("readOnly");
     expect(resolveMode("nonsense")).toBe("readOnly");
   });
@@ -53,9 +61,10 @@ describe("checkCommandAllowed", () => {
   });
 
   it("blocks writes under the resolved default (unset → readOnly)", () => {
-    expect(
-      checkCommandAllowed("rm", ["-rf", "x"], resolveMode(undefined)).allowed,
-    ).toBe(false);
+    vi.stubEnv("BASH_MCP_MODE", undefined); // ensure the default resolves independent of the shell
+    expect(checkCommandAllowed("rm", ["-rf", "x"], resolveMode()).allowed).toBe(
+      false,
+    );
   });
 
   it("never blocks when mode is dangerous", () => {
