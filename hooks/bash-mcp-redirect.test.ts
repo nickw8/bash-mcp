@@ -13,14 +13,14 @@
  */
 
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { buildRegistry } from "../src/registry.js";
 
-const HOOK = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "bash-mcp-redirect.sh",
-);
+const HERE = dirname(fileURLToPath(import.meta.url));
+const HOOK = join(HERE, "bash-mcp-redirect.sh");
 
 type Decision = {
   decision?: string;
@@ -219,5 +219,64 @@ describe("bash-mcp-redirect: finer targeting", () => {
       "kubectl get pods --field-selector=status.phase=Failed",
       "kube_pod_failure_summary",
     );
+  });
+});
+
+// ── Registry ↔ hook parity ──────────────────────────────────────────────────
+//
+// A tool's `equivalentCommands` declares the raw CLI it replaces, so any such
+// tool SHOULD also be redirected by this hook. This guard fails when a new
+// wrapper ships with equivalentCommands but no corresponding hook rule — the
+// exact drift that once left the liquibase tools un-advertised. Tools whose
+// equivalents don't map to a single redirectable subcommand are exempted with a
+// documented reason.
+describe("bash-mcp-redirect: registry parity", () => {
+  /**
+   * Tools that carry equivalentCommands but intentionally have no hook rule.
+   * Each maps to *why* a PreToolUse(Bash) redirect doesn't apply.
+   */
+  const EXEMPT: Record<string, string> = {
+    run_seq:
+      "escape hatch — equivalent is an arbitrary `cmd1 && cmd2` chain, not a redirectable subcommand",
+    glob: "shell-builtin globbing, not a command an agent invokes; `find` already redirects to find_files",
+    git_pr_context:
+      "composite summary; its underlying git reads already redirect to git_log/git_diff",
+    repo_health_summary:
+      "composite summary; its underlying git reads already redirect to git_status/git_log",
+    argo_app_health_summary:
+      "composite summary; `argocd app get` already redirects to argo_app_detail",
+  };
+
+  /** The hook references tools by full `mcp__bash-mcp__<name>` id; match on a boundary. */
+  function referencedInHook(hook: string, name: string): boolean {
+    return new RegExp(`mcp__bash-mcp__${name}(?![a-z0-9_])`).test(hook);
+  }
+
+  it("every tool with equivalentCommands is named in the hook (or explicitly exempt)", () => {
+    const hook = readFileSync(HOOK, "utf8");
+    const missing = buildRegistry()
+      .filter((t) => t.equivalentCommands?.length)
+      .filter((t) => !referencedInHook(hook, t.name))
+      .map((t) => t.name)
+      .filter((name) => !(name in EXEMPT));
+    expect(
+      missing,
+      `These tools declare equivalentCommands but no hook rule references them. ` +
+        `Add a RULES entry in bash-mcp-redirect.sh, or add an EXEMPT reason in this test.`,
+    ).toEqual([]);
+  });
+
+  it("exemptions stay relevant: each exempt tool still exists and lacks a hook rule", () => {
+    const hook = readFileSync(HOOK, "utf8");
+    const byName = new Map(buildRegistry().map((t) => [t.name, t]));
+    for (const name of Object.keys(EXEMPT)) {
+      expect(byName.has(name), `exempt tool ${name} no longer exists`).toBe(
+        true,
+      );
+      expect(
+        referencedInHook(hook, name),
+        `exempt tool ${name} now has a hook rule — remove it from EXEMPT`,
+      ).toBe(false);
+    }
   });
 });

@@ -19,6 +19,7 @@ export function registerNpmTypecheckTool(server: McpServer) {
       description:
         "Run tsc/tsgo --noEmit and return structured type errors with file, line, column, message, and TS error code. " +
         "Much more compact than raw tsc output. Auto-detects tsgo for faster checking. Use project to specify a tsconfig.",
+      equivalentCommands: ["npm run typecheck"],
       inputSchema: {
         cwd: z.string().describe("Project root directory"),
         project: z

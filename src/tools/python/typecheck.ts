@@ -18,6 +18,7 @@ export function registerPythonTypecheckTool(server: McpServer) {
       description:
         "Run mypy and return structured type errors with file, line, column, message, and error code. " +
         "Much more compact than raw mypy output.",
+      equivalentCommands: ["mypy ."],
       inputSchema: {
         cwd: z.string().describe("Project root directory"),
         paths: z

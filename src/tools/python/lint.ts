@@ -19,6 +19,7 @@ export function registerPythonLintTool(server: McpServer) {
       description:
         "Run ruff check and return structured diagnostics with file, line, column, message, and rule code. " +
         "Much more compact than raw ruff output. Use minSeverity to filter by severity level.",
+      equivalentCommands: ["ruff check ."],
       inputSchema: {
         cwd: z.string().describe("Project root directory"),
         fix: z

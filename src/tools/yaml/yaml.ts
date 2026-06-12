@@ -22,6 +22,7 @@ export function registerYamlTools(server: McpServer) {
       title: "yq YAML processor",
       description:
         "Query and transform YAML files using yq expressions (mikefarah/yq). Outputs as JSON for structured consumption. Far more compact than reading a full YAML file.",
+      equivalentCommands: ["yq <filter> <file>"],
       inputSchema: {
         expression: z
           .string()

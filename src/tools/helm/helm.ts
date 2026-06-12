@@ -27,6 +27,7 @@ export function registerHelmTools(server: McpServer) {
       title: "Helm releases",
       description:
         "List Helm releases with status, chart, and app version. Structured output.",
+      equivalentCommands: ["helm list -A -o json"],
       inputSchema: {
         namespace: z.string().optional().describe("Namespace (omit for all)"),
         allNamespaces: z.boolean().optional().describe("All namespaces"),
@@ -85,6 +86,7 @@ export function registerHelmTools(server: McpServer) {
     {
       title: "Helm release status",
       description: "Get detailed status of a Helm release.",
+      equivalentCommands: ["helm status <release> -n <ns>"],
       inputSchema: {
         release: z.string().describe("Release name"),
         namespace: z
@@ -153,6 +155,7 @@ export function registerHelmTools(server: McpServer) {
       title: "Helm release values",
       description:
         "Get the computed values for a Helm release as structured data.",
+      equivalentCommands: ["helm get values <release> -n <ns>"],
       inputSchema: {
         release: z.string().describe("Release name"),
         namespace: z

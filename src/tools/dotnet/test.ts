@@ -32,6 +32,7 @@ export function registerDotnetTestTool(server: McpServer) {
       description:
         "Run dotnet test and return structured results: pass/fail/skip counts, failure messages. " +
         "Much more compact than raw test output. Only failures are listed.",
+      equivalentCommands: ["dotnet test"],
       inputSchema: {
         cwd: z.string().describe("Project root directory"),
         filter: z

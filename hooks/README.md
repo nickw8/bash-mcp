@@ -7,6 +7,13 @@ Opt-in hooks that make agents use bash-mcp's structured tools instead of raw she
   roadmap tools and pipelines, and lets write commands (`git commit`, `kubectl apply`)
   through. The command→tool mapping is the `RULES` array at the top of the script.
 - **`settings.example.json`** — copy its `hooks` block into your Claude Code settings.
+- **`../claude/rules/bash-mcp-tools.md`** — generated rules file (auto-loaded by Claude Code
+  into every session) that advertises the full tool inventory so agents reach for the
+  structured tools before raw Bash. Regenerate with `npm run docs:tools`.
+
+Install both into `~/.claude/` with **`npm run claude:install`** (copy mode; `npm run
+claude:check` reports drift without writing). It also prints the global `settings.json`
+hook snippet to paste in.
 
 Full setup, behavior tiers, customizing, and the roadmap mappings:
 **[../docs/recommended-hooks-setup.md](../docs/recommended-hooks-setup.md)**.

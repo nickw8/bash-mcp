@@ -71,6 +71,7 @@ export function registerDotnetBuildTool(server: McpServer) {
         "Run dotnet build and return structured diagnostics with file, line, column, message, and error code. " +
         "Much more compact than raw MSBuild output. " +
         "Warnings are omitted by default; pass includeWarnings:true (or detailLevel:'full') to include them.",
+      equivalentCommands: ["dotnet build"],
       inputSchema: {
         cwd: z.string().describe("Project root directory"),
         project: z

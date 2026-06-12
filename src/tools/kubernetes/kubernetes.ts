@@ -172,6 +172,7 @@ export function registerKubernetesTools(server: McpServer) {
       description:
         "Get pod logs. Returns structured log lines with timestamps when available. " +
         "Use grep to filter lines by regex pattern (e.g. 'ERROR|WARN') instead of piping through shell commands.",
+      equivalentCommands: ["kubectl logs <pod> -n <ns>"],
       inputSchema: {
         pod: z.string().describe("Pod name (or deployment/xxx)"),
         namespace: z
@@ -275,6 +276,7 @@ export function registerKubernetesTools(server: McpServer) {
       title: "Kubectl contexts",
       description:
         "List available kubectl contexts with current context marked.",
+      equivalentCommands: ["kubectl config get-contexts"],
       inputSchema: {
         format: z
           .enum(["json", "tsv", "columnar", "bare"])

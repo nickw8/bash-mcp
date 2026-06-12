@@ -249,6 +249,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       title: "Summarize warning events",
       description:
         "Summarize Warning events in a namespace (grouped by reason, ordered by count) instead of scrolling raw kubectl get events.",
+      equivalentCommands: ["kubectl get events -n <ns>"],
       inputSchema: {
         namespace: z
           .string()

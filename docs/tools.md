@@ -25,6 +25,12 @@ Get detailed status for a single ArgoCD application including resource health.
 - `resources`: object[]
 - `conditions`: object[]
 
+**Equivalent commands:**
+
+```sh
+argocd app get <name> -o json
+```
+
 ## `argo_app_diff`
 
 `read-only`
@@ -39,6 +45,12 @@ Show what's out of sync for an ArgoCD application.
 
 - `hasDiff`: boolean
 - `diff`: string
+
+**Equivalent commands:**
+
+```sh
+argocd app diff <name>
+```
 
 ## `argo_app_health_summary`
 
@@ -82,6 +94,12 @@ List ArgoCD applications with sync/health status. Structured summary instead of 
 - `apps`: object[]
 - `count`: number
 - `summary`: object
+
+**Equivalent commands:**
+
+```sh
+argocd app list -o json
+```
 
 ## `bash_lint`
 
@@ -201,6 +219,12 @@ Read one or more files with line numbers and smart truncation. Returns structure
 - `files`: object[] _(optional)_
 - `count`: number _(optional)_
 
+**Equivalent commands:**
+
+```sh
+cat <file>
+```
+
 ## `check_environment`
 
 `read-only`
@@ -216,6 +240,13 @@ _no inputs_
 - `tools`: object[]
 - `installedCount`: number
 - `total`: number
+
+**Equivalent commands:**
+
+```sh
+which <tool>
+command -v <tool>
+```
 
 ## `dotnet_build`
 
@@ -240,6 +271,12 @@ Run dotnet build and return structured diagnostics with file, line, column, mess
 - `warningCount`: number
 - `summary`: string
 
+**Equivalent commands:**
+
+```sh
+dotnet build
+```
+
 ## `dotnet_test`
 
 Run dotnet test and return structured results: pass/fail/skip counts, failure messages. Much more compact than raw test output. Only failures are listed.
@@ -260,6 +297,12 @@ Run dotnet test and return structured results: pass/fail/skip counts, failure me
 - `failures`: object[]
 - `summary`: string
 
+**Equivalent commands:**
+
+```sh
+dotnet test
+```
+
 ## `du`
 
 `read-only`
@@ -276,6 +319,12 @@ Show disk usage for paths. Returns structured size data. The text view omits the
 **Outputs:**
 
 - `entries`: object[]
+
+**Equivalent commands:**
+
+```sh
+du -sh <path>
+```
 
 ## `find_files`
 
@@ -300,6 +349,12 @@ Find files by name pattern, type, or modification time. Returns structured list 
 - `count`: number
 - `metadata`: object[] _(optional)_
 
+**Equivalent commands:**
+
+```sh
+find <path> -name <pattern>
+```
+
 ## `git_branches`
 
 `read-only`
@@ -317,6 +372,12 @@ List git branches with current branch marker and last commit info.
 
 - `current`: string
 - `branches`: object[]
+
+**Equivalent commands:**
+
+```sh
+git branch -a
+```
 
 ## `git_diff`
 
@@ -339,6 +400,12 @@ Structured git diff: files changed with insertions/deletions counts. Use base+re
 - `totalDeletions`: number
 - `fileCount`: number
 
+**Equivalent commands:**
+
+```sh
+git diff --stat
+```
+
 ## `git_diff_content`
 
 `read-only`
@@ -358,6 +425,13 @@ Show git diff with structured patch content. Returns parsed hunks per file inste
 
 - `files`: object[]
 - `summary`: object
+
+**Equivalent commands:**
+
+```sh
+git diff <ref>
+git show <ref>
+```
 
 ## `git_log`
 
@@ -382,6 +456,12 @@ Structured git log: commit hash, author, date, message. Compact and parseable. U
 
 - `commits`: object[]
 - `count`: number
+
+**Equivalent commands:**
+
+```sh
+git log
+```
 
 ## `git_pr_context`
 
@@ -431,6 +511,12 @@ Structured git status: branch, staged/unstaged/untracked files. Replaces parsing
 - `untracked`: string[]
 - `clean`: boolean
 
+**Equivalent commands:**
+
+```sh
+git status
+```
+
 ## `glob`
 
 `read-only`
@@ -447,6 +533,12 @@ Find files matching a glob pattern. Returns a compact list of paths.
 
 - `files`: string[]
 - `count`: number
+
+**Equivalent commands:**
+
+```sh
+find <path> -name <glob>
+```
 
 ## `helm_list`
 
@@ -465,6 +557,12 @@ List Helm releases with status, chart, and app version. Structured output.
 
 - `releases`: object[]
 - `count`: number
+
+**Equivalent commands:**
+
+```sh
+helm list -A -o json
+```
 
 ## `helm_release_triage`
 
@@ -517,6 +615,12 @@ Get detailed status of a Helm release.
 - `lastDeployed`: string
 - `notes`: string
 
+**Equivalent commands:**
+
+```sh
+helm status <release> -n <ns>
+```
+
 ## `helm_values`
 
 `read-only`
@@ -533,6 +637,12 @@ Get the computed values for a Helm release as structured data.
 **Outputs:**
 
 - `values`: object
+
+**Equivalent commands:**
+
+```sh
+helm get values <release> -n <ns>
+```
 
 ## `jq`
 
@@ -554,6 +664,12 @@ Query and transform JSON using jq expressions. Accepts a file path or raw JSON s
 - `result`: object | unknown[] | string | number | boolean | unknown
 - `multiline`: boolean
 
+**Equivalent commands:**
+
+```sh
+jq <filter> <file>
+```
+
 ## `kube_contexts`
 
 `read-only`
@@ -569,6 +685,12 @@ List available kubectl contexts with current context marked.
 
 - `current`: string
 - `contexts`: object[]
+
+**Equivalent commands:**
+
+```sh
+kubectl config get-contexts
+```
 
 ## `kube_deployment_status`
 
@@ -647,6 +769,12 @@ Summarize Warning events in a namespace (grouped by reason, ordered by count) in
 - `total`: number _(optional)_
 - `truncated`: boolean _(optional)_
 
+**Equivalent commands:**
+
+```sh
+kubectl get events -n <ns>
+```
+
 ## `kube_get`
 
 `read-only`
@@ -705,6 +833,12 @@ Get pod logs. Returns structured log lines with timestamps when available. Use g
 - `pod`: string
 - `total`: number _(optional)_
 - `truncated`: boolean _(optional)_
+
+**Equivalent commands:**
+
+```sh
+kubectl logs <pod> -n <ns>
+```
 
 ## `kube_pod_failure_summary`
 
@@ -862,6 +996,12 @@ List files in a directory. Returns structured entries with name, type, size, and
 - `total`: number
 - `path`: string
 
+**Equivalent commands:**
+
+```sh
+ls -la <path>
+```
+
 ## `npm_lint`
 
 Run biome check and return structured diagnostics with file, line, column, message, and rule. Far more compact and parseable than raw lint output. Use minSeverity to filter by severity level.
@@ -880,6 +1020,12 @@ Run biome check and return structured diagnostics with file, line, column, messa
 - `warningCount`: number
 - `fixedCount`: number
 
+**Equivalent commands:**
+
+```sh
+npm run lint
+```
+
 ## `npm_test`
 
 Run vitest and return structured test results: suites, pass/fail counts, failure messages. Much more compact than raw test output. Only failures are listed by default; use verbose=true for all tests.
@@ -895,6 +1041,12 @@ Run vitest and return structured test results: suites, pass/fail counts, failure
 
 - `suites`: object[]
 - `summary`: object
+
+**Equivalent commands:**
+
+```sh
+npm test
+```
 
 ## `npm_typecheck`
 
@@ -916,6 +1068,12 @@ Run tsc/tsgo --noEmit and return structured type errors with file, line, column,
 - `errors`: object[]
 - `errorCount`: number
 - `success`: boolean
+
+**Equivalent commands:**
+
+```sh
+npm run typecheck
+```
 
 ## `outline`
 
@@ -962,6 +1120,12 @@ Run ruff check and return structured diagnostics with file, line, column, messag
 - `warningCount`: number
 - `fixedCount`: number
 
+**Equivalent commands:**
+
+```sh
+ruff check .
+```
+
 ## `python_test`
 
 Run pytest and return structured test results: suites, pass/fail counts, failure messages. Much more compact than raw test output. Only failures are listed by default; use verbose=true for all tests.
@@ -977,6 +1141,12 @@ Run pytest and return structured test results: suites, pass/fail counts, failure
 
 - `suites`: object[]
 - `summary`: object
+
+**Equivalent commands:**
+
+```sh
+pytest
+```
 
 ## `python_typecheck`
 
@@ -998,6 +1168,12 @@ Run mypy and return structured type errors with file, line, column, message, and
 - `errors`: object[]
 - `errorCount`: number
 - `success`: boolean
+
+**Equivalent commands:**
+
+```sh
+mypy .
+```
 
 ## `repo_health_summary`
 
@@ -1062,6 +1238,13 @@ Search file contents with ripgrep. Returns structured matches with file, line nu
 - `matchCount`: number
 - `truncated`: boolean
 - `fileCounts`: object[] _(optional)_
+
+**Equivalent commands:**
+
+```sh
+rg <pattern>
+grep -rn <pattern>
+```
 
 ## `run`
 
@@ -1164,6 +1347,12 @@ List Terraform/OpenTofu outputs (name, type, value) with sensitive values redact
 - `outputs`: object[]
 - `count`: number
 
+**Equivalent commands:**
+
+```sh
+terraform output -json
+```
+
 ## `tf_plan_summary`
 
 `read-only`
@@ -1209,6 +1398,12 @@ List the Terraform/OpenTofu version and selected provider versions for the proje
 - `version`: string
 - `providers`: object[]
 
+**Equivalent commands:**
+
+```sh
+terraform providers
+```
+
 ## `tf_show`
 
 `read-only`
@@ -1224,6 +1419,12 @@ Show current Terraform state as structured JSON. Returns resource summary with t
 
 - `resources`: object[]
 - `count`: number
+
+**Equivalent commands:**
+
+```sh
+terraform show
+```
 
 ## `tf_state_list`
 
@@ -1243,6 +1444,12 @@ List resources in Terraform state. Returns structured resource addresses grouped
 - `count`: number
 - `byType`: object
 
+**Equivalent commands:**
+
+```sh
+terraform state list
+```
+
 ## `tf_validate_summary`
 
 `read-only`
@@ -1261,6 +1468,12 @@ Validate the Terraform/OpenTofu config and return a compact pass/fail summary wi
 - `warningCount`: number
 - `diagnostics`: object[]
 
+**Equivalent commands:**
+
+```sh
+terraform validate
+```
+
 ## `tf_workspaces`
 
 `read-only`
@@ -1276,6 +1489,12 @@ List Terraform workspaces with current workspace marked.
 
 - `current`: string
 - `workspaces`: string[]
+
+**Equivalent commands:**
+
+```sh
+terraform workspace list
+```
 
 ## `tree`
 
@@ -1298,6 +1517,12 @@ Show directory structure as a compact tree. Returns structured nodes instead of 
 - `files`: number
 - `tree`: object[]
 
+**Equivalent commands:**
+
+```sh
+tree <path>
+```
+
 ## `yq`
 
 `read-only`
@@ -1315,3 +1540,9 @@ Query and transform YAML files using yq expressions (mikefarah/yq). Outputs as J
 
 - `result`: object | unknown[] | string | number | boolean | unknown
 - `format`: string
+
+**Equivalent commands:**
+
+```sh
+yq <filter> <file>
+```

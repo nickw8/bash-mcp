@@ -16,6 +16,7 @@ export function registerGitLogTool(server: McpServer) {
         "Structured git log: commit hash, author, date, message. Compact and parseable. " +
         "Use range for ref comparisons (e.g. 'main..feature'). " +
         "Use exclude to filter out commits matching a pattern (e.g. 'ci:').",
+      equivalentCommands: ["git log"],
       inputSchema: {
         cwd: z.string().optional().describe("Repository path"),
         count: z

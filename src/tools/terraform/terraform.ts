@@ -57,6 +57,7 @@ export function registerTerraformTools(server: McpServer) {
       description:
         "List resources in Terraform state. Returns structured resource addresses grouped by type. " +
         "Text view lists addresses only (type/name/module are parsed from each address); the byType rollup is in meta.",
+      equivalentCommands: ["terraform state list"],
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
         binary: binarySchema,
@@ -129,6 +130,7 @@ export function registerTerraformTools(server: McpServer) {
       title: "Terraform show",
       description:
         "Show current Terraform state as structured JSON. Returns resource summary with types and attributes.",
+      equivalentCommands: ["terraform show"],
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
         binary: binarySchema,
@@ -298,6 +300,7 @@ export function registerTerraformTools(server: McpServer) {
     {
       title: "Terraform workspaces",
       description: "List Terraform workspaces with current workspace marked.",
+      equivalentCommands: ["terraform workspace list"],
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
         binary: binarySchema,
@@ -337,6 +340,7 @@ export function registerTerraformTools(server: McpServer) {
       title: "Terraform outputs",
       description:
         "List Terraform/OpenTofu outputs (name, type, value) with sensitive values redacted.",
+      equivalentCommands: ["terraform output -json"],
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
         binary: binarySchema,
@@ -400,6 +404,7 @@ export function registerTerraformTools(server: McpServer) {
       title: "Terraform providers",
       description:
         "List the Terraform/OpenTofu version and selected provider versions for the project.",
+      equivalentCommands: ["terraform providers"],
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
         binary: binarySchema,
@@ -437,6 +442,7 @@ export function registerTerraformTools(server: McpServer) {
       title: "Terraform validate summary",
       description:
         "Validate the Terraform/OpenTofu config and return a compact pass/fail summary with diagnostics.",
+      equivalentCommands: ["terraform validate"],
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
         binary: binarySchema,

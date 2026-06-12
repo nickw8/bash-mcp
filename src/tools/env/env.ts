@@ -90,6 +90,7 @@ export function registerEnvTools(server: McpServer) {
       description:
         "Report which CLIs are installed (and their versions) so you can pick the right tool before calling it. " +
         "Probes are client-only and non-blocking — no server/auth calls. Includes kubectl's current context when available.",
+      equivalentCommands: ["which <tool>", "command -v <tool>"],
       inputSchema: {},
       outputSchema: {
         tools: z.array(

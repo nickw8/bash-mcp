@@ -14,6 +14,7 @@ export function registerGitBranchesTool(server: McpServer) {
       title: "Git branches",
       description:
         "List git branches with current branch marker and last commit info.",
+      equivalentCommands: ["git branch -a"],
       inputSchema: {
         cwd: z.string().optional().describe("Repository path"),
         remote: z.boolean().optional().describe("Include remote branches"),

@@ -27,6 +27,7 @@ export function registerDuTool(server: McpServer) {
       description:
         "Show disk usage for paths. Returns structured size data. The text view omits " +
         "the derived sizeHuman field (computable from sizeBytes); it remains in structuredContent.",
+      equivalentCommands: ["du -sh <path>"],
       inputSchema: {
         path: z.string().describe("Path to measure"),
         maxDepth: z

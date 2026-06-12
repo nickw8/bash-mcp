@@ -278,6 +278,7 @@ export function registerFileTools(server: McpServer) {
         "Use ref to read from a git branch/commit instead of disk (e.g. ref='main'). " +
         'NOTE: reading with cat does NOT satisfy the built-in Edit/Write "must read first" guard ' +
         "(it tracks only the built-in Read tool) — run the built-in Read on a file immediately before editing it.",
+      equivalentCommands: ["cat <file>"],
       inputSchema: {
         path: z.string().optional().describe("Path to a single file"),
         paths: z

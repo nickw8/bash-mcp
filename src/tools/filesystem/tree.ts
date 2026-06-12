@@ -71,6 +71,7 @@ export function registerTreeTool(server: McpServer) {
       description:
         "Show directory structure as a compact tree. Returns structured nodes instead of ASCII art. " +
         "Use dirsOnly for directory-only view, pattern to filter by glob, maxDepth to control depth.",
+      equivalentCommands: ["tree <path>"],
       inputSchema: {
         path: z.string().describe("Root directory"),
         maxDepth: z

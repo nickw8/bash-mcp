@@ -27,6 +27,7 @@ export function registerSearchTools(server: McpServer) {
         "Use glob (string or array, '!' to exclude) to filter files, ignoreCase for case-insensitive search, " +
         "filesOnly for just filenames, countPerFile for match counts per file, maxPerFile to cap hits per file. " +
         "For 'collect all X' tasks use only:true to return just the matched substrings (one row per hit) — add replace ($1 capture groups) to extract structured values.",
+      equivalentCommands: ["rg <pattern>", "grep -rn <pattern>"],
       inputSchema: {
         pattern: z.string().describe("Regex pattern to search for"),
         path: z
@@ -298,6 +299,7 @@ export function registerSearchTools(server: McpServer) {
       title: "Glob file search",
       description:
         "Find files matching a glob pattern. Returns a compact list of paths.",
+      equivalentCommands: ["find <path> -name <glob>"],
       inputSchema: {
         pattern: z.string().describe("Glob pattern (e.g. 'src/**/*.ts')"),
         cwd: z.string().optional().describe("Working directory for the glob"),

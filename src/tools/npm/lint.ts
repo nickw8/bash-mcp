@@ -16,6 +16,7 @@ export function registerNpmLintTool(server: McpServer) {
       description:
         "Run biome check and return structured diagnostics with file, line, column, message, and rule. " +
         "Far more compact and parseable than raw lint output. Use minSeverity to filter by severity level.",
+      equivalentCommands: ["npm run lint"],
       inputSchema: {
         cwd: z.string().describe("Project root directory"),
         fix: z

@@ -24,6 +24,7 @@ export function registerArgocdTools(server: McpServer) {
       title: "ArgoCD applications",
       description:
         "List ArgoCD applications with sync/health status. Structured summary instead of table output.",
+      equivalentCommands: ["argocd app list -o json"],
       inputSchema: {
         project: z.string().optional().describe("Filter by ArgoCD project"),
         selector: z.string().optional().describe("Label selector"),
@@ -101,6 +102,7 @@ export function registerArgocdTools(server: McpServer) {
       title: "ArgoCD app detail",
       description:
         "Get detailed status for a single ArgoCD application including resource health.",
+      equivalentCommands: ["argocd app get <name> -o json"],
       inputSchema: {
         name: z.string().describe("Application name"),
       },
@@ -183,6 +185,7 @@ export function registerArgocdTools(server: McpServer) {
     {
       title: "ArgoCD app diff",
       description: "Show what's out of sync for an ArgoCD application.",
+      equivalentCommands: ["argocd app diff <name>"],
       inputSchema: {
         name: z.string().describe("Application name"),
       },

@@ -13,6 +13,7 @@ export function registerGitStatusTool(server: McpServer) {
       title: "Git status",
       description:
         "Structured git status: branch, staged/unstaged/untracked files. Replaces parsing raw git status output.",
+      equivalentCommands: ["git status"],
       inputSchema: {
         cwd: z.string().optional().describe("Repository path"),
       },

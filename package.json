@@ -33,6 +33,7 @@
     "docs",
     "hooks",
     "!hooks/**/*.test.ts",
+    "claude",
     "README.md",
     "LICENSE"
   ],
@@ -61,6 +62,8 @@
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "docs:tools": "tsx scripts/gen-tool-docs.mjs",
+    "claude:install": "node scripts/install-claude-assets.mjs",
+    "claude:check": "node scripts/install-claude-assets.mjs --check",
     "prepublishOnly": "npm run build && node scripts/verify-bundle.mjs",
     "lint": "biome check .",
     "lint:fix": "biome check --fix .",

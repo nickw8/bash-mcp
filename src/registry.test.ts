@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   buildRegistry,
+  renderAgentRules,
   renderReadme,
   renderToolDocs,
   renderToolsSection,
@@ -22,6 +23,7 @@ import { INTENTS } from "./tools/guidance/guidance.js";
 const here = dirname(fileURLToPath(import.meta.url));
 const docPath = join(here, "..", "docs", "tools.md");
 const readmePath = join(here, "..", "README.md");
+const rulesPath = join(here, "..", "claude", "rules", "bash-mcp-tools.md");
 
 describe("buildRegistry", () => {
   it("returns one record per registered tool, deduplicated across calls", () => {
@@ -106,5 +108,39 @@ describe("README.md generated regions", () => {
     const readme = readFileSync(readmePath, "utf8");
     // renderReadme is idempotent: regenerating the committed README is a no-op.
     expect(readme).toBe(renderReadme(readme, buildRegistry(), INTENTS));
+  });
+});
+
+describe("renderAgentRules", () => {
+  it("advertises every registered tool so none can silently go missing", () => {
+    const tools = buildRegistry();
+    const md = renderAgentRules(tools);
+    for (const t of tools) {
+      expect(md).toContain(`\`${t.name}\``);
+    }
+  });
+
+  it("renders one row per category with a curated 'instead of' note", () => {
+    const md = renderAgentRules(buildRegistry());
+    expect(md).toContain("| Category | Use bash-mcp | Instead of |");
+    expect(md).toContain("| Liquibase | `liquibase_validate`");
+    expect(md).toContain("`Bash(liquibase)`");
+  });
+
+  it("throws when a registry category lacks a CATEGORY_AVOID entry", () => {
+    const tools = buildRegistry();
+    expect(() =>
+      renderAgentRules([
+        ...tools,
+        { name: "fake_tool", category: "Brand New Category" },
+      ]),
+    ).toThrow(/CATEGORY_AVOID/);
+  });
+});
+
+describe("claude/rules/bash-mcp-tools.md", () => {
+  it("matches the generator output (run `npm run docs:tools` if this fails)", () => {
+    const committed = readFileSync(rulesPath, "utf8");
+    expect(committed).toBe(renderAgentRules(buildRegistry()));
   });
 });

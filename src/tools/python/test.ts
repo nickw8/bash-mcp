@@ -18,6 +18,7 @@ export function registerPythonTestTool(server: McpServer) {
       description:
         "Run pytest and return structured test results: suites, pass/fail counts, failure messages. " +
         "Much more compact than raw test output. Only failures are listed by default; use verbose=true for all tests.",
+      equivalentCommands: ["pytest"],
       inputSchema: {
         cwd: z.string().describe("Project root directory"),
         pattern: z

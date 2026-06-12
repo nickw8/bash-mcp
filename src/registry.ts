@@ -359,3 +359,98 @@ export function renderReadme(
   out = replaceRegion(out, TOOLS_BEGIN, TOOLS_END, renderToolsSection(tools));
   return out;
 }
+
+// ── Agent rules file generation (claude/rules/bash-mcp-tools.md) ─────────────
+//
+// The rules file is auto-loaded by Claude Code into every session's context, so
+// it is the surface that tells an agent which bash-mcp tools exist before it ever
+// reaches for raw Bash. It is generated from the registry (one row per category,
+// tools in registration order) so a newly added tool — or a whole new category —
+// can never silently go un-advertised the way the liquibase wrapper once did.
+//
+// The "Instead of" column is the one piece of curated knowledge not derivable
+// from the registry (it names Claude Code built-ins like `Read`/`Grep`/`Glob`).
+// `CATEGORY_AVOID` holds it, and `renderAgentRules` THROWS if a registry category
+// lacks an entry — so adding a category forces a matching avoidance note.
+
+/** Per-category "Instead of" cell: the built-in / raw commands to avoid. */
+const CATEGORY_AVOID: Record<string, string> = {
+  Environment: "guessing which CLIs exist",
+  Filesystem: "`Bash(ls/tree/du/find)`, `Glob`",
+  Search: "`Grep`, `Bash(grep)`",
+  File: "`Read` (Read only immediately before Edit)",
+  Git: "`Bash(git)`",
+  Kubernetes: "`Bash(kubectl)`",
+  Terraform: "`Bash(terraform/tofu)`",
+  Helm: "`Bash(helm)`",
+  ArgoCD: "`Bash(argocd)`",
+  "Data Processing": "`Read` + manual parsing",
+  ".NET": "`Bash(dotnet)`",
+  Liquibase: "`Bash(liquibase)`",
+  "Node.js": "`Bash(npm)`",
+  Python: "`Bash(ruff/pytest/mypy)`",
+  Shell: "`Bash(shellcheck/bats/bash -n)`",
+  Execution: "`Bash(cd && cmd)`, sequential one-off calls",
+};
+
+/** A tool is a "diagnostic" tool if its output carries the triage shape. */
+function isDiagnostic(t: ToolRecord): boolean {
+  return !!t.outputSchema && "likelyCauses" in t.outputSchema;
+}
+
+/**
+ * Render the agent-facing rules markdown from the registry. Categories appear in
+ * `CATEGORY_ORDER`; tools within each keep registration order. The diagnostic
+ * callout is derived from the registry (tools whose output has `likelyCauses`).
+ *
+ * Throws if a registry category has no `CATEGORY_AVOID` entry, so a new tool
+ * group can't ship without a corresponding "use this, not that" row.
+ */
+export function renderAgentRules(tools: ToolRecord[]): string {
+  const byCategory = new Map<string, ToolRecord[]>();
+  for (const t of tools) {
+    const cat = t.category ?? "Other";
+    const list = byCategory.get(cat) ?? [];
+    list.push(t);
+    byCategory.set(cat, list);
+  }
+  const categories = [
+    ...CATEGORY_ORDER.filter((c) => byCategory.has(c)),
+    ...[...byCategory.keys()]
+      .filter((c) => !CATEGORY_ORDER.includes(c))
+      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)),
+  ];
+
+  const rows = categories.map((category) => {
+    const avoid = CATEGORY_AVOID[category];
+    if (avoid === undefined) {
+      throw new Error(
+        `renderAgentRules: category "${category}" has no CATEGORY_AVOID entry. ` +
+          `Add one in src/registry.ts so the rules file advertises it.`,
+      );
+    }
+    const use = (byCategory.get(category) ?? [])
+      .map((t) => `\`${t.name}\``)
+      .join(", ");
+    return `| ${category} | ${use} | ${avoid} |`;
+  });
+
+  const diagnostics = tools.filter(isDiagnostic).map((t) => `\`${t.name}\``);
+
+  return [
+    "# bash-mcp Tools",
+    "",
+    "<!-- GENERATED FILE — do not edit by hand. Regenerate with `npm run docs:tools`. -->",
+    "",
+    "Prefer these bash-mcp MCP tools over raw shell / built-ins: structured JSON, fewer tokens.",
+    "",
+    "| Category | Use bash-mcp | Instead of |",
+    "|----------|--------------|------------|",
+    ...rows,
+    "",
+    `**Diagnostic tools** collapse multi-call triage into one answer (status + likely causes + suggested next commands + evidence): ${diagnostics.join(", ")}.`,
+    "",
+    '`Edit` and `Write` stay built-in. `cat` does NOT satisfy the Edit/Write "read first" guard — run the built-in `Read` immediately before editing.',
+    "",
+  ].join("\n");
+}

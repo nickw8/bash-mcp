@@ -93,6 +93,7 @@ export function registerGitDiffContentTools(server: McpServer) {
         "Use this when you need to see actual code changes, not just file-level stats. " +
         "Use base+ref for two-ref comparison (e.g. base='main', ref='feature'). " +
         "Use path to scope to one or more files or directories.",
+      equivalentCommands: ["git diff <ref>", "git show <ref>"],
       inputSchema: {
         cwd: z.string().optional().describe("Working directory (git repo)"),
         ref: z
