@@ -5,8 +5,9 @@ MCP server wrapping CLI tools with structured JSON output instead of raw text.
 TypeScript, Node.js >= 20 (ESM), MCP SDK, Zod schemas, Vitest, Biome (lint/format), tsup (bundler)
 
 ## Key Paths
-- src/index.ts — server entry; main() dispatches `--doctor` (runDoctor → print report → exit) BEFORE starting the server, else calls registerAll(server) from src/registry.ts and connects stdio transport
+- src/index.ts — server entry; main() dispatches `--doctor` (runDoctor) and `--install-claude [--check]` (installClaudeAssets) — print report → exit — BEFORE starting the server, else calls registerAll(server) from src/registry.ts and connects stdio transport
 - src/doctor.ts — `bash-mcp --doctor` preflight: runDoctor() returns { checks: Check[], exitCode } (Node version, dist entry, MCP SDK import, PATH, per-CLI availability via env.ts PROBES/runProbe, resolved BASH_MCP_MODE); pure exitCodeFor/formatReport at the edge; injectable DoctorDeps for tests. Critical fails (old Node, SDK not loadable) → non-zero exit; missing CLIs advisory
+- src/install-claude.ts — `bash-mcp --install-claude [--check]`: installClaudeAssets() copies claude/rules/bash-mcp-tools.md + hooks/bash-mcp-redirect.sh into ~/.claude (or reports drift), returning { results, exitCode, missingSource? }; pure formatInstallReport/hookSnippet at the edge; injectable InstallDeps for tests. Path resolution (dirname(dirname(import.meta.url))) works from src (tsx) and the dist bundle, so npm-installed consumers run it via `npx @nickw8/bash-mcp --install-claude` without a clone. scripts/install-claude-assets.mjs is a thin tsx wrapper over the same module (npm run claude:install/claude:check)
 - src/registry.ts — GROUPS (single tool-group list + README category each) drives registerAll (shared with index.ts) + buildRegistry (collects/categorises ToolRecord[] via no-op server) + renderToolDocs (Zod→markdown for docs/tools.md) + renderReadme (regenerates README's "## Tools" tables from the registry and the "Which tool?" table from guidance INTENTS)
 - src/exec.ts — command execution (exec, execJson, execWithStdin), IS_MACOS, TIMEOUT constants; surfaces errorCode/signal/timedOut
 - src/tool.ts — defineTool: wraps registerTool with wide-event logging + uniform error catching (all tools use it); folds equivalentCommands into _meta + records each tool in the registry (getRegisteredTools/resetRegistry)
@@ -55,7 +56,7 @@ See docs/adding-tools.md
 DEFAULT: 30s (filesystem/search/git) | INFRA: 15s (kube/helm/argocd) | TYPECHECK: 60s (tsc, tf show) | BUILD: 120s (dotnet, npm test, tf plan) | All: 10 MB maxBuffer
 
 ## Commands
-Build: npm run build | Dev: npm run dev | Test: npm test | Lint: npm run lint | Typecheck: npm run typecheck | Tool reference: npm run docs:tools (regenerates docs/tools.md + README generated regions + claude/rules/bash-mcp-tools.md; `-- --check` fails if stale) | Install agent assets: npm run claude:install (copies rules + hook into ~/.claude; `claude:check` for dry-run)
+Build: npm run build | Dev: npm run dev | Test: npm test | Lint: npm run lint | Typecheck: npm run typecheck | Tool reference: npm run docs:tools (regenerates docs/tools.md + README generated regions + claude/rules/bash-mcp-tools.md; `-- --check` fails if stale) | Install agent assets: npm run claude:install (copies rules + hook into ~/.claude; `claude:check` for dry-run) — npm-installed consumers use `npx @nickw8/bash-mcp --install-claude [--check]` instead
 
 ## Prerequisites
 Node.js >= 20 always required. Per-category: rg (ripgrep), git, kubectl, terraform, helm, argocd, jq, yq (mikefarah), dotnet, liquibase, ruff, mypy, pytest, shellcheck, bats. Tools error gracefully if CLI missing.

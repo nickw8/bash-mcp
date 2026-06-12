@@ -88,6 +88,23 @@ You can also add it from the CLI:
 claude mcp add bash-mcp -e BASH_MCP_MODE=readOnly -- npx -y @nickw8/bash-mcp
 ```
 
+### Steer agents toward the structured tools (optional)
+
+Registering the server exposes the tools, but agents still reach for raw `Bash`
+out of habit. Two assets fix that: a rules file (`~/.claude/rules/bash-mcp-tools.md`,
+auto-loaded into every session — the tool inventory) and a `PreToolUse(Bash)`
+redirect hook. Install both with:
+
+```bash
+npx -y @nickw8/bash-mcp --install-claude        # copy into ~/.claude
+npx -y @nickw8/bash-mcp --install-claude --check # report drift, write nothing
+```
+
+It prints the `settings.json` hook block to paste in (the rules file needs no
+settings — Claude Code auto-loads `~/.claude/rules/*.md`). See
+[hooks/README.md](hooks/README.md) for details and the clone-time
+`npm run claude:install` equivalent.
+
 ## Claude Desktop Setup
 
 Edit `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/`,

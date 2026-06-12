@@ -9,6 +9,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { formatReport, runDoctor } from "./doctor.js";
+import { formatInstallReport, installClaudeAssets } from "./install-claude.js";
 import { logLifecycle } from "./logger.js";
 import { registerAll } from "./registry.js";
 import { VERSION } from "./version.js";
@@ -56,12 +57,23 @@ const server = new McpServer(
 registerAll(server);
 
 async function main() {
+  const args = process.argv.slice(2);
+
   // `--doctor`: run preflight checks, print a report, and exit before starting
   // the server. Safe to use stdout here — there is no MCP session yet.
-  if (process.argv.slice(2).includes("--doctor")) {
+  if (args.includes("--doctor")) {
     const { checks, exitCode } = await runDoctor();
     console.log(formatReport(checks));
     process.exit(exitCode);
+  }
+
+  // `--install-claude [--check]`: copy the rules file + redirect hook into
+  // ~/.claude (or report drift) and exit. Lets npm-installed consumers wire up
+  // the agent assets without cloning the repo.
+  if (args.includes("--install-claude")) {
+    const result = installClaudeAssets({ check: args.includes("--check") });
+    console.log(formatInstallReport(result));
+    process.exit(result.exitCode);
   }
 
   const transport = new StdioServerTransport();

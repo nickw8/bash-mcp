@@ -12,7 +12,9 @@ Opt-in hooks that make agents use bash-mcp's structured tools instead of raw she
   structured tools before raw Bash. Regenerate with `npm run docs:tools`.
 
 Install both into `~/.claude/` with **`npm run claude:install`** (copy mode; `npm run
-claude:check` reports drift without writing). It also prints the global `settings.json`
+claude:check` reports drift without writing). If you installed the package from npm
+rather than cloning, run **`npx @nickw8/bash-mcp --install-claude`** (`--check` for
+drift) — same copy, no clone needed. Either way it prints the global `settings.json`
 hook snippet to paste in.
 
 Full setup, behavior tiers, customizing, and the roadmap mappings:
