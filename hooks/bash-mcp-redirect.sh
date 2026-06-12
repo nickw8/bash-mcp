@@ -90,19 +90,11 @@ RULES=(
   "npm run|warn|mcp__bash-mcp__run (or npm_* tools)"
   "dotnet build|block|mcp__bash-mcp__dotnet_build"
   "dotnet test|block|mcp__bash-mcp__dotnet_test"
-  "liquibase validate|block|mcp__bash-mcp__liquibase_validate"
-  "liquibase updateSQL|block|mcp__bash-mcp__liquibase_update_sql"
-  "liquibase status|block|mcp__bash-mcp__liquibase_status"
   "uv run ruff|block|mcp__bash-mcp__python_lint"
   "uv run pytest|block|mcp__bash-mcp__python_test"
   "ruff|block|mcp__bash-mcp__python_lint"
   "pytest|block|mcp__bash-mcp__python_test"
   "mypy|block|mcp__bash-mcp__python_typecheck"
-
-  # ── Shell (shellcheck/bats/bash -n) ──
-  "shellcheck|block|mcp__bash-mcp__bash_lint"
-  "bats|block|mcp__bash-mcp__bash_test"
-  "bash -n|block|mcp__bash-mcp__bash_syntax_check"
 
   # ── Capability discovery ──
   "which|block|mcp__bash-mcp__check_environment"

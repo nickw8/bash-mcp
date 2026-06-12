@@ -21,29 +21,38 @@ Thumbs.db
 *.swp
 *.swo
 
-# Logs
-*.log
 npm-debug.log*
 
 # Personal / internal files
 **/scratch
 
-### AI agent files
-# mempalace
 **/entities.json
-**/mempalace.yaml
 
 # serena
-**/.serena
-**/.serena/
 
 # claude
-**/.claude*
-**/CLAUDE.md
 
 # codex
 **/.codex
 
 **/.mise.toml
 
-# Misc AI tooling
+### AI agent files (data-hub managed)
+# Local-only / machine-specific files (settings.local.json, *.local.json, secrets)
+.claude/settings.local.json
+**/*local*
+
+# Claude runtime locks (regenerated locally)
+.claude/*.lock
+
+# Private per-engineer task docs (spec/plan/review)
+.claude/tasks/
+
+# Serena cache (regenerated locally)
+.serena/cache/
+
+# Mempalace local config (not shared context)
+**/mempalace.yaml
+
+# Logs
+*.log
