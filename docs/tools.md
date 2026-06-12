@@ -179,7 +179,7 @@ bash test.sh
 
 ## `batch`
 
-Run multiple shell commands in parallel and return all results. Use when you need to gather independent pieces of information in a single tool call instead of multiple sequential calls.
+Run multiple commands in parallel and return all results. Each command is a binary plus an args array, executed without a shell (for a pipeline use command='sh', args=['-c', '...']). Use when you need to gather independent pieces of information in a single tool call instead of multiple sequential calls.
 
 **Inputs:**
 
@@ -1248,12 +1248,12 @@ grep -rn <pattern>
 
 ## `run`
 
-Run a shell command and return structured output with smart truncation. Keeps the last N lines of output by default (where errors typically appear), or the first N with mode='head'. Use for build, test, and lint commands where you need exit code and error details, not full verbose output.
+Run a single command — a binary plus an args array, executed directly without a shell (so no pipes, redirects, or ';'/'&&' in the string) — and return structured output with smart truncation. Pass the binary as `command` and its arguments as `args` (e.g. command='npm', args=['test']); for a real shell pipeline run the shell yourself: command='sh', args=['-c', 'a | b > c']. Keeps the last N lines of output by default (where errors typically appear), or the first N with mode='head'. Use for build, test, and lint commands where you need exit code and error details, not full verbose output.
 
 **Inputs:**
 
-- `command`: string — The command to run (e.g. 'npm')
-- `args`: string[] _(optional)_ — Command arguments (e.g. ['test'])
+- `command`: string — The binary to execute — NOT a shell string (e.g. 'npm', 'git', 'sh'). For pipes/redirects, use command='sh' and put the script in args.
+- `args`: string[] _(optional)_ — Arguments passed directly to the binary (e.g. ['test']). With command='sh', use ['-c', '<shell script>'].
 - `cwd`: string _(optional)_ — Working directory
 - `timeout`: number _(optional)_ — Timeout in ms
 - `maxLines`: number _(optional)_ — Max stdout/stderr lines to keep. 0 = unlimited.

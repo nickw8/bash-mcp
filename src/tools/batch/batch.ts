@@ -1,9 +1,10 @@
 /**
  * Batch Tool
  *
- * Runs multiple shell commands in parallel and returns all results
- * in a single response. Useful for gathering independent pieces of
- * information without multiple sequential tool calls.
+ * Runs multiple commands (each a binary plus an args array, via execFile — no
+ * shell) in parallel and returns all results in a single response. Useful for
+ * gathering independent pieces of information without multiple sequential tool
+ * calls. For a pipeline in a command, use command='sh', args=['-c', '<script>'].
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -20,13 +21,19 @@ export function registerBatchTools(server: McpServer) {
     {
       title: "Run commands in parallel",
       description:
-        "Run multiple shell commands in parallel and return all results. " +
-        "Use when you need to gather independent pieces of information " +
-        "in a single tool call instead of multiple sequential calls.",
+        "Run multiple commands in parallel and return all results. Each command " +
+        "is a binary plus an args array, executed without a shell (for a pipeline " +
+        "use command='sh', args=['-c', '...']). Use when you need to gather " +
+        "independent pieces of information in a single tool call instead of " +
+        "multiple sequential calls.",
       inputSchema: {
         commands: z.array(
           z.object({
-            command: z.string(),
+            command: z
+              .string()
+              .describe(
+                "The binary to execute — NOT a shell string (e.g. 'git', 'sh'). For pipes/redirects, use command='sh' with args=['-c', '<script>'].",
+              ),
             args: z.array(z.string()).optional().default([]),
             cwd: z.string().optional(),
             label: z

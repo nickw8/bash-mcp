@@ -32,12 +32,18 @@ export function registerRunSeqTools(server: McpServer) {
         steps: z
           .array(
             z.object({
-              command: z.string().describe("The command to run (e.g. 'npm')"),
+              command: z
+                .string()
+                .describe(
+                  "The binary to execute — NOT a shell string (e.g. 'npm', 'sh'). For pipes/redirects in a step, use command='sh' with args=['-c', '<script>'].",
+                ),
               args: z
                 .array(z.string())
                 .optional()
                 .default([])
-                .describe("Command arguments (e.g. ['test'])"),
+                .describe(
+                  "Arguments passed directly to the binary (e.g. ['test']). With command='sh', use ['-c', '<shell script>'].",
+                ),
               cwd: z.string().optional().describe("Working directory"),
               label: z
                 .string()

@@ -358,9 +358,9 @@ so agents can self-select without the README.
 
 | Tool | Description |
 |------|-------------|
-| `run` | Run a shell command and return structured output with smart truncation. |
+| `run` | Run a single command — a binary plus an args array, executed directly without a shell (so no pipes, redirects, or ';'/'&&' in the string) — and return structured output with smart truncation. |
 | `run_seq` | Run an ordered list of labeled commands one after another, stopping at the first failure by default. |
-| `batch` | Run multiple shell commands in parallel and return all results. |
+| `batch` | Run multiple commands in parallel and return all results. |
 
 <!-- END GENERATED: tools -->
 

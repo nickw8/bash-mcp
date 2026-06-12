@@ -1,10 +1,11 @@
 /**
  * Run Tool
  *
- * Executes a shell command and returns structured output with smart
- * truncation. Keeps the last N lines of stdout (where errors typically
- * appear) so callers get exit code + error context without wading
- * through hundreds of progress lines.
+ * Executes a single command (a binary plus an args array, via execFile — no
+ * shell) and returns structured output with smart truncation. Keeps the last
+ * N lines of stdout (where errors typically appear) so callers get exit code +
+ * error context without wading through hundreds of progress lines. For a real
+ * shell pipeline, the caller passes command='sh', args=['-c', '<script>'].
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -22,15 +23,21 @@ export function registerRunTools(server: McpServer) {
     {
       title: "Run a command",
       description:
-        "Run a shell command and return structured output with smart truncation. Keeps the last N lines of output by default (where errors typically appear), or the first N with mode='head'. Use for build, test, and lint commands where you need exit code and error details, not full verbose output.",
+        "Run a single command — a binary plus an args array, executed directly without a shell (so no pipes, redirects, or ';'/'&&' in the string) — and return structured output with smart truncation. Pass the binary as `command` and its arguments as `args` (e.g. command='npm', args=['test']); for a real shell pipeline run the shell yourself: command='sh', args=['-c', 'a | b > c']. Keeps the last N lines of output by default (where errors typically appear), or the first N with mode='head'. Use for build, test, and lint commands where you need exit code and error details, not full verbose output.",
       equivalentCommands: ["<command> | tail -n N", "<command> | head -n N"],
       inputSchema: {
-        command: z.string().describe("The command to run (e.g. 'npm')"),
+        command: z
+          .string()
+          .describe(
+            "The binary to execute — NOT a shell string (e.g. 'npm', 'git', 'sh'). For pipes/redirects, use command='sh' and put the script in args.",
+          ),
         args: z
           .array(z.string())
           .optional()
           .default([])
-          .describe("Command arguments (e.g. ['test'])"),
+          .describe(
+            "Arguments passed directly to the binary (e.g. ['test']). With command='sh', use ['-c', '<shell script>'].",
+          ),
         cwd: z.string().optional().describe("Working directory"),
         timeout: z.number().optional().default(30000).describe("Timeout in ms"),
         maxLines: z
