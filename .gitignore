@@ -28,9 +28,13 @@ npm-debug.log*
 
 **/entities.json
 
+**/.agents
+**/skills-lock.json
+
 # serena
 
 # claude
+**/.claude
 
 # codex
 **/.codex
