@@ -23,7 +23,7 @@ import type {
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import type { ZodRawShape } from "zod";
 import { logger as defaultLogger, type Logger, type WideEvent } from "#logger";
-import { err } from "#response";
+import { err, zeroOf } from "#response";
 
 /** Tool config object, matching the shape registerTool accepts. */
 interface ToolConfig<
@@ -101,6 +101,11 @@ export function defineTool<
 ): void {
   const call = handler as (...a: unknown[]) => unknown;
 
+  // The error path's payload comes from the declared schema, computed once
+  // here rather than restated as a literal beside every `err(...)` — see
+  // ADR-0011. Handlers pass only what the zero cannot know; that wins the merge.
+  const zero = config.outputSchema ? zeroOf(config.outputSchema) : {};
+
   const wrapped = async (...callArgs: unknown[]) => {
     const args = callArgs[0];
     const start = performance.now();
@@ -112,17 +117,25 @@ export function defineTool<
       if (result?.isError) {
         outcome = "error";
         errorKind = result.structuredContent?.error?.kind;
+        return {
+          ...result,
+          structuredContent: { ...zero, ...result.structuredContent },
+        };
       }
       return result;
     } catch (e) {
       outcome = "error";
       errorKind = "command_failed";
       const message = e instanceof Error ? e.message : String(e);
-      return err(
+      const thrown = err(
         message,
         {},
         { kind: "command_failed", message, command: name },
       );
+      return {
+        ...thrown,
+        structuredContent: { ...zero, ...thrown.structuredContent },
+      };
     } finally {
       const event: WideEvent = {
         tool: name,

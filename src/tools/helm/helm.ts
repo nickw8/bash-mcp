@@ -62,7 +62,7 @@ export function registerHelmTools(server: McpServer) {
       });
 
       if (result.error) {
-        return err(result.error, { releases: [], count: 0 });
+        return err(result.error);
       }
 
       const releases = (result.data ?? []).map((r) => ({
@@ -126,11 +126,8 @@ export function registerHelmTools(server: McpServer) {
         return err(result.error ?? "helm status: no data", {
           name: release,
           namespace: namespace ?? "default",
-          revision: 0,
           status: "error",
           description: result.error ?? "",
-          lastDeployed: "",
-          notes: "",
         });
       }
 
@@ -192,7 +189,7 @@ export function registerHelmTools(server: McpServer) {
       });
 
       if (result.error) {
-        return err(result.error, { values: {} });
+        return err(result.error);
       }
 
       return ok({ values: result.data ?? {} });
@@ -232,23 +229,15 @@ export function registerHelmTools(server: McpServer) {
     async ({ release, namespace, context }) => {
       const ns = namespace ?? "default";
       const ctxArgs = context ? ["--kube-context", context] : [];
-      const empty = {
-        status: "error",
-        healthy: false,
-        revision: 0,
-        revisions: 0,
-        likelyCauses: [],
-        suggestedNextCommands: [],
-        evidence: [],
-      };
-
       const statusRes = await execJson<HelmStatusInfo>(
         "helm",
         ["status", release, "-n", ns, "-o", "json", ...ctxArgs],
         { timeout: TIMEOUT.INFRA },
       );
       if (statusRes.error || !statusRes.data) {
-        return err(statusRes.error ?? "helm status: no data", empty);
+        return err(statusRes.error ?? "helm status: no data", {
+          status: "error",
+        });
       }
 
       // History is best-effort — a missing history shouldn't fail the triage.

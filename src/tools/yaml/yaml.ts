@@ -56,7 +56,6 @@ export function registerYamlTools(server: McpServer) {
     async ({ expression, file, input, outputFormat }) => {
       if (!file && !input) {
         return err("Either 'file' or 'input' must be provided", {
-          result: null,
           format: "error",
         });
       }
@@ -69,7 +68,7 @@ export function registerYamlTools(server: McpServer) {
         const result = await exec("yq", args);
 
         if (result.exitCode !== 0) {
-          return err(result.stderr, { result: null, format: "error" });
+          return err(result.stderr, { format: "error" });
         }
 
         return toYqResult(result.stdout, fmt);
@@ -78,7 +77,7 @@ export function registerYamlTools(server: McpServer) {
       const result = await execWithStdin("yq", args, input ?? "");
 
       if (result.exitCode !== 0) {
-        return err(result.stderr, { result: null, format: "error" });
+        return err(result.stderr, { format: "error" });
       }
 
       return toYqResult(result.stdout, fmt);

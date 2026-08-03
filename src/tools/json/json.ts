@@ -60,10 +60,7 @@ export function registerJsonTools(server: McpServer) {
     },
     async ({ filter, file, input, rawOutput, slurp, compact }) => {
       if (!file && !input) {
-        return err("Either 'file' or 'input' must be provided", {
-          result: null,
-          multiline: false,
-        });
+        return err("Either 'file' or 'input' must be provided");
       }
 
       const args: string[] = [];
@@ -77,7 +74,7 @@ export function registerJsonTools(server: McpServer) {
         const result = await exec("jq", args);
 
         if (result.exitCode !== 0) {
-          return err(result.stderr, { result: null, multiline: false });
+          return err(result.stderr);
         }
 
         return toJqResult(result.stdout);
@@ -86,7 +83,7 @@ export function registerJsonTools(server: McpServer) {
       const result = await execWithStdin("jq", args, input ?? "");
 
       if (result.exitCode !== 0) {
-        return err(result.stderr, { result: null, multiline: false });
+        return err(result.stderr);
       }
 
       return toJqResult(result.stdout);

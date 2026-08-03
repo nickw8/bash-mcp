@@ -101,7 +101,7 @@ export function registerLiquibaseUpdateSqlTool(server: McpServer) {
           { ...result, stderr: result.stderr.trim() || result.stdout.trim() },
           "liquibase",
         );
-        return err(e.message, { changesetCount: 0, changesets: [] }, e);
+        return err(e.message, undefined, e);
       }
 
       const parsed = parseUpdateSql(output, { batchLint });
@@ -112,7 +112,7 @@ export function registerLiquibaseUpdateSqlTool(server: McpServer) {
         if (!match) {
           return err(
             `Changeset '${changesetId}' not found among ${parsed.changesetCount} pending changesets`,
-            { changesetCount: 0, changesets: [] },
+            undefined,
             {
               kind: "not_found",
               message: `Changeset '${changesetId}' not found`,

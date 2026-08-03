@@ -361,16 +361,6 @@ export function registerFileTools(server: McpServer) {
         maxLines,
         lineNumbers,
       };
-      const emptySingle = {
-        path: path ?? "",
-        totalLines: 0,
-        size: 0,
-        mtime: 0,
-        content: "",
-        range: [0, 0] as [number, number],
-        truncated: false,
-      };
-
       // Multi-file mode: read all in parallel; per-file failures surface in each
       // file's `error` field and never abort the batch.
       if (paths && paths.length > 0) {
@@ -381,14 +371,13 @@ export function registerFileTools(server: McpServer) {
       }
 
       if (!path) {
-        return err(
-          "Provide `path` (single file) or `paths` (multiple files)",
-          emptySingle,
-        );
+        return err("Provide `path` (single file) or `paths` (multiple files)", {
+          path: path ?? "",
+        });
       }
 
       const result = await readFileContent(path, params);
-      if (result.error) return err(result.error, emptySingle);
+      if (result.error) return err(result.error, { path: path ?? "" });
       return ok({ ...result });
     },
   );
@@ -437,18 +426,6 @@ export function registerFileTools(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     async ({ path, ref }) => {
-      const empty = {
-        path,
-        language: "unknown" as string,
-        totalLines: 0,
-        outlineLines: 0,
-        symbols: 0,
-        mtime: 0,
-        branch: null as string | null,
-        commit: null as string | null,
-        outline: "",
-      };
-
       let content: string;
       let mtime = 0;
 
@@ -456,7 +433,10 @@ export function registerFileTools(server: McpServer) {
         // Read file content from a git ref instead of disk
         const gitDir = await findGitRoot(path);
         if (!gitDir) {
-          return err(`Not in a git repo: ${path}`, empty);
+          return err(`Not in a git repo: ${path}`, {
+            path,
+            language: "unknown",
+          });
         }
         // Resolve path relative to git root for git show
         const relPath = path.startsWith(gitDir)
@@ -469,17 +449,20 @@ export function registerFileTools(server: McpServer) {
           `${ref}:${relPath}`,
         ]);
         if (showResult.exitCode !== 0) {
-          return err(
-            showResult.stderr || `Cannot read ${ref}:${relPath}`,
-            empty,
-          );
+          return err(showResult.stderr || `Cannot read ${ref}:${relPath}`, {
+            path,
+            language: "unknown",
+          });
         }
         content = showResult.stdout;
       } else {
         // Read from disk
         const catResult = await exec("cat", [path]);
         if (catResult.exitCode !== 0) {
-          return err(catResult.stderr || `Cannot read file: ${path}`, empty);
+          return err(catResult.stderr || `Cannot read file: ${path}`, {
+            path,
+            language: "unknown",
+          });
         }
         content = catResult.stdout;
 

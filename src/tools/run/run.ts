@@ -78,14 +78,7 @@ export function registerRunTools(server: McpServer) {
         const reason = gate.reason ?? "blocked by BASH_MCP_MODE";
         return err(
           reason,
-          {
-            exitCode: 126,
-            stdout: "",
-            stderr: reason,
-            stdoutLines: 0,
-            truncated: false,
-            elapsed: 0,
-          },
+          { exitCode: 126, stderr: reason },
           { kind: "permission_denied", message: reason, command },
         );
       }

@@ -59,16 +59,7 @@ export function registerNpmTestTool(server: McpServer) {
       // vitest exits non-zero on test failures but still outputs JSON
       const output = result.stdout || result.stderr;
       if (!output.trim()) {
-        return err("No test output received", {
-          suites: [],
-          summary: {
-            total: 0,
-            passed: 0,
-            failed: 0,
-            skipped: 0,
-            duration: 0,
-          },
-        });
+        return err("No test output received");
       }
 
       try {
@@ -88,16 +79,7 @@ export function registerNpmTestTool(server: McpServer) {
 
         return ok({ suites, summary });
       } catch {
-        return err("Failed to parse vitest JSON output", {
-          suites: [],
-          summary: {
-            total: 0,
-            passed: 0,
-            failed: 0,
-            skipped: 0,
-            duration: 0,
-          },
-        });
+        return err("Failed to parse vitest JSON output");
       }
     },
   );

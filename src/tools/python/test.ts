@@ -80,16 +80,7 @@ export function registerPythonTestTool(server: McpServer) {
 
       if (!xmlContent) {
         const output = `${result.stdout}\n${result.stderr}`.trim();
-        return err(output.slice(0, 500) || "No test output received", {
-          suites: [],
-          summary: {
-            total: 0,
-            passed: 0,
-            failed: 0,
-            skipped: 0,
-            duration: 0,
-          },
-        });
+        return err(output.slice(0, 500) || "No test output received");
       }
 
       const { suites, summary } = parsePytestResults(xmlContent);

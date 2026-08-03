@@ -97,11 +97,6 @@ export function registerDotnetTestTool(server: McpServer) {
         const output = `${result.stdout}\n${result.stderr}`.trim();
         return err(output.slice(0, 500) || "No test output received", {
           exitCode: result.exitCode,
-          passed: 0,
-          failed: 0,
-          skipped: 0,
-          total: 0,
-          failures: [],
           summary: "No TRX output produced",
         });
       }

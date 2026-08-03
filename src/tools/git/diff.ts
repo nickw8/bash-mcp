@@ -158,10 +158,7 @@ export function registerGitDiffContentTools(server: McpServer) {
       const result = await exec("git", args, cwd ? { cwd } : {});
 
       if (result.exitCode !== 0) {
-        return err(result.stderr || result.stdout, {
-          files: [],
-          summary: { filesChanged: 0, insertions: 0, deletions: 0 },
-        });
+        return err(result.stderr || result.stdout);
       }
 
       // Empty diff (no changes)
