@@ -14,6 +14,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
+import { kubectlContext } from "#kube-context";
 import {
   applyBudget,
   budgetSchema,
@@ -40,11 +41,6 @@ function okDiagnosis(d: Diagnosis) {
     suggestedNextCommands: d.suggestedNextCommands,
     evidence: d.evidence,
   });
-}
-
-/** Build kubectl args with an optional --context. */
-function withContext(args: string[], context?: string): string[] {
-  return context ? [...args, "--context", context] : args;
 }
 
 /** Register the kube diagnostic tools on the MCP server. */
@@ -79,7 +75,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       const ns = namespace ?? "default";
       const res = await execJson<KubeResource>(
         "kubectl",
-        withContext(["get", "pod", pod, "-n", ns, "-o", "json"], context),
+        ["get", "pod", pod, "-n", ns, "-o", "json", ...kubectlContext(context)],
         { timeout: TIMEOUT.INFRA },
       );
       if (res.error) {
@@ -136,7 +132,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       const scope = allNamespaces ? ["--all-namespaces"] : ["-n", ns];
       const res = await execJson<KubeList>(
         "kubectl",
-        withContext(["get", "pods", ...scope, "-o", "json"], context),
+        ["get", "pods", ...scope, "-o", "json", ...kubectlContext(context)],
         { timeout: TIMEOUT.INFRA },
       );
       if (res.error) {
@@ -214,10 +210,16 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       const ns = namespace ?? "default";
       const res = await execJson<KubeResource>(
         "kubectl",
-        withContext(
-          ["get", "deployment", name, "-n", ns, "-o", "json"],
-          context,
-        ),
+        [
+          "get",
+          "deployment",
+          name,
+          "-n",
+          ns,
+          "-o",
+          "json",
+          ...kubectlContext(context),
+        ],
         { timeout: TIMEOUT.INFRA },
       );
       if (res.error) {
@@ -261,7 +263,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       const scope = allNamespaces ? ["--all-namespaces"] : ["-n", ns];
       const res = await execJson<{ items: KubeEvent[] }>(
         "kubectl",
-        withContext(["get", "events", ...scope, "-o", "json"], context),
+        ["get", "events", ...scope, "-o", "json", ...kubectlContext(context)],
         { timeout: TIMEOUT.INFRA },
       );
       if (res.error) {

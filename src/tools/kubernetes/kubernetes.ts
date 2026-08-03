@@ -10,6 +10,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execJson, execWithStdin, TIMEOUT } from "#exec";
 import type { ListFormat } from "#format";
+import { kubectlContext } from "#kube-context";
 import { applyBudget, budgetSchema, parseJsonishOutput } from "#parsers";
 import { err, ok, okList } from "#response";
 import { defineTool } from "#tool";
@@ -95,7 +96,7 @@ export function registerKubernetesTools(server: McpServer) {
       if (namespace) args.push("-n", namespace);
       if (allNamespaces) args.push("--all-namespaces");
       if (selector) args.push("-l", selector);
-      if (context) args.push("--context", context);
+      args.push(...kubectlContext(context));
 
       if (jqFilter) {
         const kubectlResult = await exec("kubectl", args, {
@@ -264,7 +265,7 @@ export function registerKubernetesTools(server: McpServer) {
       ];
       if (container) args.push("-c", container);
       if (since) args.push(`--since=${since}`);
-      if (context) args.push("--context", context);
+      args.push(...kubectlContext(context));
 
       const result = await exec("kubectl", args, { timeout: TIMEOUT.INFRA });
 

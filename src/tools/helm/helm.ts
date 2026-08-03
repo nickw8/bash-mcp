@@ -8,6 +8,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
+import { helmContext } from "#kube-context";
 import { isUnrunnable, triageSchema, unknownTriage } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
@@ -55,7 +56,7 @@ export function registerHelmTools(server: McpServer) {
       if (namespace) args.push("-n", namespace);
       if (allNamespaces) args.push("--all-namespaces");
       if (filter) args.push("--filter", filter);
-      if (context) args.push("--kube-context", context);
+      args.push(...helmContext(context));
 
       const result = await execJson<HelmRelease[]>("helm", args, {
         timeout: TIMEOUT.INFRA,
@@ -116,7 +117,7 @@ export function registerHelmTools(server: McpServer) {
         "-o",
         "json",
       ];
-      if (context) args.push("--kube-context", context);
+      args.push(...helmContext(context));
 
       const result = await execJson<HelmStatus>("helm", args, {
         timeout: TIMEOUT.INFRA,
@@ -186,7 +187,7 @@ export function registerHelmTools(server: McpServer) {
         "json",
       ];
       if (allValues) args.push("--all");
-      if (context) args.push("--kube-context", context);
+      args.push(...helmContext(context));
 
       const result = await execJson<Record<string, unknown>>("helm", args, {
         timeout: TIMEOUT.INFRA,
@@ -232,7 +233,7 @@ export function registerHelmTools(server: McpServer) {
     },
     async ({ release, namespace, context }) => {
       const ns = namespace ?? "default";
-      const ctxArgs = context ? ["--kube-context", context] : [];
+      const ctxArgs = helmContext(context);
       const statusRes = await execJson<HelmStatusInfo>(
         "helm",
         ["status", release, "-n", ns, "-o", "json", ...ctxArgs],
