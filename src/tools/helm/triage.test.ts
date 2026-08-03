@@ -6,11 +6,8 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import {
-  type HelmHistoryEntry,
-  type HelmStatusInfo,
-  triageRelease,
-} from "./triage.js";
+import type { HelmStatus } from "./payload.js";
+import { type HelmHistoryEntry, triageRelease } from "./triage.js";
 
 const fixtures = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -21,7 +18,7 @@ function load<T>(name: string): T {
 }
 
 describe("triageRelease", () => {
-  const status = load<HelmStatusInfo>("status.json");
+  const status = load<HelmStatus>("status.json");
   const history = load<HelmHistoryEntry[]>("history.json");
 
   it("flags a failed release as unhealthy with the failure description", () => {

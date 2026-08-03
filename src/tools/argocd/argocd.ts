@@ -12,7 +12,8 @@ import { exec, execJson, TIMEOUT } from "#exec";
 import { isUnrunnable, triageSchema, unknownTriage } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
-import { type ArgoAppHealth, summarizeAppHealth } from "./health.js";
+import { summarizeAppHealth } from "./health.js";
+import type { ArgoApp } from "./payload.js";
 
 /** Register all ArgoCD tools on the MCP server. */
 export function registerArgocdTools(server: McpServer) {
@@ -232,7 +233,7 @@ export function registerArgocdTools(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     async ({ name }) => {
-      const result = await execJson<ArgoAppHealth>(
+      const result = await execJson<ArgoApp>(
         "argocd",
         ["app", "get", name, "-o", "json"],
         { timeout: TIMEOUT.INFRA },
@@ -255,29 +256,4 @@ export function registerArgocdTools(server: McpServer) {
       return ok({ ...summary, name: summary.name || name });
     },
   );
-}
-
-// ── Types ───────────────────────────────────────────────────────────
-
-/** Partial representation of an ArgoCD application from JSON output. */
-interface ArgoApp {
-  metadata?: { name?: string };
-  spec?: {
-    project?: string;
-    source?: { repoURL?: string; path?: string; targetRevision?: string };
-    destination?: { server?: string; namespace?: string };
-  };
-  status?: {
-    sync?: { status?: string; revision?: string };
-    health?: { status?: string };
-    operationState?: { message?: string };
-    resources?: Array<{
-      kind?: string;
-      name?: string;
-      namespace?: string;
-      status?: string;
-      health?: { status?: string };
-    }>;
-    conditions?: Array<{ type?: string; message?: string }>;
-  };
 }

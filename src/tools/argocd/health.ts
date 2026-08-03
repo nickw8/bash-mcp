@@ -7,28 +7,11 @@
  */
 
 import type { Triage } from "#parsers";
-
-/** Subset of an ArgoCD application needed for health triage. */
-export interface ArgoAppHealth {
-  metadata?: { name?: string };
-  spec?: { project?: string };
-  status?: {
-    sync?: { status?: string };
-    health?: { status?: string; message?: string };
-    operationState?: { message?: string; phase?: string };
-    resources?: Array<{
-      kind?: string;
-      name?: string;
-      status?: string;
-      health?: { status?: string; message?: string };
-    }>;
-    conditions?: Array<{ type?: string; message?: string }>;
-  };
-}
+import type { ArgoApp } from "./payload.js";
 
 /** Summarize an app's health: the shared triage envelope plus argo-specific fields. */
 export function summarizeAppHealth(
-  app: ArgoAppHealth,
+  app: ArgoApp,
 ): Triage & { name: string; syncStatus: string; healthy: boolean } {
   const health = app.status?.health?.status ?? "Unknown";
   const sync = app.status?.sync?.status ?? "Unknown";

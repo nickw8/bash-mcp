@@ -7,31 +7,14 @@
  */
 
 import type { Triage } from "#parsers";
-
-/** One entry from `helm history -o json`. */
-export interface HelmHistoryEntry {
-  revision?: number;
-  updated?: string;
-  status?: string;
-  chart?: string;
-  app_version?: string;
-  description?: string;
-}
-
-/** Current status subset from `helm status -o json`. */
-export interface HelmStatusInfo {
-  name?: string;
-  namespace?: string;
-  version?: number;
-  info?: { status?: string; description?: string };
-}
+import type { HelmHistoryEntry, HelmStatus } from "./payload.js";
 
 /**
  * Triage a release from its current status and revision history.
  * Returns the shared triage envelope plus helm-specific revision fields.
  */
 export function triageRelease(
-  current: HelmStatusInfo,
+  current: HelmStatus,
   history: HelmHistoryEntry[],
 ): Triage & { healthy: boolean; revision: number; revisions: number } {
   const status = current.info?.status ?? "unknown";

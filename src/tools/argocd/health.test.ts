@@ -6,16 +6,15 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { type ArgoAppHealth, summarizeAppHealth } from "./health.js";
+import { summarizeAppHealth } from "./health.js";
+import type { ArgoApp } from "./payload.js";
 
 const fixtures = join(
   dirname(fileURLToPath(import.meta.url)),
   "../../../fixtures/argocd",
 );
-function load(name: string): ArgoAppHealth {
-  return JSON.parse(
-    readFileSync(join(fixtures, name), "utf8"),
-  ) as ArgoAppHealth;
+function load(name: string): ArgoApp {
+  return JSON.parse(readFileSync(join(fixtures, name), "utf8")) as ArgoApp;
 }
 
 describe("summarizeAppHealth", () => {

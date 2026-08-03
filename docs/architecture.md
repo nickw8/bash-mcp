@@ -33,6 +33,7 @@ TypeScript, Node.js >= 20 (ESM), MCP SDK, Zod schemas, Vitest, Biome (lint/forma
 - src/parsers/strip-prefix.ts — generic prefix stripping (paths, namespaces)
 - src/parsers/diagnostic-line.ts — generic path(line,col): severity code: msg parser
 - src/parsers/json-output.ts — JSON-ish output parser (jq/yq parse cascade)
+- src/tools/&lt;group&gt;/payload.ts — the CLI payload: the subset of that CLI's `-o json` output the group reads, one declaration per command, every field optional (Kubernetes keeps its KubeResource/KubeList in parse.ts)
 - src/tools/kube-context.ts — the `#kube-context` subpath: kubectlContext (`--context`) and helmContext (`--kube-context`), the same input spelled differently per CLI. argocd is deliberately absent — its `--kube-context` only applies under `--core`
 - src/tools/&lt;category&gt;/&lt;category&gt;.ts — tool implementations, each exports registerXTools(server)
 

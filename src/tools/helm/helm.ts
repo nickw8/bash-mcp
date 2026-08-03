@@ -12,11 +12,8 @@ import { helmContext } from "#kube-context";
 import { isUnrunnable, triageSchema, unknownTriage } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
-import {
-  type HelmHistoryEntry,
-  type HelmStatusInfo,
-  triageRelease,
-} from "./triage.js";
+import type { HelmHistoryEntry, HelmRelease, HelmStatus } from "./payload.js";
+import { triageRelease } from "./triage.js";
 
 /** Register all Helm tools on the MCP server. */
 export function registerHelmTools(server: McpServer) {
@@ -234,7 +231,7 @@ export function registerHelmTools(server: McpServer) {
     async ({ release, namespace, context }) => {
       const ns = namespace ?? "default";
       const ctxArgs = helmContext(context);
-      const statusRes = await execJson<HelmStatusInfo>(
+      const statusRes = await execJson<HelmStatus>(
         "helm",
         ["status", release, "-n", ns, "-o", "json", ...ctxArgs],
         { timeout: TIMEOUT.INFRA },
@@ -266,30 +263,4 @@ export function registerHelmTools(server: McpServer) {
       return ok({ ...triageRelease(statusRes.data, histRes.data ?? []) });
     },
   );
-}
-
-// ── Types ───────────────────────────────────────────────────────────
-
-/** A single Helm release from helm list -o json. */
-interface HelmRelease {
-  name?: string;
-  namespace?: string;
-  revision?: string;
-  status?: string;
-  chart?: string;
-  app_version?: string;
-  updated?: string;
-}
-
-/** Detailed Helm release status from helm status -o json. */
-interface HelmStatus {
-  name?: string;
-  namespace?: string;
-  version?: number;
-  info?: {
-    status?: string;
-    description?: string;
-    last_deployed?: string;
-    notes?: string;
-  };
 }

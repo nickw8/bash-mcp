@@ -26,6 +26,7 @@ from the model, not to add features the underlying CLI lacks.
 | **Probe** | A capability check that a CLI is installed (`PROBES` / `runProbe` in `env.ts`), used by `check_environment` and `--doctor`. |
 | **Intent** | An entry in guidance `INTENTS` — a task phrased as the user's goal, mapped to a preferred tool and what to avoid. |
 | **equivalentCommands** | The raw CLI invocation a tool approximates. Drives `_meta`, the generated docs, and the redirect hook. |
+| **CLI payload** | The subset of a CLI's `-o json` output a group reads, declared once in that group's `payload.ts` (or `parse.ts` for Kubernetes) with every field optional. Not the same as the Tool's own payload, which is what the agent gets back. |
 | **Redirect hook** | `hooks/bash-mcp-redirect.sh` — a PreToolUse Bash hook steering agents off raw commands onto the equivalent tool. |
 | **Budget** | The `detailLevel` / `maxItems` / `includeRaw` input fragment plus `applyBudget`, capping variable-size lists. |
 | **Shaping** | Trimming a command's output to a head/tail window (`shapeOutput` in `src/shape.ts`). |
