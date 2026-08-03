@@ -26,9 +26,10 @@ consumers use `npx @nickw8/bash-mcp --install-claude [--check]` instead of `clau
 5. **All schemas are Zod** (`inputSchema`, `outputSchema`); every tool returns `{ content: [...], structuredContent: {...}, isError?: true }` and never throws.
 
 Diagnostic tools (kube_diagnose_pod, `*_summary`, helm_release_triage,
-argo_app_health_summary, repo_health_summary) return
-`{ status/healthy, likelyCauses[], suggestedNextCommands[], evidence[] }` — they collapse
-multi-call triage into one answer. New diagnostics follow that shape.
+argo_app_health_summary, repo_health_summary) return the Triage envelope
+(`...triageSchema` from `#parsers`, plus their own fields) — they collapse multi-call
+triage into one answer. New diagnostics follow that shape, and handle a failed probe with
+`isUnrunnable(detail) ? err(...) : ok({ ...unknownTriage(why) })` ([ADR-0005](docs/adr/0005-wrapped-failure-is-a-result.md)).
 
 ## Guides
 

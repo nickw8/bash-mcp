@@ -6,15 +6,22 @@
  * form { status, likelyCauses, suggestedNextCommands, evidence }. The pure
  * classification lives in diagnose.ts; these are thin kubectl + parser glue.
  *
- * Sub-command failures are captured in `evidence` as a partial result rather
- * than surfaced as a hard error, so the agent always gets something actionable.
+ * A kubectl that ran and failed is captured in `evidence` as a partial result
+ * rather than surfaced as a hard error, so the agent always gets something
+ * actionable; only a kubectl that never ran (`isUnrunnable`) is an error.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
-import { applyBudget, budgetSchema, triageSchema } from "#parsers";
-import { ok } from "#response";
+import {
+  applyBudget,
+  budgetSchema,
+  isUnrunnable,
+  triageSchema,
+  unknownTriage,
+} from "#parsers";
+import { err, ok } from "#response";
 import { defineTool } from "#tool";
 import {
   type Diagnosis,
@@ -33,23 +40,6 @@ function okDiagnosis(d: Diagnosis) {
     suggestedNextCommands: d.suggestedNextCommands,
     evidence: d.evidence,
   });
-}
-
-/**
- * Partial-result diagnosis for a failed kubectl probe: an "Unknown" status
- * carrying the failure as evidence (plus any follow-up commands) so the agent
- * still gets something actionable instead of a hard error.
- */
-function unknownDiagnosis(
-  evidence: string,
-  suggestedNextCommands: string[] = [],
-): Diagnosis {
-  return {
-    status: "Unknown",
-    likelyCauses: [],
-    suggestedNextCommands,
-    evidence: [evidence],
-  };
 }
 
 /** Build kubectl args with an optional --context. */
@@ -93,8 +83,9 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         { timeout: TIMEOUT.INFRA },
       );
       if (res.error) {
+        if (isUnrunnable(res.detail)) return err(res.error, {}, res.detail);
         return okDiagnosis(
-          unknownDiagnosis(`kubectl get pod failed: ${res.error}`, [
+          unknownTriage(`kubectl get pod failed: ${res.error}`, [
             `kube_events_summary namespace=${ns}`,
           ]),
         );
@@ -149,8 +140,9 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         { timeout: TIMEOUT.INFRA },
       );
       if (res.error) {
+        if (isUnrunnable(res.detail)) return err(res.error, {}, res.detail);
         return ok({
-          ...unknownDiagnosis(`kubectl get pods failed: ${res.error}`),
+          ...unknownTriage(`kubectl get pods failed: ${res.error}`),
           pods: [],
         });
       }
@@ -229,8 +221,9 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         { timeout: TIMEOUT.INFRA },
       );
       if (res.error) {
+        if (isUnrunnable(res.detail)) return err(res.error, {}, res.detail);
         return okDiagnosis(
-          unknownDiagnosis(`kubectl get deployment failed: ${res.error}`),
+          unknownTriage(`kubectl get deployment failed: ${res.error}`),
         );
       }
       return okDiagnosis(diagnoseDeployment(res.data ?? {}));
@@ -272,8 +265,9 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         { timeout: TIMEOUT.INFRA },
       );
       if (res.error) {
+        if (isUnrunnable(res.detail)) return err(res.error, {}, res.detail);
         return okDiagnosis(
-          unknownDiagnosis(`kubectl get events failed: ${res.error}`),
+          unknownTriage(`kubectl get events failed: ${res.error}`),
         );
       }
       const diag = summarizeEvents(res.data?.items ?? []);

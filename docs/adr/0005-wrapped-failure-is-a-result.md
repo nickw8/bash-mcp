@@ -33,10 +33,19 @@ as the expected path.
 JSON-speaking tool — all of Kubernetes, Helm, Terraform and ArgoCD — could only report an
 unclassified string, and their wide events carried no `errorKind`.
 
+For a Diagnostic tool the boundary is not per-CLI but per *kind*, and `isUnrunnable`
+(`#parsers`) draws it in one place: `missing_binary`, `timeout`, `permission_denied` and
+`not_authenticated` mean nothing was diagnosed because nothing ran, so they get `err()`.
+Every other kind — including `not_found`, a release or app that does not exist — is the CLI
+answering, and the answer becomes `unknownTriage(...)`: status `"Unknown"`, the failure in
+`evidence[]`. An unclassified failure counts as an answer.
+
 ## Consequences
 
 - An agent can distinguish "your code has problems" from "I couldn't check your code".
 - Pure parsers must never throw on malformed input — they return safe empty or partial
   results, so a weird CLI version degrades output instead of failing the call.
 - Diagnostic tools capture sub-command failures in `evidence[]` and still return a partial
-  answer rather than a hard error.
+  answer rather than a hard error. `helm_release_triage` and `argo_app_health_summary` used
+  to `err()` on any failure, so "no such release" reached the agent as a broken tool
+  instead of a finding; they now go through `isUnrunnable` like the kube diagnostics.

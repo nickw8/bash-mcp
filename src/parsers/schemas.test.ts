@@ -1,17 +1,24 @@
 /**
- * Tests for the shared output-budget helper.
+ * Tests for the shared schema helpers.
  *
  * applyBudget caps a row list per caller-supplied budget params so variable-size
  * tools (kube_get, kube_logs, lists) can shrink output on request. Omitting all
  * params must preserve the full list (current behavior).
+ *
+ * isUnrunnable and unknownTriage are the two halves of ADR-0005 for Diagnostic
+ * tools: which failures are errors, and what the rest look like as a Triage.
  */
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import {
   applyBudget,
   budgetSchema,
+  isUnrunnable,
   stringOrArray,
   toArray,
+  triageSchema,
+  unknownTriage,
 } from "./schemas.js";
 
 const rows = Array.from({ length: 250 }, (_, i) => ({ i }));
@@ -99,5 +106,53 @@ describe("stringOrArray", () => {
 
   it("rejects a non-string element", () => {
     expect(() => schema.parse([1])).toThrow();
+  });
+});
+
+describe("isUnrunnable", () => {
+  // The ADR-0005 split: did the CLI answer, or did it never run?
+  it.each([
+    "missing_binary",
+    "timeout",
+    "permission_denied",
+    "not_authenticated",
+  ] as const)("%s never ran → error", (kind) => {
+    expect(isUnrunnable({ kind, message: "x" })).toBe(true);
+  });
+
+  it.each([
+    "command_failed",
+    "not_found",
+    "parse_failed",
+    "invalid_input",
+  ] as const)("%s is the CLI answering → result", (kind) => {
+    expect(isUnrunnable({ kind, message: "x" })).toBe(false);
+  });
+
+  it("treats an unclassified failure as the CLI having answered", () => {
+    expect(isUnrunnable(undefined)).toBe(false);
+  });
+});
+
+describe("unknownTriage", () => {
+  it("carries the failure as evidence under an Unknown status", () => {
+    expect(unknownTriage("helm status failed: boom")).toEqual({
+      status: "Unknown",
+      likelyCauses: [],
+      suggestedNextCommands: [],
+      evidence: ["helm status failed: boom"],
+    });
+  });
+
+  it("passes through follow-up commands", () => {
+    expect(unknownTriage("boom", ["argo_apps"]).suggestedNextCommands).toEqual([
+      "argo_apps",
+    ]);
+  });
+
+  it("satisfies triageSchema — the type and the schema are one declaration", () => {
+    expect(() =>
+      z.object(triageSchema).parse(unknownTriage("boom")),
+    ).not.toThrow();
   });
 });

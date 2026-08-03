@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import type { ToolError, ToolErrorKind } from "#error";
 import type { BudgetParams, Diagnostic } from "./types.js";
 
 /**
@@ -97,6 +98,46 @@ export const triageSchema = triageObject.shape;
  *   Triage & { healthy: boolean; revision: number }
  */
 export type Triage = z.infer<typeof triageObject>;
+
+/**
+ * Failure kinds that mean nothing was diagnosed because nothing ran — the CLI
+ * is absent, hung, or won't let us in. Everything else (a non-zero exit, a
+ * missing resource, unparseable output) is the CLI answering, and answering is
+ * a result.
+ */
+const UNRUNNABLE: ReadonlySet<ToolErrorKind> = new Set([
+  "missing_binary",
+  "timeout",
+  "permission_denied",
+  "not_authenticated",
+]);
+
+/**
+ * Should a Diagnostic tool raise this failure as an error rather than fold it
+ * into a Triage? Only when the command never ran — see
+ * [ADR-0005](../../docs/adr/0005-wrapped-failure-is-a-result.md). An
+ * unclassified failure (no `detail`) counts as the CLI having answered.
+ */
+export function isUnrunnable(detail?: ToolError): boolean {
+  return detail !== undefined && UNRUNNABLE.has(detail.kind);
+}
+
+/**
+ * The Triage for a probe that ran and failed: an "Unknown" status carrying the
+ * failure as evidence, so the agent still gets something actionable. Spread it
+ * alongside the tool's own fields at their empty values.
+ */
+export function unknownTriage(
+  evidence: string,
+  suggestedNextCommands: string[] = [],
+): Triage {
+  return {
+    status: "Unknown",
+    likelyCauses: [],
+    suggestedNextCommands,
+    evidence: [evidence],
+  };
+}
 
 /** Default item caps per detailLevel; full (and unset) means no cap. */
 const DETAIL_CAPS = { summary: 20, normal: 100, full: Infinity } as const;

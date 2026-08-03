@@ -8,7 +8,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
-import { triageSchema } from "#parsers";
+import { isUnrunnable, triageSchema, unknownTriage } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
 import {
@@ -239,11 +239,20 @@ export function registerHelmTools(server: McpServer) {
         { timeout: TIMEOUT.INFRA },
       );
       if (statusRes.error || !statusRes.data) {
-        return err(
-          statusRes.error ?? "helm status: no data",
-          { status: "error" },
-          statusRes.detail,
-        );
+        const why = statusRes.error ?? "helm status: no data";
+        if (isUnrunnable(statusRes.detail)) {
+          return err(why, {}, statusRes.detail);
+        }
+        // helm answered and the answer was no — a triage of "Unknown", not an
+        // error (ADR-0005). A release that does not exist is a finding.
+        return ok({
+          healthy: false,
+          revision: 0,
+          revisions: 0,
+          ...unknownTriage(`helm status failed: ${why}`, [
+            `helm_list namespace=${ns}`,
+          ]),
+        });
       }
 
       // History is best-effort — a missing history shouldn't fail the triage.
