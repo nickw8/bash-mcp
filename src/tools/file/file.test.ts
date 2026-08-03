@@ -159,23 +159,22 @@ describe("readFileContent (disk)", () => {
 });
 
 describe("readFileContent (git ref)", () => {
-  // This test file lives inside the repo, so HEAD can read it back.
+  // git-source.test.ts makes the exact claims about reading a ref, against a
+  // temp repo. What is left to check here is the windowing readFromRef layers
+  // on top — so read package.json, which is always committed.
   const here = dirname(fileURLToPath(import.meta.url));
   const repoRoot = execSync("git rev-parse --show-toplevel", { cwd: here })
     .toString()
     .trim();
-  const self = join(repoRoot, "src", "tools", "file", "file.test.ts");
+  const committed = join(repoRoot, "package.json");
 
-  it("reads a committed file from HEAD", async () => {
-    const r = await readFileContent(self, { ref: "HEAD", maxLines: 1 });
-    // Either HEAD has this file (content present) or it is newly added
-    // (git show fails → error). Both are valid, deterministic outcomes.
-    if (r.error) {
-      expect(r.error).toContain("HEAD");
-    } else {
-      expect(r.totalLines).toBeGreaterThan(0);
-      expect(r.range[0]).toBe(1);
-    }
+  it("windows a file read from HEAD", async () => {
+    const r = await readFileContent(committed, { ref: "HEAD", maxLines: 1 });
+    expect(r.error).toBeUndefined();
+    expect(r.content).toBe("{");
+    expect(r.range).toEqual([1, 1]);
+    expect(r.truncated).toBe(true);
+    expect(r.totalLines).toBeGreaterThan(1);
   });
 
   it("errors for a path outside any git repo", async () => {

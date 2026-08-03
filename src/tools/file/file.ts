@@ -13,49 +13,18 @@ import { exec } from "#exec";
 import { statArgs } from "#platform";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
+import { gitMeta, readAtRef, resolveRepo } from "./git-source.js";
 import { detectLanguage, extractOutline } from "./outline/index.js";
 
-/** Find the git repo root for a file path. Returns null if not in a git repo. */
-async function findGitRoot(filePath: string): Promise<string | null> {
-  const dir = filePath.replace(/\/[^/]*$/, "") || ".";
-  const result = await exec("git", ["-C", dir, "rev-parse", "--show-toplevel"]);
-  if (result.exitCode !== 0) return null;
-  return result.stdout.trim();
-}
-
-/** Get git branch and last commit hash for a file. Returns nulls if not in a git repo. */
-async function getGitMeta(
-  filePath: string,
-  ref?: string,
-): Promise<{ branch: string | null; commit: string | null }> {
-  const gitRoot = await findGitRoot(filePath);
-  if (!gitRoot) return { branch: null, commit: null };
-
-  const relPath = filePath.startsWith(gitRoot)
-    ? filePath.slice(gitRoot.length + 1)
-    : filePath;
-
-  // Run branch and commit lookups in parallel
-  const [branchResult, commitResult] = await Promise.all([
-    exec("git", ["-C", gitRoot, "rev-parse", "--abbrev-ref", "HEAD"]),
-    exec("git", [
-      "-C",
-      gitRoot,
-      "log",
-      "-1",
-      "--format=%H",
-      ref ?? "HEAD",
-      "--",
-      relPath,
-    ]),
-  ]);
-
-  return {
-    branch:
-      branchResult.exitCode === 0 ? branchResult.stdout.trim() || null : null,
-    commit:
-      commitResult.exitCode === 0 ? commitResult.stdout.trim() || null : null,
-  };
+/**
+ * Split content into lines, dropping the empty element a trailing newline
+ * produces. The single answer to "how many lines does this file have" — both
+ * Tools count through here, so `cat` and `outline` cannot disagree on one file.
+ */
+function splitLines(content: string): string[] {
+  const lines = content.split("\n");
+  if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
+  return lines;
 }
 
 /** One file's read result. `error` is set (with empty content) on failure. */
@@ -89,6 +58,11 @@ function emptyCat(path: string): CatResult {
     range: [0, 0],
     truncated: false,
   };
+}
+
+/** The `outline` payload with nothing known but the path; spread under an err(). */
+function emptyOutline(path: string) {
+  return { path, language: "unknown" as const };
 }
 
 /** Prefix each line with a right-aligned 1-based number (`rangeStart` + index). */
@@ -137,28 +111,14 @@ async function readFromRef(
   ref: string,
   { startLine, endLine, maxLines, lineNumbers }: CatParams,
 ): Promise<CatResult> {
-  const gitDir = await findGitRoot(path);
-  if (!gitDir)
-    return { ...emptyCat(path), error: `Not in a git repo: ${path}` };
-  const relPath = path.startsWith(gitDir)
-    ? path.slice(gitDir.length + 1)
-    : path;
-  const showResult = await exec("git", [
-    "-C",
-    gitDir,
-    "show",
-    `${ref}:${relPath}`,
-  ]);
-  if (showResult.exitCode !== 0) {
-    return {
-      ...emptyCat(path),
-      error: showResult.stderr || `Cannot read ${ref}:${relPath}`,
-    };
-  }
+  const repo = await resolveRepo(path);
+  if (!repo) return { ...emptyCat(path), error: `Not in a git repo: ${path}` };
 
-  let allLines = showResult.stdout;
-  if (allLines.endsWith("\n")) allLines = allLines.slice(0, -1);
-  const lines = allLines.split("\n");
+  const shown = await readAtRef(repo, ref);
+  if (shown.error) return { ...emptyCat(path), error: shown.error };
+  const raw = shown.content ?? "";
+
+  const lines = splitLines(raw);
   const totalLines = lines.length;
   const { rangeStart, rangeEnd, truncated } = computeRange({
     totalLines,
@@ -173,7 +133,7 @@ async function readFromRef(
   return {
     path,
     totalLines,
-    size: showResult.stdout.length,
+    size: raw.length,
     mtime: 0,
     content,
     range: [rangeStart, rangeEnd],
@@ -427,40 +387,25 @@ export function registerFileTools(server: McpServer) {
       let content: string;
       let mtime = 0;
 
+      // Resolved once and reused for both the ref read and the metadata, so a
+      // `--ref` outline costs one rev-parse rather than two.
+      const repo = await resolveRepo(path);
+
       if (ref) {
-        // Read file content from a git ref instead of disk
-        const gitDir = await findGitRoot(path);
-        if (!gitDir) {
-          return err(`Not in a git repo: ${path}`, {
-            path,
-            language: "unknown",
-          });
+        if (!repo) {
+          return err(`Not in a git repo: ${path}`, emptyOutline(path));
         }
-        // Resolve path relative to git root for git show
-        const relPath = path.startsWith(gitDir)
-          ? path.slice(gitDir.length + 1)
-          : path;
-        const showResult = await exec("git", [
-          "-C",
-          gitDir,
-          "show",
-          `${ref}:${relPath}`,
-        ]);
-        if (showResult.exitCode !== 0) {
-          return err(showResult.stderr || `Cannot read ${ref}:${relPath}`, {
-            path,
-            language: "unknown",
-          });
-        }
-        content = showResult.stdout;
+        const shown = await readAtRef(repo, ref);
+        if (shown.error) return err(shown.error, emptyOutline(path));
+        content = shown.content ?? "";
       } else {
         // Read from disk
         const catResult = await exec("cat", [path]);
         if (catResult.exitCode !== 0) {
-          return err(catResult.stderr || `Cannot read file: ${path}`, {
-            path,
-            language: "unknown",
-          });
+          return err(
+            catResult.stderr || `Cannot read file: ${path}`,
+            emptyOutline(path),
+          );
         }
         content = catResult.stdout;
 
@@ -471,13 +416,12 @@ export function registerFileTools(server: McpServer) {
         }
       }
 
-      const totalLines = content.split("\n").length;
+      const totalLines = splitLines(content).length;
       const language = detectLanguage(path);
       const { outline, symbols } = extractOutline(content, language);
       const outlineLines = outline ? outline.split("\n").length : 0;
 
-      // Gather git metadata (branch + last commit for this file)
-      const git = await getGitMeta(path, ref);
+      const git = await gitMeta(repo, ref);
 
       return ok({
         path,

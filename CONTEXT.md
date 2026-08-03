@@ -29,6 +29,7 @@ from the model, not to add features the underlying CLI lacks.
 | **Budget** | The `detailLevel` / `maxItems` / `includeRaw` input fragment plus `applyBudget`, capping variable-size lists. |
 | **Shaping** | Trimming a command's output to a head/tail window (`shapeOutput` in `src/shape.ts`). |
 | **Step** | One command run through the guarded pipeline — gate, spawn, shape — by `runStep`. The unit `run_seq` and `batch` are each a list of. |
+| **Git Source** | Reading a file's content out of git rather than off disk — what a Tool's `ref` parameter selects. Distinct from the git Tools, which report on a repo instead of reading through it. |
 | **Text block vs structuredContent** | Every response carries both. `structuredContent` is the complete typed payload and **the artifact the agent is charged tokens for** — a client that understands it renders it and ignores the text block. The text block is the compact rendering for clients that don't. They are deliberately not the same. See [ADR-0009](docs/adr/0009-structuredcontent-is-what-the-agent-reads.md). |
 | **Mode** | The `BASH_MCP_MODE` safety setting gating mutating `run`/`batch` commands. |
 | **Zero payload** | The payload a tool's `outputSchema` describes with every field empty, derived by `zeroOf` and merged under the error result by `defineTool`. An `err(...)` carries only what the zero cannot know. See [ADR-0011](docs/adr/0011-the-outputschema-defines-the-error-payload.md). |
