@@ -20,30 +20,19 @@ const server = new McpServer(
     version: VERSION,
   },
   {
+    // Deliberately does NOT enumerate the tools: the same handshake sends
+    // tools/list with every name and description, and `list_guidance` is the
+    // intent→preferred-tool index. A prose copy here would be a second
+    // inventory nothing generates and nothing checks.
     instructions: [
       "Structured CLI wrappers that return JSON instead of raw text.",
       "Philosophy: reach for a structured tool first; `run`/`batch` are the escape hatch",
       "for commands without a dedicated wrapper. Prefer a diagnostic tool (one call that",
       "returns status + likely causes + suggested next commands + evidence) over chaining",
       "raw commands and reasoning across their output yourself.",
-      "Use for: capability discovery (check_environment), tool-selection guidance",
-      "(list_guidance — an intent→preferred-tool index), reading files (cat, outline),",
-      "filesystem listing (ls, tree, du, find_files),",
-      "file search (rg/ripgrep, glob), git operations (status, log, diff, branches,",
-      "diff_content, repo_health_summary, git_pr_context),",
-      "running shell commands (run), parallel tool execution (batch),",
-      "JSON/YAML processing (jq, yq), npm tasks (test, lint, typecheck),",
-      "dotnet builds (build, test), Python tasks (lint, test, typecheck),",
-      "shell scripts (bash_syntax_check, bash_lint via shellcheck, bash_test via bats),",
-      "Liquibase (validate, update_sql, status),",
-      "and infrastructure: Kubernetes (kube_get, kube_logs, kube_contexts, plus diagnostics",
-      "kube_diagnose_pod, kube_pod_failure_summary, kube_deployment_status,",
-      "kube_events_summary),",
-      "Terraform/OpenTofu (state list, show, plan summary, workspaces, outputs, providers,",
-      "validate, modules, backend; `binary:'tofu'` or $TF_BINARY selects OpenTofu),",
-      "Helm (list, status, values, release_triage), ArgoCD (apps, app detail, app diff,",
-      "app_health_summary).",
-      "Prefer these over raw Bash for structured output and lower token usage.",
+      "Prefer these over raw Bash for structured output and lower token usage;",
+      "call check_environment for which CLIs are installed, and list_guidance for the",
+      "intent→preferred-tool index.",
       "Caveat: reading a file with cat does NOT satisfy the built-in Edit/Write",
       '"must read first" guard (it tracks only the built-in Read tool) — use the',
       "built-in Read on a file immediately before editing it.",
