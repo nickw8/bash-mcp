@@ -6,6 +6,7 @@
  * handle exit codes, stdout/stderr, timeouts, and JSON parsing.
  */
 
+import { realpathSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { exec, execJson } from "./exec.js";
 
@@ -32,9 +33,11 @@ describe("exec", () => {
   });
 
   it("respects the cwd option", async () => {
+    // `pwd` reports the physical directory, and /tmp is a symlink to
+    // /private/tmp on macOS — resolve the expectation the same way.
     const result = await exec("pwd", [], { cwd: "/tmp" });
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.trim()).toBe("/tmp");
+    expect(result.stdout.trim()).toBe(realpathSync("/tmp"));
   });
 
   // The stdin option replaced an `sh -c "echo '<doc>' | cmd"` string. That form
