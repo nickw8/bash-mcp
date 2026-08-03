@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { diagnosticRows, diagnosticsResponse } from "./diagnostics-response.js";
+import {
+  compactDiagnostics,
+  diagnosticRows,
+  diagnosticsResponse,
+} from "./diagnostics-response.js";
 import type { Diagnostic } from "./types.js";
 
 const e0: Diagnostic = {
@@ -60,33 +64,69 @@ describe("diagnosticRows", () => {
   });
 });
 
+describe("compactDiagnostics", () => {
+  it("pays each path once and encodes findings as strings", () => {
+    expect(compactDiagnostics(ERRORS)).toEqual([
+      { file: "a.ts", items: ["12:9 TS2304 x", "20:1 TS2305 y"] },
+      { file: "b.ts", items: ["4:3 TS2554 z"] },
+    ]);
+  });
+
+  it("prefixes severity only when the set is mixed", () => {
+    const warn: Diagnostic = {
+      file: "a.ts",
+      line: 5,
+      column: 2,
+      severity: "warning",
+      message: "w",
+    };
+    expect(compactDiagnostics([e0, warn])).toEqual([
+      { file: "a.ts", items: ["12:9 error TS2304 x", "5:2 warning w"] },
+    ]);
+  });
+});
+
 describe("diagnosticsResponse", () => {
-  it("groups by file in the text block and leaves structuredContent intact", () => {
-    const structured = { errors: ERRORS, errorCount: 3, success: false };
-    const res = diagnosticsResponse(structured, ERRORS, {
+  it("groups by file in both the payload and the text block", () => {
+    const res = diagnosticsResponse({ errorCount: 3, success: false }, ERRORS, {
       meta: { errorCount: 3 },
     });
-    expect(res.structuredContent).toBe(structured);
+    expect(res.structuredContent).toEqual({
+      errorCount: 3,
+      success: false,
+      errors: compactDiagnostics(ERRORS),
+    });
     expect(res.content[0]?.text).toBe(
       "errorCount\t3\n---\na.ts:\n12:9\tTS2304\tx\n20:1\tTS2305\ty\nb.ts:\n4:3\tTS2554\tz",
     );
   });
 
-  it("caps with maxItems and notes shown/total", () => {
-    const res = diagnosticsResponse({ errors: ERRORS }, ERRORS, {
+  it("caps the payload as well as the text block", () => {
+    const res = diagnosticsResponse({}, ERRORS, {
       budget: { maxItems: 1 },
       meta: { errorCount: 3 },
+    });
+    expect(res.structuredContent).toEqual({
+      errors: [{ file: "a.ts", items: ["12:9 TS2304 x"] }],
+      total: 3,
+      truncated: true,
     });
     const text = res.content[0]?.text ?? "";
     expect(text).toContain("shown\t1");
     expect(text).toContain("total\t3");
-    expect(text).toContain("a.ts:");
     expect(text).not.toContain("b.ts:");
   });
 
-  it("json format emits the structuredContent JSON verbatim", () => {
-    const structured = { errors: ERRORS, errorCount: 3 };
-    const res = diagnosticsResponse(structured, ERRORS, { format: "json" });
-    expect(res.content[0]?.text).toBe(JSON.stringify(structured));
+  it("writes the list under the caller's key", () => {
+    const res = diagnosticsResponse({}, ERRORS, { key: "diagnostics" });
+    expect(res.structuredContent).toHaveProperty("diagnostics");
+    expect(res.structuredContent).not.toHaveProperty("errors");
+  });
+
+  it("json format emits the payload JSON verbatim", () => {
+    const res = diagnosticsResponse({ errorCount: 3 }, ERRORS, {
+      format: "json",
+    });
+    expect(res.content[0]?.text).toBe(JSON.stringify(res.structuredContent));
   });
 });

@@ -2,12 +2,11 @@
  * Shared response builder for diagnostic-emitting tools (typecheck, lint, build).
  *
  * These tools (npm_typecheck, python_typecheck, python_lint, dotnet_build) all
- * parse a Diagnostic[] and previously returned ok() — full JSON in the text
- * block, repeating file/line/column/severity/rule/message on every row. This
- * routes the text block through okList with a compact, grouped-by-file default
- * (file header once, then `line:col [severity] rule message`) while keeping
- * structuredContent as the complete typed payload. An optional output budget
- * caps large error cascades so a broken build can't blow the token budget.
+ * parse a Diagnostic[] and hand it here. The payload — the artifact the agent is
+ * billed for (ADR-0009) — is grouped by file so a path is paid once, with each
+ * diagnostic encoded as one `line:col [severity] [rule] message` string instead
+ * of a six-key object. The text block is the same data rendered by okList for
+ * clients that read it. The output budget caps large error cascades in both.
  */
 import { z } from "zod";
 import type { ListFormat } from "#format";
@@ -38,10 +37,50 @@ export const diagnosticInputSchema = {
     .array(z.string())
     .optional()
     .describe(
-      "Limit the text view to these columns (e.g. ['file','loc','message']); structuredContent keeps all",
+      "Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload",
     ),
   ...budgetControls,
 };
+
+/** One file's diagnostics: the path once, then `line:col [severity] [rule] message` per finding. */
+export const fileDiagnosticsSchema = z.object({
+  file: z.string(),
+  items: z.array(z.string()),
+});
+
+/**
+ * Output-schema fragment shared by diagnostic tools that name their list
+ * `errors`. Spread into `outputSchema` alongside the tool's own counts.
+ */
+export const diagnosticOutputSchema = {
+  errors: z.array(fileDiagnosticsSchema),
+  total: z.number().optional(),
+  truncated: z.boolean().optional(),
+};
+
+/**
+ * Group diagnostics by file for the payload: the path is paid once and each
+ * finding becomes `line:col [severity] [rule] message`. Severity is emitted
+ * only when the set is mixed — a uniform list is described by the counts that
+ * travel alongside it.
+ */
+export function compactDiagnostics(
+  diags: Diagnostic[],
+): { file: string; items: string[] }[] {
+  const first = diags[0]?.severity;
+  const mixed = diags.some((d) => d.severity !== first);
+  const byFile = new Map<string, string[]>();
+  for (const d of diags) {
+    const parts = [`${d.line}:${d.column}`];
+    if (mixed) parts.push(d.severity);
+    if (d.rule) parts.push(d.rule);
+    parts.push(d.message);
+    const items = byFile.get(d.file);
+    if (items) items.push(parts.join(" "));
+    else byFile.set(d.file, [parts.join(" ")]);
+  }
+  return [...byFile].map(([file, items]) => ({ file, items }));
+}
 
 /**
  * Curate diagnostics into compact text rows: `file` (the grouping column),
@@ -70,12 +109,15 @@ export interface DiagnosticsResponseOpts {
   fields?: string[];
   /** Extra meta lines (errorCount, warningCount, …) shown above the rows. */
   meta?: Record<string, unknown>;
+  /** Payload key holding the grouped diagnostics (default `errors`). */
+  key?: string;
 }
 
 /**
- * Build a structured diagnostic response: `structuredContent` stays the full
- * typed payload; the text block is the compact grouped/tsv view of `diagnostics`
- * (capped by `budget`, with a `shown`/`total` note when truncated).
+ * Build a diagnostic response. The grouped, budget-capped diagnostics are
+ * written into the payload under `opts.key` (overriding whatever the caller
+ * put there), with `total`/`truncated` added when the budget bit; the text
+ * block is the same list rendered grouped/tsv/json.
  */
 export function diagnosticsResponse<T extends Record<string, unknown>>(
   structuredContent: T,
@@ -92,7 +134,12 @@ export function diagnosticsResponse<T extends Record<string, unknown>>(
     meta.shown = items.length;
     meta.total = total;
   }
-  return okList(structuredContent, rows, meta, opts.format ?? "grouped", {
+  const payload = {
+    ...structuredContent,
+    [opts.key ?? "errors"]: compactDiagnostics(items),
+    ...(truncated ? { total, truncated } : {}),
+  };
+  return okList(payload, rows, meta, opts.format ?? "grouped", {
     fields: opts.fields,
   });
 }

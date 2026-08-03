@@ -1,7 +1,1 @@
-count	4
----
-name	value	sensitive
-vpc_id	vpc-0abc123	false
-public_subnets	["subnet-01","subnet-02"]	false
-db_endpoint	app-db.xyz.rds.amazonaws.com:5432	false
-api_key		true
+{"outputs":[{"name":"vpc_id","value":"vpc-0abc123"},{"name":"public_subnets","value":"[\"subnet-01\",\"subnet-02\"]"},{"name":"db_endpoint","value":"app-db.xyz.rds.amazonaws.com:5432"},{"name":"api_key","sensitive":true}],"count":4}

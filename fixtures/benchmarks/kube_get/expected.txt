@@ -1,11 +1,1 @@
-count	7
-resource	pods
----
-name	namespace	status	ready	restarts	age
-web-7c5b8d6c88-abc12	default	Running	1/1	0	3d4h
-web-7c5b8d6c88-def34	default	Running	1/1	0	3d4h
-worker-5d9f7b6c-ghi56	default	CrashLoopBackOff	0/1	12	3d4h
-coredns-5d78c9869d-jkl78	kube-system	Running	1/1	1	9d
-kube-proxy-mno90	kube-system	Running	1/1	0	9d
-api-6f8c9d7b5-pqr12	payments	Running	1/1	0	18h
-migrate-xyz98	payments	Completed	0/1	0	18h
+{"items":[{"name":"web-7c5b8d6c88-abc12","namespace":"default","status":"Running","age":"3d"},{"name":"web-7c5b8d6c88-def34","namespace":"default","status":"Running","age":"3d"},{"name":"worker-5d9f7b6c-ghi56","namespace":"default","status":"CrashLoopBackOff","age":"3d","restarts":"12"},{"name":"coredns-5d78c9869d-jkl78","namespace":"kube-system","status":"Running","age":"9d","restarts":"1"},{"name":"kube-proxy-mno90","namespace":"kube-system","status":"Running","age":"9d"},{"name":"api-6f8c9d7b5-pqr12","namespace":"payments","status":"Running","age":"18h"},{"name":"migrate-xyz98","namespace":"payments","status":"Succeeded","age":"18h"}],"count":7,"resource":"pods","kind":"Pod"}

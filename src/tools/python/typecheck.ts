@@ -4,9 +4,9 @@ import { exec, TIMEOUT } from "#exec";
 import { defineTool } from "#tool";
 import {
   diagnosticInputSchema,
+  diagnosticOutputSchema,
   diagnosticsResponse,
 } from "../../parsers/diagnostics-response.js";
-import { diagnosticSchema } from "../../parsers/schemas.js";
 import { parseMypyOutput } from "./parsers/mypy.js";
 
 export function registerPythonTypecheckTool(server: McpServer) {
@@ -28,7 +28,7 @@ export function registerPythonTypecheckTool(server: McpServer) {
         ...diagnosticInputSchema,
       },
       outputSchema: {
-        errors: z.array(diagnosticSchema),
+        ...diagnosticOutputSchema,
         errorCount: z.number(),
         success: z.boolean(),
       },
@@ -51,7 +51,7 @@ export function registerPythonTypecheckTool(server: McpServer) {
       const errors = parseMypyOutput(output);
 
       return diagnosticsResponse(
-        { errors, errorCount: errors.length, success: result.exitCode === 0 },
+        { errorCount: errors.length, success: result.exitCode === 0 },
         errors,
         {
           format,

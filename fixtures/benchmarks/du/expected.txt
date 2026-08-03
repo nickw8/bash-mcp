@@ -1,6 +1,1 @@
-path	sizeBytes
-./src/parsers	4096
-./src/tools	24576
-./src	40960
-./fixtures	8192
-.	61440
+{"entries":[{"path":"./src/parsers","sizeBytes":4096},{"path":"./src/tools","sizeBytes":24576},{"path":"./src","sizeBytes":40960},{"path":"./fixtures","sizeBytes":8192},{"path":".","sizeBytes":61440}]}

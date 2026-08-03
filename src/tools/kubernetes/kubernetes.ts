@@ -56,6 +56,12 @@ export function registerKubernetesTools(server: McpServer) {
             "jq filter applied to raw kubectl JSON. Skips the default summary and returns the jq result instead. " +
               "Example: '.spec.template.spec.containers[].env'",
           ),
+        includeLabels: z
+          .boolean()
+          .optional()
+          .describe(
+            "Include each resource's labels (default false — labels are verbose and mostly hashes; use selector to filter or jq to read specific ones)",
+          ),
         format: z
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
@@ -64,7 +70,7 @@ export function registerKubernetesTools(server: McpServer) {
           .array(z.string())
           .optional()
           .describe(
-            "Limit the text view to these columns, e.g. ['name','status','restarts'] (structuredContent keeps all)",
+            "Limit the text view to these columns, e.g. ['name','status','restarts'] (text view only)",
           ),
         ...budgetSchema,
       },
@@ -78,6 +84,7 @@ export function registerKubernetesTools(server: McpServer) {
       name,
       context,
       jq: jqFilter,
+      includeLabels,
       format,
       fields,
       detailLevel,
@@ -96,9 +103,7 @@ export function registerKubernetesTools(server: McpServer) {
           timeout: TIMEOUT.INFRA,
         });
         if (kubectlResult.exitCode !== 0) {
-          return err(kubectlResult.stderr || kubectlResult.stdout, {
-            result: null,
-          });
+          return err(kubectlResult.stderr || kubectlResult.stdout);
         }
         const jqResult = await execWithStdin(
           "jq",
@@ -106,7 +111,7 @@ export function registerKubernetesTools(server: McpServer) {
           kubectlResult.stdout,
         );
         if (jqResult.exitCode !== 0) {
-          return err(jqResult.stderr, { result: null });
+          return err(jqResult.stderr);
         }
         const parsed = parseJsonishOutput(jqResult.stdout);
         switch (parsed.kind) {
@@ -124,7 +129,7 @@ export function registerKubernetesTools(server: McpServer) {
       });
 
       if (result.error) {
-        return err(result.error, { items: [], count: 0, resource });
+        return err(result.error, { resource });
       }
 
       const rawItems =
@@ -141,22 +146,46 @@ export function registerKubernetesTools(server: McpServer) {
         detailLevel,
         maxItems,
       });
-      const structured = hasBudget
-        ? { items, count: items.length, resource, total, truncated }
-        : { items, count: items.length, resource };
-      // Flatten labels/extra for the text view: extra fields (replicas, restarts,
-      // type, …) become top-level columns; verbose labels stay in structuredContent.
-      const rows = items.map((it) => ({
-        name: it.name,
-        namespace: it.namespace,
-        status: it.status,
-        age: it.age,
-        ...it.extra,
-      }));
+      // Payload shaping (ADR-0009): the client is billed for structuredContent, so
+      // anything repeated on every item is hoisted to the top level, `extra` is
+      // flattened away, and labels (mostly template hashes) are opt-in.
+      const uniform = <T>(values: T[]) => {
+        const set = new Set(values);
+        return set.size === 1 ? values[0] : undefined;
+      };
+      const kind = uniform(items.map((it) => it.extra.kind));
+      const namespace_ = uniform(items.map((it) => it.namespace));
+      const slim = items.map(({ extra, labels, ...it }) => {
+        const { kind: itemKind, ...rest } = extra;
+        return {
+          name: it.name,
+          ...(namespace_ === undefined ? { namespace: it.namespace } : {}),
+          status: it.status,
+          age: it.age,
+          ...(kind === undefined && itemKind ? { kind: itemKind } : {}),
+          ...rest,
+          ...(includeLabels ? { labels } : {}),
+        };
+      });
+      const structured = {
+        items: slim,
+        count: items.length,
+        resource,
+        ...(kind ? { kind } : {}),
+        ...(namespace_ ? { namespace: namespace_ } : {}),
+        ...(hasBudget ? { total, truncated } : {}),
+      };
       return okList(
         structured,
-        rows,
-        { count: items.length, resource, total, truncated },
+        slim,
+        {
+          count: items.length,
+          resource,
+          kind,
+          namespace: namespace_,
+          total,
+          truncated,
+        },
         fmt,
         { fields },
       );
@@ -241,7 +270,7 @@ export function registerKubernetesTools(server: McpServer) {
       const result = await exec("kubectl", args, { timeout: TIMEOUT.INFRA });
 
       if (result.exitCode !== 0) {
-        return err(result.stderr, { lines: [], count: 0, pod });
+        return err(result.stderr, { pod });
       }
 
       let lines = parseLogLines(result.stdout);
@@ -286,17 +315,18 @@ export function registerKubernetesTools(server: McpServer) {
           .array(z.string())
           .optional()
           .describe(
-            "Limit the text view to these columns (structuredContent keeps all)",
+            "Limit the text view to these columns (text block only, not the returned payload)",
           ),
       },
       outputSchema: {
         current: z.string(),
+        // The current context is named once at the top level, and `cluster` is
+        // carried only when it differs from the context name (ADR-0009).
         contexts: z.array(
           z.object({
             name: z.string(),
-            cluster: z.string(),
             namespace: z.string(),
-            current: z.boolean(),
+            cluster: z.string().optional(),
           }),
         ),
       },
@@ -311,9 +341,18 @@ export function registerKubernetesTools(server: McpServer) {
       ]);
 
       const parsed = parseContexts(result.stdout);
-      return okList(parsed, parsed.contexts, { current: parsed.current }, fmt, {
-        fields,
-      });
+      const contexts = parsed.contexts.map(({ name, cluster, namespace }) => ({
+        name,
+        namespace,
+        ...(cluster && cluster !== name ? { cluster } : {}),
+      }));
+      return okList(
+        { current: parsed.current, contexts },
+        parsed.contexts,
+        { current: parsed.current },
+        fmt,
+        { fields },
+      );
     },
   );
 

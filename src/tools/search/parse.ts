@@ -113,3 +113,24 @@ export function parseRgJson(stdout: string, opts: ParseRgOptions): ParsedRg {
 
   return { entries, matchCount, fileCount: filesSeen.size };
 }
+
+/**
+ * Group flat entries into the billed payload shape: one object per file, each
+ * hit encoded as `"<line>:<text>"` (`"<line>-<text>"` for a context line, the
+ * grep convention). The path is paid for once per file instead of once per hit,
+ * and the `line`/`text` keys disappear entirely — see ADR-0009.
+ */
+export function groupMatchesByFile(
+  entries: RgEntry[],
+  path: (file: string) => string = (f) => f,
+): Array<{ file: string; lines: string[] }> {
+  const byFile = new Map<string, string[]>();
+  for (const e of entries) {
+    const file = path(e.file);
+    const sep = e.kind === "context" ? "-" : ":";
+    const lines = byFile.get(file);
+    if (lines) lines.push(`${e.line}${sep}${e.text}`);
+    else byFile.set(file, [`${e.line}${sep}${e.text}`]);
+  }
+  return [...byFile].map(([file, lines]) => ({ file, lines }));
+}

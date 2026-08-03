@@ -100,6 +100,22 @@ export const INTENTS = [
     reason: "Returns symbols/headings so you can target what to read next.",
   },
   {
+    intent: "read one region of a large file",
+    preferredTool: "cat",
+    category: "file",
+    avoid: ["cat (whole file)", "run: sed -n '10,40p'"],
+    reason:
+      "startLine/endLine returns just that range; the whole body is otherwise returned and charged for.",
+  },
+  {
+    intent: "keep a broad search from flooding the context",
+    preferredTool: "rg",
+    category: "search",
+    avoid: ["format/fields (text block only)", "run: rg | head"],
+    reason:
+      "maxResults, maxLineLength, filesOnly, and countPerFile shrink the returned payload; output formats do not.",
+  },
+  {
     intent: "search for exact code references or symbols",
     preferredTool: "rg",
     category: "search",

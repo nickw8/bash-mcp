@@ -202,6 +202,8 @@ so agents can self-select without the README.
 | review the current feature branch before a PR | `git_pr_context` | `git diff`, `git log`, `git status` |
 | understand the overall state of a repository | `repo_health_summary` | `git status`, `git log --oneline` |
 | read a file's structure without loading the full body | `outline` | `cat (entire file)`, `cat` |
+| read one region of a large file | `cat` | `cat (whole file)`, `sed -n '10,40p'` |
+| keep a broad search from flooding the context | `rg` | `format/fields (text block only)`, `rg \| head` |
 | search for exact code references or symbols | `rg` | `grep -r`, `rg` |
 | triage why a Helm release is unhealthy | `helm_release_triage` | `helm status`, `helm get values` |
 | check whether an ArgoCD app is healthy and in sync | `argo_app_health_summary` | `argocd app get`, `argocd app list` |
@@ -284,7 +286,7 @@ so agents can self-select without the README.
 | `tf_show` | Show current Terraform state as structured JSON. |
 | `tf_plan_summary` | Run terraform plan and return a structured summary of changes (add/change/destroy counts and affected resources). |
 | `tf_workspaces` | List Terraform workspaces with current workspace marked. |
-| `tf_outputs` | List Terraform/OpenTofu outputs (name, type, value) with sensitive values redacted. |
+| `tf_outputs` | List Terraform/OpenTofu outputs (name, value) with sensitive values redacted — a redacted output carries sensitive:true and no value. |
 | `tf_providers` | List the Terraform/OpenTofu version and selected provider versions for the project. |
 | `tf_validate_summary` | Validate the Terraform/OpenTofu config and return a compact pass/fail summary with diagnostics. |
 | `tf_modules_summary` | List the modules used by an initialized Terraform/OpenTofu project (key, source, version). |

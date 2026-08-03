@@ -4,9 +4,9 @@ import { exec, TIMEOUT } from "#exec";
 import { defineTool } from "#tool";
 import {
   diagnosticInputSchema,
+  diagnosticOutputSchema,
   diagnosticsResponse,
 } from "../../parsers/diagnostics-response.js";
-import { diagnosticSchema } from "../../parsers/schemas.js";
 import { parseTscOutput } from "./parsers/tsc.js";
 
 /** Register the npm_typecheck tool for structured tsc/tsgo type errors. */
@@ -29,7 +29,7 @@ export function registerNpmTypecheckTool(server: McpServer) {
         ...diagnosticInputSchema,
       },
       outputSchema: {
-        errors: z.array(diagnosticSchema),
+        ...diagnosticOutputSchema,
         errorCount: z.number(),
         success: z.boolean(),
       },
@@ -50,7 +50,7 @@ export function registerNpmTypecheckTool(server: McpServer) {
       const errors = parseTscOutput(output);
 
       return diagnosticsResponse(
-        { errors, errorCount: errors.length, success: result.exitCode === 0 },
+        { errorCount: errors.length, success: result.exitCode === 0 },
         errors,
         {
           format,

@@ -26,17 +26,18 @@ export function registerGitBranchesTool(server: McpServer) {
           .array(z.string())
           .optional()
           .describe(
-            "Limit the text view to these columns (structuredContent keeps all)",
+            "Limit the text view to these columns (text block only, not the returned payload)",
           ),
       },
       outputSchema: {
         current: z.string(),
+        // Neither `current` nor `remote` gets a per-branch key: the current
+        // branch is named once at the top level and a remote branch is one
+        // whose name starts with "remotes/" (ADR-0009).
         branches: z.array(
           z.object({
             name: z.string(),
-            current: z.boolean(),
             lastCommit: z.string(),
-            remote: z.boolean(),
           }),
         ),
       },
@@ -65,15 +66,21 @@ export function registerGitBranchesTool(server: McpServer) {
           return { name, current: isCurrent, lastCommit, remote: isRemote };
         });
 
-      // Drop the all-false `remote` column from the text view unless remotes
-      // were requested; structuredContent keeps it for schema completeness.
-      const rows = branches.map(({ name, current, lastCommit, ...rest }) =>
-        remote
-          ? { name, current, lastCommit, remote: rest.remote }
-          : { name, current, lastCommit },
-      );
+      // Text view keeps the current-branch marker as a column; the payload
+      // names the current branch once instead.
+      const rows = branches.map(({ name, current, lastCommit }) => ({
+        name,
+        current,
+        lastCommit,
+      }));
       return okList(
-        { current: currentBranch, branches },
+        {
+          current: currentBranch,
+          branches: branches.map(({ name, lastCommit }) => ({
+            name,
+            lastCommit,
+          })),
+        },
         rows,
         { current: currentBranch },
         fmt,

@@ -5,9 +5,10 @@ import { err, ok } from "#response";
 import { defineTool } from "#tool";
 import {
   diagnosticInputSchema,
+  diagnosticOutputSchema,
   diagnosticsResponse,
 } from "../../parsers/diagnostics-response.js";
-import { countBySeverity, diagnosticSchema } from "../../parsers/schemas.js";
+import { countBySeverity } from "../../parsers/schemas.js";
 import { parseRuffDiagnostics } from "./parsers/ruff.js";
 
 export function registerPythonLintTool(server: McpServer) {
@@ -39,7 +40,7 @@ export function registerPythonLintTool(server: McpServer) {
         ...diagnosticInputSchema,
       },
       outputSchema: {
-        errors: z.array(diagnosticSchema),
+        ...diagnosticOutputSchema,
         errorCount: z.number(),
         warningCount: z.number(),
         fixedCount: z.number(),
@@ -87,7 +88,7 @@ export function registerPythonLintTool(server: McpServer) {
         const fixedCount = fixedMatch ? parseInt(fixedMatch[1] ?? "0", 10) : 0;
 
         return diagnosticsResponse(
-          { errors: diagnostics, errorCount, warningCount, fixedCount },
+          { errorCount, warningCount, fixedCount },
           diagnostics,
           {
             format,
@@ -98,18 +99,8 @@ export function registerPythonLintTool(server: McpServer) {
         );
       } catch {
         return err("Failed to parse ruff JSON output", {
-          errors: [
-            {
-              file: "",
-              line: 0,
-              column: 0,
-              message: output.slice(0, 500),
-              severity: "error" as const,
-            },
-          ],
+          errors: [{ file: "", items: [`0:0 ${output.slice(0, 500)}`] }],
           errorCount: 1,
-          warningCount: 0,
-          fixedCount: 0,
         });
       }
     },

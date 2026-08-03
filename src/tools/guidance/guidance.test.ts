@@ -19,6 +19,7 @@ const KNOWN_TOOLS = new Set([
   "git_pr_context",
   "repo_health_summary",
   "outline",
+  "cat",
   "rg",
   "helm_release_triage",
   "argo_app_health_summary",

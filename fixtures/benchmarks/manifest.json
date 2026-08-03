@@ -3,139 +3,139 @@
     "id": "kube_get",
     "command": "kubectl get pods -A",
     "weight": 5,
-    "budget": 227
+    "budget": 250
   },
   {
     "id": "kube_diagnose_pod",
     "command": "kubectl describe pod (→ kube_diagnose_pod)",
     "weight": 3,
-    "budget": 124
+    "budget": 125
   },
   {
     "id": "kube_logs",
     "command": "kubectl logs (ERROR filter)",
     "weight": 4,
-    "budget": 91
+    "budget": 95
   },
   {
     "id": "tf_plan_summary",
     "command": "terraform plan",
     "weight": 2,
-    "budget": 61
+    "budget": 65
   },
   {
     "id": "helm_list",
     "command": "helm list -A",
     "weight": 2,
-    "budget": 129
+    "budget": 130
   },
   {
     "id": "argo_apps",
     "command": "argocd app list",
     "weight": 2,
-    "budget": 113
+    "budget": 115
   },
   {
     "id": "git_diff",
     "command": "git diff (→ git_diff)",
     "weight": 5,
-    "budget": 62
+    "budget": 65
   },
   {
     "id": "ls",
     "command": "ls -lh (→ ls)",
     "weight": 6,
-    "budget": 128
+    "budget": 170
   },
   {
     "id": "tree",
     "command": "tree (→ tree)",
     "weight": 2,
-    "budget": 65
+    "budget": 80
   },
   {
     "id": "du",
     "command": "du (→ du)",
     "weight": 1,
-    "budget": 39
+    "budget": 70
   },
   {
     "id": "rg",
     "command": "ripgrep (→ rg)",
     "weight": 8,
-    "budget": 49
+    "budget": 80
   },
   {
     "id": "rg_extract",
     "command": "rg process.env (→ rg only/replace)",
     "weight": 3,
-    "budget": 60
+    "budget": 85
   },
   {
     "id": "outline",
     "command": "cat full file (→ outline)",
     "weight": 8,
-    "budget": 104
+    "budget": 105
   },
   {
     "id": "git_status",
     "command": "git status (→ git_status)",
     "weight": 5,
-    "budget": 59
+    "budget": 60
   },
   {
     "id": "git_log",
     "command": "git log (→ git_log)",
     "weight": 3,
-    "budget": 85
+    "budget": 105
   },
   {
     "id": "git_branches",
     "command": "git branch -v (→ git_branches)",
     "weight": 2,
-    "budget": 65
+    "budget": 85
   },
   {
     "id": "kube_contexts",
     "command": "kubectl config get-contexts (→ kube_contexts)",
     "weight": 1,
-    "budget": 32
+    "budget": 40
   },
   {
     "id": "kube_events_summary",
     "command": "kubectl get events (→ kube_events_summary)",
     "weight": 2,
-    "budget": 151
+    "budget": 155
   },
   {
     "id": "tf_state_list",
     "command": "terraform state list (→ tf_state_list)",
     "weight": 1,
-    "budget": 74
+    "budget": 80
   },
   {
     "id": "tf_outputs",
     "command": "terraform output (→ tf_outputs)",
     "weight": 1,
-    "budget": 62
+    "budget": 85
   },
   {
     "id": "helm_status",
     "command": "helm status (→ helm_status)",
     "weight": 2,
-    "budget": 62
+    "budget": 65
   },
   {
     "id": "argo_app_detail",
     "command": "argocd app get (→ argo_app_detail)",
     "weight": 2,
-    "budget": 108
+    "budget": 110
   },
   {
     "id": "npm_typecheck",
     "command": "tsc --noEmit (→ npm_typecheck)",
     "weight": 3,
-    "budget": 52
+    "budget": 70
   },
   {
     "id": "python_test",
@@ -147,49 +147,49 @@
     "id": "dotnet_build",
     "command": "dotnet build (→ dotnet_build)",
     "weight": 1,
-    "budget": 43
+    "budget": 85
   },
   {
     "id": "check_environment",
     "command": "which + version probes (→ check_environment)",
     "weight": 1,
-    "budget": 96
+    "budget": 100
   },
   {
     "id": "python_lint",
     "command": "ruff check (→ python_lint)",
     "weight": 2,
-    "budget": 85
+    "budget": 100
   },
   {
     "id": "python_typecheck",
     "command": "mypy (→ python_typecheck)",
     "weight": 2,
-    "budget": 83
+    "budget": 105
   },
   {
     "id": "bash_lint",
     "command": "shellcheck (→ bash_lint)",
     "weight": 2,
-    "budget": 74
+    "budget": 85
   },
   {
     "id": "bash_syntax_check",
     "command": "bash -n (→ bash_syntax_check)",
     "weight": 1,
-    "budget": 25
+    "budget": 40
   },
   {
     "id": "bash_test",
     "command": "bats --tap (→ bash_test)",
     "weight": 1,
-    "budget": 112
+    "budget": 90
   },
   {
     "id": "liquibase_status",
     "command": "liquibase status (→ liquibase_status)",
     "weight": 2,
-    "budget": 969
+    "budget": 970
   },
   {
     "id": "liquibase_validate",
@@ -207,6 +207,6 @@
     "id": "dotnet_test",
     "command": "dotnet test (→ dotnet_test)",
     "weight": 2,
-    "budget": 114
+    "budget": 115
   }
 ]

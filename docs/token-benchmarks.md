@@ -9,8 +9,8 @@ and others are omitted).
 ## Method
 
 `scripts/token-benchmark.mjs` tokenizes the captured fixtures in
-`fixtures/benchmarks/` (per tool: `raw.txt` = CLI capture, `expected.txt` = the `bash-mcp`
-text block) and reports the per-command and aggregate reduction. Run it yourself:
+`fixtures/benchmarks/` (per tool: `raw.txt` = CLI capture, `expected.txt` = the payload the
+client receives) and reports the per-command and aggregate reduction. Run it yourself:
 
 ```bash
 node scripts/token-benchmark.mjs          # print the report
@@ -25,12 +25,20 @@ doc can't drift). Add a tool by dropping a new `fixtures/benchmarks/<id>/{raw,ex
 pair plus a manifest entry, then re-run with `--write`.
 
 **What "structured" means here.** Each `bash-mcp` tool returns both a `structuredContent`
-(JSON, for programmatic use) and a `content` text block (what the model actually reads and
-token-counts). The benchmark measures the **text block** — each tool's **default text
-representation**: `bare` (values only) or `TSV` (header + tab-separated) for list tools,
-JSON for the rest. Field-curated text views (e.g. `du` drops the derived `sizeHuman`,
-`git_log` drops the redundant full hash) keep `structuredContent` complete — only the text
-block is trimmed, so the savings cost nothing programmatically.
+(the typed JSON payload) and a `content` text block. **A client that understands
+`structuredContent` renders that and ignores the text block** — Claude Code does. So the
+benchmark measures `JSON.stringify(structuredContent)`, the artifact the agent is actually
+charged tokens for. See [ADR-0009](adr/0009-structuredcontent-is-what-the-agent-reads.md).
+
+Until 2026-08-03 this suite measured the **text block** instead — the compact `bare`/TSV/
+`grouped` rendering — for the 17 wrappers that build one. That artifact never reached the
+agent, so the published headline (62% token-weighted) described work the model never saw.
+Re-baselining those 17 fixtures onto the payload — no tool change, only a change in what is
+counted — dropped the honest headline to **50%** and put 15 of 35 tools in the red, because
+**field curation and `format`/`fields` shape the text block only, so they save the agent
+nothing.** The payload reshaping that followed (see the worst-offender ranking below) moved
+that curation into `structuredContent` itself and brought the headline to the 59% reported
+here, with 9 tools still net-negative.
 
 **Tokenizer.** By default the script uses [`js-tiktoken`](https://www.npmjs.com/package/js-tiktoken)
 with the `o200k_base` encoding (GPT-4o/o200k). This is a **GPT tokenizer used as a proxy
@@ -59,40 +67,40 @@ Measured with `o200k_base` (positive `saved` = structured is smaller):
 | --- | ---: | ---: | ---: |
 | `liquibase updateSQL` (→ `liquibase_update_sql`) | 2953 | 181 | 94% |
 | `dotnet test` (→ `dotnet_test`) | 1027 | 103 | 90% |
-| `shellcheck` (→ `bash_lint`) | 366 | 67 | 82% |
+| `shellcheck` (→ `bash_lint`) | 366 | 73 | 80% |
 | `terraform plan` (→ `tf_plan_summary`) | 220 | 55 | 75% |
 | `pytest` (→ `python_test`) | 174 | 45 | 74% |
-| `dotnet build` (→ `dotnet_build`) | 150 | 39 | 74% |
-| `ruff check` (→ `python_lint`) | 254 | 77 | 70% |
 | `git diff` (→ `git_diff`) | 161 | 56 | 65% |
+| `ruff check` (→ `python_lint`) | 254 | 90 | 65% |
 | `kubectl describe pod` (→ `kube_diagnose_pod`) | 309 | 112 | 64% |
 | `cat full file` (→ `outline`) | 232 | 94 | 59% |
 | `helm status` (→ `helm_status`) | 123 | 56 | 54% |
 | `git status` (→ `git_status`) | 116 | 53 | 54% |
-| `rg process.env` (→ `rg_extract`) | 104 | 54 | 48% |
-| `git log` (→ `git_log`) | 143 | 77 | 46% |
+| `dotnet build` (→ `dotnet_build`) | 150 | 77 | 49% |
 | `kubectl logs (ERROR filter)` (→ `kube_logs`) | 143 | 82 | 43% |
 | `argocd app get` (→ `argo_app_detail`) | 158 | 98 | 38% |
-| `tsc --noEmit` (→ `npm_typecheck`) | 73 | 47 | 36% |
-| `kubectl config get-contexts` (→ `kube_contexts`) | 44 | 29 | 34% |
+| `git log` (→ `git_log`) | 143 | 94 | 34% |
 | `argocd app list` (→ `argo_apps`) | 149 | 102 | 32% |
 | `liquibase status` (→ `liquibase_status`) | 1270 | 880 | 31% |
 | `liquibase validate` (→ `liquibase_validate`) | 217 | 154 | 29% |
-| `tree` (→ `tree`) | 81 | 59 | 27% |
+| `rg process.env` (→ `rg_extract`) | 104 | 75 | 28% |
 | `which + version probes` (→ `check_environment`) | 118 | 87 | 26% |
-| `bash -n` (→ `bash_syntax_check`) | 29 | 22 | 24% |
+| `kubectl config get-contexts` (→ `kube_contexts`) | 44 | 34 | 23% |
 | `helm list -A` (→ `helm_list`) | 149 | 117 | 21% |
-| `ls -lh` (→ `ls`) | 146 | 116 | 21% |
-| `mypy` (→ `python_typecheck`) | 88 | 75 | 15% |
-| `kubectl get pods -A` (→ `kube_get`) | 234 | 206 | 12% |
+| `tsc --noEmit` (→ `npm_typecheck`) | 73 | 63 | 14% |
+| `tree` (→ `tree`) | 81 | 70 | 14% |
+| `kubectl get pods -A` (→ `kube_get`) | 234 | 226 | 3% |
 | `kubectl get events` (→ `kube_events_summary`) | 141 | 137 | 3% |
-| `du` (→ `du`) | 35 | 35 | 0% |
-| `terraform output` (→ `tf_outputs`) | 54 | 56 | -4% |
-| `git branch -v` (→ `git_branches`) | 53 | 59 | -11% |
-| `ripgrep` (→ `rg`) | 39 | 44 | -13% |
-| `bats --tap` (→ `bash_test`) | 61 | 101 | -66% |
-| `terraform state list` (→ `tf_state_list`) | 34 | 67 | -97% |
-| **TOTAL (token-weighted)** | 9648 | 3642 | **62%** |
+| `ls -lh` (→ `ls`) | 146 | 153 | -5% |
+| `mypy` (→ `python_typecheck`) | 88 | 94 | -7% |
+| `bash -n` (→ `bash_syntax_check`) | 29 | 35 | -21% |
+| `bats --tap` (→ `bash_test`) | 61 | 78 | -28% |
+| `terraform output` (→ `tf_outputs`) | 54 | 73 | -35% |
+| `git branch -v` (→ `git_branches`) | 53 | 73 | -38% |
+| `du` (→ `du`) | 35 | 62 | -77% |
+| `ripgrep` (→ `rg`) | 39 | 70 | -79% |
+| `terraform state list` (→ `tf_state_list`) | 34 | 72 | -112% |
+| **TOTAL (token-weighted)** | 9648 | 3924 | **59%** |
 <!-- BENCHMARK:RESULTS END -->
 <!-- generated by scripts/token-benchmark.mjs --write — do not edit by hand -->
 
@@ -101,41 +109,61 @@ Three aggregates, because the single TOTAL is misleading on its own:
 <!-- BENCHMARK:AGGREGATES START -->
 | Aggregate | Reduction | What it measures |
 | --- | ---: | --- |
-| Token-weighted total | **62%** | `(Σraw − Σstruct)/Σraw` — dominated by the few large samples (plan, describe, outline). |
-| Median per-command reduction | **34%** | Robust central tendency across the 35 commands; ignores sample size. |
-| Frequency-weighted total | **55%** | Weighted by an illustrative session mix (read/diff/log/diagnose dominate, bulk infra listings are rare — see `weight` in the manifest). |
+| Token-weighted total | **59%** | `(Σraw − Σstruct)/Σraw` — dominated by the few large samples (plan, describe, outline). |
+| Median per-command reduction | **29%** | Robust central tendency across the 35 commands; ignores sample size. |
+| Frequency-weighted total | **50%** | Weighted by an illustrative session mix (read/diff/log/diagnose dominate, bulk infra listings are rare — see `weight` in the manifest). |
 <!-- BENCHMARK:AGGREGATES END -->
-
-> These numbers reflect the compact-format work described in [How to read this](#how-to-read-this):
-> the flat-list tools (`tree`, `du`, `git_log`, `git_branches`, `tf_state_list`, `tf_outputs`,
-> `kube_contexts`, `kube_get`) now default to `bare`/`TSV` text, omit low-signal meta, and curate
-> redundant columns. Before that change the same mix scored 21% / 21% / 28% — several tools were
-> deeply negative (`tf_state_list` −376%, `du` −191%, `tree` −102%, `kube_get` −26%, `kube_contexts` −34%).
 
 The frequency-weighted figure is the most representative of real usage: a triage or
 dev session is mostly the high-saving diagnostic, diff, log, and file-read calls, not
 repeated tiny `tf_state_list`/`rg` listings.
 
+### Worst offenders, by weighted excess
+
+9 of the 35 tools still return a payload **larger** than the raw CLI output they wrap. Ranked
+by `(struct − raw) × weight` — the tokens a tool adds across an illustrative session, which
+is the order the payload-reshaping work follows:
+
+| Tool | excess/call | weight | weighted excess |
+| --- | ---: | ---: | ---: |
+| `rg` | +31 | 8 | **248** |
+| `ls` | +7 | 6 | 42 |
+| `git_branches` | +20 | 2 | 40 |
+| `tf_state_list` | +38 | 1 | 38 |
+| `du` | +27 | 1 | 27 |
+| `tf_outputs` | +19 | 1 | 19 |
+| `bash_test` | +17 | 1 | 17 |
+| `python_typecheck` | +6 | 2 | 12 |
+| `bash_syntax_check` | +6 | 1 | 6 |
+
+Total excess is 449 tokens, down from 2343 across 15 tools before the reshape (`kube_get`
+alone was 985 of that, and is now +3% saved). What remains is dominated by `rg`, and by the
+floor every one of these hits: on a 3–7 item fixture, JSON's quotes, braces, and commas cost
+more than the newline-and-space layout of the CLI they wrap, whatever the shape. The wins
+show up on real-sized inputs — `rg` over a multi-file search pays each path once where the
+raw output repeats it per match.
+
 ### Scaling: how the flat-list gap behaves at higher row counts
 
-`tf_state_list` now defaults to `bare` text (one address per line, with the `byType` rollup
-in the meta block). Measured on a homogeneous list of N identical resources:
+`tf_state_list`'s payload is a bare array of addresses plus the `byType` rollup — the
+per-row field names are gone, and what is left is JSON's own punctuation. Measured on a
+homogeneous list of N identical resources:
 
 <!-- BENCHMARK:SCALING START -->
 | N rows | raw | struct | saved |
 | ---: | ---: | ---: | ---: |
-| 5 | 45 | 60 | -33% |
-| 50 | 450 | 465 | -3% |
-| 200 | 1800 | 1815 | -1% |
-| 1000 | 9000 | 9017 | -0% |
+| 5 | 45 | 67 | -49% |
+| 50 | 450 | 517 | -15% |
+| 200 | 1800 | 2017 | -12% |
+| 1000 | 9000 | 10019 | -11% |
 <!-- BENCHMARK:SCALING END -->
 
-The gap **closes toward 0% as rows grow**: bare per-row cost equals the raw address, so the
-only overhead is the fixed `count`/`byType` meta block, which amortizes away. (For
-comparison, the old JSON default plateaued near **−234%** here — it repeated four field
-names on every row, so scale never helped. The fix was the format, not the row count.) And
-unlike raw, the structured form still carries the `byType` summary the agent would otherwise
-have to compute.
+The gap **does not amortize**: per-row overhead is constant, so the deficit stays roughly
+proportional in N — scale never helps. Dropping the fields derivable from `address` took the
+series from −234% to −11%, and that is the floor for a flat list of strings: quoting and
+comma-separating N addresses costs ~11% more than newline-separating them. Measuring the
+text block hid all of this — `bare` text put one address per line and the same series read
+−33% → −0%.
 
 ## How to read this
 
@@ -150,88 +178,61 @@ state) into the few fields an agent acts on. Diagnostics go further: one
 `kube_diagnose_pod` call replaces a `get` + `describe` + `logs` sequence *and* the
 reasoning across them.
 
-**Small, already-terse flat lists used to cost more as JSON — now they don't.** When these
-tools serialized full JSON, the raw output was a bare column of strings while JSON repeated
-every field name on every row: `tf_state_list` was −376%, `du` −191%, `tree` −102%. The fix
-was to emit compact text by default while keeping `structuredContent` as JSON:
+**Small, already-terse flat lists still cost more than the CLI they wrap** — `tf_state_list`
+−112%, `rg` −79%, `du` −77%, `bash_test` −66% — but far less than before. Three structural
+causes, in the order they cost tokens, and what each one's fix bought:
 
-1. **Compact list formats (the main lever).** List tools now route their text block through
-   `formatList` with a non-JSON default — **`bare`** (values only, no header) for
-   single-column lists (`tree`, `tf_state_list`, `glob`) and **`TSV`** (header + tab rows)
-   for multi-column ones (`ls`, `du`, `git_log`, `git_branches`, `tf_outputs`,
-   `kube_contexts`). **`grouped`** (group value printed once as a header, then the remaining
-   columns per row, ripgrep-style) is the default for `rg` and the diagnostic tools, where the
-   first column repeats heavily. Each still accepts a `format` param to override. This is what
-   turned `tf_state_list` −376% → −97% (and → ~0% at scale), `du` → 0%, `tree` → +27%,
-   `rg` −41% → −13%.
-2. **Field curation.** The text view drops fields the agent can recompute or that duplicate
-   others, while `structuredContent` keeps them: `du` omits the derived `sizeHuman`,
-   `git_log` drops the full `hash` (keeps `shortHash`) → −15% to **+46%**, `tf_outputs`
-   drops the verbose `type`, `git_branches` omits the all-`false` `remote` column, and the
-   diagnostic tools combine `line`/`column` into one `loc` cell and drop `severity` when every
-   row shares it.
-3. **Output budgets.** `detailLevel` / `maxItems` cap large lists — and large diagnostic
-   cascades (`npm_typecheck`, `dotnet_build`, `python_lint`) — so the agent never pays for rows
-   it won't read; truncated output notes `shown`/`total`.
-4. **Agent-driven levers.** Most list tools take a `fields` param to project just the columns
-   the task needs (text view only — `structuredContent` keeps every field), and `cat` accepts
-   `paths` to read several files in one call. These cut tokens the encoding work can't, by
-   removing whole columns and whole round-trips.
+1. **Repeated keys.** Each row re-serializes its field names. `tree`'s `{path,type,depth}`
+   tripled the cost of a path; collapsing it to a marked path string took the tool from
+   −117% to +14%. The lever is fewer keys per row, or none at all where a string encodes
+   the same thing.
+2. **Repeated values.** `rg` repeated the full file path on every match and `kube_get`
+   `kind: Pod` on every item. Grouping by the repeated value (`rg`, diagnostics) or hoisting
+   it to the top level (`kube_get`) pays it once per group instead of once per row —
+   `kube_get` went from −84% to +3%.
+3. **Fields the agent didn't ask for.** `du` carried `sizeHuman` (derivable from
+   `sizeBytes`), `git_log` the full `hash` next to `shortHash`, `kube_get` the whole `labels`
+   map (now behind `includeLabels`), `tf_state_list` `type`/`name`/`module` (all parseable
+   from `address`). Each had already been dropped from the text view; moving that curation
+   into the payload is what made it count.
 
-`kube_get` flattens its summarized rows (the per-item `extra` map — replicas, restarts, type —
-becomes top-level TSV columns; verbose `labels` stay in `structuredContent`), which flipped it
-from −26% to +12%.
+What is left is JSON's own punctuation, which no reshape removes.
 
-The diagnostic tools (`npm_typecheck`, `python_typecheck`, `python_lint`, `dotnet_build`)
-moved off raw JSON too: a shared helper groups errors by file (file header once, then
-`line:col rule message`), drops `severity` when uniform, and accepts the same output budget,
-all while `structuredContent` keeps the full typed diagnostics. That flipped `npm_typecheck`
-−18% → **+36%** and `dotnet_build` +31% → **+74%**.
+The three existing levers relate to this as follows:
 
-`rg` defaults to `grouped` (file path printed once, then `line` + matched text, like native
-ripgrep), trims leading indentation from each matched line, and windows over-long / minified
-lines around the match (`maxLineLength`, default 300) — together lifting it −41% → −13% and
-toward ~0% as matches-per-file grow. A previously-ignored `context` param now actually emits
-surrounding lines (marked with a trailing `-` on the line number).
+- **`format` / `fields`** shape the text block only. They are spec-correct for clients that
+  render `content[]`, and remain supported, but they save a `structuredContent`-rendering
+  client nothing. They are no longer described as token controls.
+- **Output budgets** (`detailLevel` / `maxItems`) do bite: they cap the rows in
+  `structuredContent` itself, and truncated output notes `shown`/`total`.
+- **Per-tool caps and projections that shrink the payload** — `rg`'s `maxResults`,
+  `maxLineLength`, `only`, `filesOnly`, `maxPerFile`, `countPerFile`; `cat`'s
+  `startLine`/`endLine`; `kube_get`'s `jq` — also bite, for the same reason.
 
-For "collect all X" searches, `only` returns just the matched substrings (one row per hit,
-not whole lines) and `replace` (`$1` capture groups) extracts structured values — the
-`rg_extract` sample (pulling every `process.env.*` name) lands at **48%**, since the captured
-token is a fraction of the line it sits in. `glob` now accepts an array with `!` exclusions,
-and `maxPerFile` caps hits per file independently of `maxResults` so one hot file can't
-crowd out coverage.
+**Structured still wins where the CLI is verbose.** Every positive row above is a case where
+the raw text carries formatting the payload doesn't: `liquibase updateSQL` (94%),
+`dotnet test` (90%), `terraform plan` (75%), `pytest` (74%), `git diff` (65%),
+`kubectl describe`→`kube_diagnose_pod` (64%), `cat`→`outline` (59%). The diagnostic tools
+win twice over, because one call replaces a `get` + `describe` + `logs` sequence *and* the
+reasoning across it. Those wins are real and were never dependent on the text block.
 
-**What's still negative, and why:**
+The fixtures are small (3–7 items), and the remaining deficit does not amortize (see the
+scaling table). The tools stay enabled: a negative row still buys a reliable parse, rollups
+(`byType`), and fields the agent would otherwise derive by hand, and the alternative is raw
+`Bash`, which costs the raw column *plus* the parsing. But "structured output saves tokens"
+is still not true of those 9 tools on inputs this small.
+`src/benchmark.fixtures.test.ts` enforces the per-tool budget so a reshape can't silently
+regress.
 
-- `tf_state_list` (−97% at 5 rows): tiny result where the fixed `count`/`byType` meta block
-  dominates. Amortizes toward ~0% as rows grow (see the scaling table).
-- `rg` (−13%): a 3-match fixture where the `fileCount`/`matchCount` meta still outweighs the
-  savings. The `grouped` default (file header once) plus leading-whitespace trimming already
-  lifted it from −41%; it reaches ~0% as matches-per-file grow, and `maxLineLength` keeps long
-  / minified lines from dumping in full.
-- `git_branches` (−11%) and `tf_outputs` (−4%): small fixed meta/header overhead on a handful
-  of rows; both amortize as branch/output counts grow, and `du` (0%) is already break-even.
-
-**These tools stay enabled — the negatives are measurement artifacts, not real-world losses.**
-Every row above is a deliberately tiny fixture (3–5 items) where a one-time header/meta block
-hasn't amortized yet. At realistic sizes they all reach neutral-or-better (see the scaling
-table), and the structured forms still carry rollups (`byType`), reliable parses (typecheck
-diagnostics), and directly-usable fields (`rg` file/line/text) that raw text doesn't. The
-**frequency-weighted 42%** already prices these in at their real call mix — `rg` alone carries
-the heaviest weight (8) — so disabling any of them would *raise* real token usage, not lower
-it. The benchmark therefore tracks them rather than gating them; if a tool's standard ever
-regressed structurally (not just on a small sample), `src/benchmark.fixtures.test.ts` would
-catch it via the per-tool budget. Revisit only if one stays net-negative at scale.
-
-**Bottom line: ~41% fewer tokens token-weighted, 34% median, ~42% on a realistic session
-mix** (up from 21% / 21% / 28% before the compact-format work) — and that still
-under-weights real usage, dominated by the high-saving diagnostic, diff, log, and plan calls.
+**Bottom line: 59% fewer tokens token-weighted, 29% median, 50% on a realistic session mix.**
+The headline is carried by the verbose-CLI cases; a handful of small flat-list wrappers still
+subtract from it.
 
 ## Reproducing / extending
 
 Add or edit a tool under `fixtures/benchmarks/`: create `<id>/raw.txt` (the CLI capture) and
-`<id>/expected.txt` (the representation you want to measure — a list tool's TSV/bare text vs
-its JSON form), then add a `{ id, command, weight, budget }` entry to `manifest.json` and
+`<id>/expected.txt` (`JSON.stringify` of the `structuredContent` that tool returns for the
+same data — not its text block), then add a `{ id, command, weight, budget }` entry to `manifest.json` and
 re-run with `--write`. The fixtures are checked in (not fetched live) so the benchmark runs
 anywhere without a cluster, repo, or cloud credentials. Rendering, aggregation, and doc
 generation live in `scripts/benchmark-core.mjs`, shared with the CI test.

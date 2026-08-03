@@ -1,9 +1,1 @@
-total	5
-path	.
----
-name	type	size	permissions	modified
-package.json	file	1638	-rw-r--r--	2026-05-31
-README.md	file	8396	-rw-r--r--	2026-05-30
-src	dir	4096	drwxr-xr-x	2026-05-31
-fixtures	dir	4096	drwxr-xr-x	2026-05-31
-tsconfig.json	file	220	-rw-r--r--	2026-05-12
+{"entries":[{"name":"package.json","size":1638,"permissions":"-rw-r--r--","modified":"2026-05-31"},{"name":"README.md","size":8397,"permissions":"-rw-r--r--","modified":"2026-05-30"},{"name":"src/","size":4096,"permissions":"drwxr-xr-x","modified":"2026-05-31"},{"name":"fixtures/","size":4096,"permissions":"drwxr-xr-x","modified":"2026-05-31"},{"name":"tsconfig.json","size":220,"permissions":"-rw-r--r--","modified":"2026-05-12"}],"total":5,"path":"."}

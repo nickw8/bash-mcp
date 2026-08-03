@@ -2,7 +2,7 @@
  * Tests for parseRgJson — the pure ripgrep --json stream parser.
  */
 import { describe, expect, it } from "vitest";
-import { parseRgJson } from "./parse.js";
+import { groupMatchesByFile, parseRgJson } from "./parse.js";
 
 /** Build one rg `match` JSON line. */
 function matchLine(
@@ -145,5 +145,41 @@ describe("parseRgJson", () => {
 
     const { matchCount } = parseRgJson(stdout, base);
     expect(matchCount).toBe(1);
+  });
+});
+
+describe("groupMatchesByFile", () => {
+  it("pays for each path once and encodes hits as <line>:<text>", () => {
+    const stdout = [
+      matchLine("/repo/a.ts", 12, "const token = get();", [
+        { start: 6, end: 11 },
+      ]),
+      matchLine("/repo/a.ts", 45, "useToken(token)", [{ start: 3, end: 8 }]),
+      matchLine("/repo/b.ts", 8, "token()", [{ start: 0, end: 5 }]),
+    ].join("\n");
+
+    const { entries } = parseRgJson(stdout, base);
+    const files = groupMatchesByFile(entries, (f) => f.replace("/repo/", ""));
+
+    expect(files).toEqual([
+      {
+        file: "a.ts",
+        lines: ["12:const token = get();", "45:useToken(token)"],
+      },
+      { file: "b.ts", lines: ["8:token()"] },
+    ]);
+  });
+
+  it("marks context lines with '-' instead of ':'", () => {
+    const stdout = [
+      contextLine("a.ts", 11, "before"),
+      matchLine("a.ts", 12, "hit", [{ start: 0, end: 3 }]),
+    ].join("\n");
+
+    const { entries } = parseRgJson(stdout, { ...base, context: 1 });
+
+    expect(groupMatchesByFile(entries)).toEqual([
+      { file: "a.ts", lines: ["11-before", "12:hit"] },
+    ]);
   });
 });

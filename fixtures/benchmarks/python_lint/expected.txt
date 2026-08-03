@@ -1,9 +1,1 @@
-errorCount	3
-warningCount	0
-fixedCount	0
----
-src/app.py:
-1:8	F401	`os` imported but unused
-14:8	E712	Comparison to `True` should be `cond is True` or `if cond:`
-src/util.py:
-7:5	F841	Local variable `result` is assigned to but never used
+{"errors":[{"file":"src/app.py","items":["1:8 F401 `os` imported but unused","14:8 E712 Comparison to `True` should be `cond is True` or `if cond:`"]},{"file":"src/util.py","items":["7:5 F841 Local variable `result` is assigned to but never used"]}],"errorCount":3,"warningCount":0,"fixedCount":0}

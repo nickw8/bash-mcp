@@ -49,13 +49,14 @@ export function registerGitLogTool(server: McpServer) {
           .array(z.string())
           .optional()
           .describe(
-            "Limit the text view to these columns, e.g. ['shortHash','message'] (structuredContent keeps all)",
+            "Limit the text view to these columns, e.g. ['shortHash','message'] (text block only, not the returned payload)",
           ),
       },
       outputSchema: {
+        // Abbreviated hash only — the full 40-char hash is a prefix-equal
+        // duplicate that costs more than the rest of the commit (ADR-0009).
         commits: z.array(
           z.object({
-            hash: z.string(),
             shortHash: z.string(),
             author: z.string(),
             date: z.string(),
@@ -101,7 +102,6 @@ export function registerGitLogTool(server: McpServer) {
       const result = await exec("git", args, cwd ? { cwd } : {});
 
       let commits: {
-        hash: string;
         shortHash: string;
         author: string;
         date: string;
@@ -118,11 +118,10 @@ export function registerGitLogTool(server: McpServer) {
           if (!block) continue;
           const lines = block.split("\n");
           const commitLine = lines[0] ?? "";
-          const [hash, shortHash, authorName, date, ...msgParts] =
+          const [, shortHash, authorName, date, ...msgParts] =
             commitLine.split(sep);
           const files = lines.slice(1).filter(Boolean);
           commits.push({
-            hash: hash ?? "",
             shortHash: shortHash ?? "",
             author: authorName ?? "",
             date: date ?? "",
@@ -136,10 +135,9 @@ export function registerGitLogTool(server: McpServer) {
           .split("\n")
           .filter(Boolean)
           .map((line) => {
-            const [hash, shortHash, authorName, date, ...msgParts] =
+            const [, shortHash, authorName, date, ...msgParts] =
               line.split(sep);
             return {
-              hash: hash ?? "",
               shortHash: shortHash ?? "",
               author: authorName ?? "",
               date: date ?? "",
@@ -148,8 +146,7 @@ export function registerGitLogTool(server: McpServer) {
           });
       }
 
-      // Text view keeps shortHash (the full hash is a redundant prefix);
-      // structuredContent retains both. Files (if any) collapse to one cell.
+      // Files (if any) collapse to one cell in the text view.
       const rows = commits.map((c) => ({
         shortHash: c.shortHash,
         author: c.author,

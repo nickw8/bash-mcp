@@ -112,13 +112,15 @@ Run shellcheck and return structured diagnostics with file, line, column, messag
 - `files`: string[] — Shell script paths to lint
 - `minSeverity`: "error" | "warning" | "info" _(optional)_ — Minimum severity to include (e.g. 'error' drops warnings and info)
 - `format`: "grouped" | "tsv" | "json" _(optional)_ — Text format: grouped (default, file header once then line:col rule message), tsv, or json
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']); structuredContent keeps all
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
 - `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
 - `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
 
 **Outputs:**
 
 - `errors`: object[]
+- `total`: number _(optional)_
+- `truncated`: boolean _(optional)_
 - `errorCount`: number
 - `warningCount`: number
 
@@ -138,13 +140,15 @@ Check shell scripts for syntax errors with `bash -n` and return structured diagn
 
 - `files`: string[] — Shell script paths to check
 - `format`: "grouped" | "tsv" | "json" _(optional)_ — Text format: grouped (default, file header once then line:col rule message), tsv, or json
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']); structuredContent keeps all
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
 - `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
 - `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
 
 **Outputs:**
 
 - `errors`: object[]
+- `total`: number _(optional)_
+- `truncated`: boolean _(optional)_
 - `errorCount`: number
 - `valid`: boolean
 
@@ -167,7 +171,9 @@ Run a shell test script — bats `.bats` files via `--tap`, or a plain `.sh` har
 **Outputs:**
 
 - `summary`: object
-- `tests`: object[]
+- `passed`: string[]
+- `failed`: object[]
+- `skipped`: string[]
 - `exitCode`: number
 
 **Equivalent commands:**
@@ -259,7 +265,7 @@ Run dotnet build and return structured diagnostics with file, line, column, mess
 - `configuration`: string _(optional)_ — Build configuration (e.g. Debug, Release)
 - `includeWarnings`: boolean _(optional)_ — Include warnings in the response (default: errors only, even on a successful build)
 - `format`: "grouped" | "tsv" | "json" _(optional)_ — Text format: grouped (default, file header once then line:col rule message), tsv, or json
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']); structuredContent keeps all
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
 - `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
 - `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
 
@@ -270,6 +276,8 @@ Run dotnet build and return structured diagnostics with file, line, column, mess
 - `errorCount`: number
 - `warningCount`: number
 - `summary`: string
+- `total`: number _(optional)_
+- `truncated`: boolean _(optional)_
 
 **Equivalent commands:**
 
@@ -307,14 +315,14 @@ dotnet test
 
 `read-only`
 
-Show disk usage for paths. Returns structured size data. The text view omits the derived sizeHuman field (computable from sizeBytes); it remains in structuredContent.
+Show disk usage for paths. Returns one { path, sizeBytes } entry per path, largest-first ordering as du emits it. Use maxDepth to control how deep the summary goes.
 
 **Inputs:**
 
 - `path`: string — Path to measure
 - `maxDepth`: number _(optional)_ — Depth to summarize
 - `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Output format (default: tsv)
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (structuredContent keeps all)
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (text block only, not the returned payload)
 
 **Outputs:**
 
@@ -366,7 +374,7 @@ List git branches with current branch marker and last commit info.
 - `cwd`: string _(optional)_ — Repository path
 - `remote`: boolean _(optional)_ — Include remote branches
 - `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Output format (default: tsv)
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (structuredContent keeps all)
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (text block only, not the returned payload)
 
 **Outputs:**
 
@@ -450,7 +458,7 @@ Structured git log: commit hash, author, date, message. Compact and parseable. U
 - `exclude`: string _(optional)_ — Exclude commits matching this grep pattern (uses --invert-grep)
 - `withFiles`: boolean _(optional)_ — Include list of files changed per commit
 - `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Output format (default: tsv)
-- `fields`: string[] _(optional)_ — Limit the text view to these columns, e.g. ['shortHash','message'] (structuredContent keeps all)
+- `fields`: string[] _(optional)_ — Limit the text view to these columns, e.g. ['shortHash','message'] (text block only, not the returned payload)
 
 **Outputs:**
 
@@ -679,7 +687,7 @@ List available kubectl contexts with current context marked.
 **Inputs:**
 
 - `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Output format (default: tsv)
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (structuredContent keeps all)
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (text block only, not the returned payload)
 
 **Outputs:**
 
@@ -790,8 +798,9 @@ Get Kubernetes resources as structured data. Wraps kubectl get -o json and retur
 - `name`: string _(optional)_ — Specific resource name
 - `context`: string _(optional)_ — Kubectl context to use
 - `jq`: string _(optional)_ — jq filter applied to raw kubectl JSON. Skips the default summary and returns the jq result instead. Example: '.spec.template.spec.containers[].env'
+- `includeLabels`: boolean _(optional)_ — Include each resource's labels (default false — labels are verbose and mostly hashes; use selector to filter or jq to read specific ones)
 - `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Output format for the item list (default: tsv)
-- `fields`: string[] _(optional)_ — Limit the text view to these columns, e.g. ['name','status','restarts'] (structuredContent keeps all)
+- `fields`: string[] _(optional)_ — Limit the text view to these columns, e.g. ['name','status','restarts'] (text view only)
 - `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
 - `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
 - `includeRaw`: boolean _(optional)_ — Include raw/verbose fields where supported.
@@ -979,7 +988,7 @@ Return an intent → preferred-tool index so you can pick the right bash-mcp too
 
 `read-only`
 
-List files in a directory. Returns structured entries with name, type, size, and permissions. Much more compact than raw ls output. Use recursive for one level of subdirectories. Use all to include hidden files.
+List files in a directory. Returns structured entries with name, size, permissions, and modified date — directories end with '/' and links with '@'. Use nameOnly for names alone, recursive for one level of subdirectories, all to include hidden files.
 
 **Inputs:**
 
@@ -988,7 +997,7 @@ List files in a directory. Returns structured entries with name, type, size, and
 - `recursive`: boolean _(optional)_ — Recurse into subdirectories (1 level)
 - `nameOnly`: boolean _(optional)_ — Only return names and types (omit size, permissions, modified)
 - `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Output format (default: tsv)
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (structuredContent keeps all)
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (text block only, not the returned payload)
 
 **Outputs:**
 
@@ -1016,6 +1025,8 @@ Run biome check and return structured diagnostics with file, line, column, messa
 **Outputs:**
 
 - `errors`: object[]
+- `total`: number _(optional)_
+- `truncated`: boolean _(optional)_
 - `errorCount`: number
 - `warningCount`: number
 - `fixedCount`: number
@@ -1059,13 +1070,15 @@ Run tsc/tsgo --noEmit and return structured type errors with file, line, column,
 - `cwd`: string — Project root directory
 - `project`: string _(optional)_ — Path to tsconfig.json (default: auto-detected by tsc)
 - `format`: "grouped" | "tsv" | "json" _(optional)_ — Text format: grouped (default, file header once then line:col rule message), tsv, or json
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']); structuredContent keeps all
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
 - `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
 - `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
 
 **Outputs:**
 
 - `errors`: object[]
+- `total`: number _(optional)_
+- `truncated`: boolean _(optional)_
 - `errorCount`: number
 - `success`: boolean
 
@@ -1109,13 +1122,15 @@ Run ruff check and return structured diagnostics with file, line, column, messag
 - `paths`: string[] _(optional)_ — Specific paths to lint (default: '.')
 - `minSeverity`: "error" | "warning" | "info" _(optional)_ — Minimum severity to include (e.g. 'error' drops warnings and info)
 - `format`: "grouped" | "tsv" | "json" _(optional)_ — Text format: grouped (default, file header once then line:col rule message), tsv, or json
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']); structuredContent keeps all
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
 - `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
 - `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
 
 **Outputs:**
 
 - `errors`: object[]
+- `total`: number _(optional)_
+- `truncated`: boolean _(optional)_
 - `errorCount`: number
 - `warningCount`: number
 - `fixedCount`: number
@@ -1159,13 +1174,15 @@ Run mypy and return structured type errors with file, line, column, message, and
 - `cwd`: string — Project root directory
 - `paths`: string[] _(optional)_ — Specific paths to check (default: '.')
 - `format`: "grouped" | "tsv" | "json" _(optional)_ — Text format: grouped (default, file header once then line:col rule message), tsv, or json
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']); structuredContent keeps all
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
 - `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
 - `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
 
 **Outputs:**
 
 - `errors`: object[]
+- `total`: number _(optional)_
+- `truncated`: boolean _(optional)_
 - `errorCount`: number
 - `success`: boolean
 
@@ -1219,7 +1236,7 @@ Search file contents with ripgrep. Returns structured matches with file, line nu
 - `path`: string _(optional)_ — Directory or file to search (default: cwd)
 - `glob`: string | string[] _(optional)_ — File glob filter(s); a string or array. Prefix with '!' to exclude (e.g. ['*.ts','!*.test.ts'])
 - `ignoreCase`: boolean _(optional)_ — Case-insensitive search
-- `maxResults`: number _(optional)_ — Max results to return across all files (default 100)
+- `maxResults`: number _(optional)_ — Max results to return across all files (default 30). When the cap bites, the response reports the true totalMatches so you can decide whether to narrow the pattern or raise the cap
 - `maxPerFile`: number _(optional)_ — Cap matches per file (rg --max-count), independent of maxResults — keeps one hot file from dominating
 - `only`: boolean _(optional)_ — Return only the matched substring(s), not the whole line — one row per match. Best for collecting tokens (versions, names, URLs)
 - `replace`: string _(optional)_ — Rewrite each match with this template ($1, $2 capture groups) and return the result; implies only-match extraction
@@ -1227,17 +1244,17 @@ Search file contents with ripgrep. Returns structured matches with file, line nu
 - `filesOnly`: boolean _(optional)_ — Only return filenames, not matched lines
 - `countPerFile`: boolean _(optional)_ — Return match counts grouped by file instead of individual matches
 - `fixedStrings`: boolean _(optional)_ — Treat pattern as literal string
-- `maxLineLength`: number _(optional)_ — Window matched line text to ~this many chars centered on the match, so long/minified lines don't dump in full (0 = unlimited, default 300)
+- `maxLineLength`: number _(optional)_ — Window matched line text to ~this many chars centered on the match, so long/minified lines don't dump in full (0 = unlimited, default 120)
 - `format`: "json" | "tsv" | "columnar" | "bare" | "grouped" _(optional)_ — Output format: grouped (default for matches, file header once then line+text, ripgrep-style), tsv, json, columnar (keys once), bare (no header). filesOnly defaults to bare, countPerFile to tsv.
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','line']); structuredContent keeps all
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','line']); text view only
 
 **Outputs:**
 
-- `matches`: object[]
+- `files`: object[]
 - `fileCount`: number
 - `matchCount`: number
 - `truncated`: boolean
-- `fileCounts`: object[] _(optional)_
+- `totalMatches`: number _(optional)_
 
 **Equivalent commands:**
 
@@ -1333,14 +1350,14 @@ List the modules used by an initialized Terraform/OpenTofu project (key, source,
 
 `read-only`
 
-List Terraform/OpenTofu outputs (name, type, value) with sensitive values redacted.
+List Terraform/OpenTofu outputs (name, value) with sensitive values redacted — a redacted output carries sensitive:true and no value.
 
 **Inputs:**
 
 - `cwd`: string — Terraform project directory
 - `binary`: "terraform" | "tofu" _(optional)_ — Binary to invoke (terraform or tofu). Defaults to $TF_BINARY, else terraform.
 - `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Output format (default: tsv)
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (structuredContent keeps all)
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (text block only, not the returned payload)
 
 **Outputs:**
 
@@ -1430,7 +1447,7 @@ terraform show
 
 `read-only`
 
-List resources in Terraform state. Returns structured resource addresses grouped by type. Text view lists addresses only (type/name/module are parsed from each address); the byType rollup is in meta.
+List resources in Terraform state. Returns the resource addresses plus a byType rollup (type, name, and module are all readable from each address, so they are not repeated per resource).
 
 **Inputs:**
 
@@ -1440,7 +1457,7 @@ List resources in Terraform state. Returns structured resource addresses grouped
 
 **Outputs:**
 
-- `resources`: object[]
+- `resources`: string[]
 - `count`: number
 - `byType`: object
 
@@ -1515,7 +1532,7 @@ Show directory structure as a compact tree. Returns structured nodes instead of 
 
 - `dirs`: number
 - `files`: number
-- `tree`: object[]
+- `paths`: string[]
 
 **Equivalent commands:**
 

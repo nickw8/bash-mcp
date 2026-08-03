@@ -3,7 +3,11 @@ import { z } from "zod";
 import { exec } from "#exec";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
-import { countBySeverity, diagnosticSchema } from "../../parsers/schemas.js";
+import {
+  compactDiagnostics,
+  diagnosticOutputSchema,
+} from "../../parsers/diagnostics-response.js";
+import { countBySeverity } from "../../parsers/schemas.js";
 import { parseBiomeDiagnostics } from "./parsers/biome.js";
 
 /** Register the npm_lint tool for structured biome diagnostics. */
@@ -35,7 +39,7 @@ export function registerNpmLintTool(server: McpServer) {
           ),
       },
       outputSchema: {
-        errors: z.array(diagnosticSchema),
+        ...diagnosticOutputSchema,
         errorCount: z.number(),
         warningCount: z.number(),
         fixedCount: z.number(),
@@ -76,7 +80,7 @@ export function registerNpmLintTool(server: McpServer) {
         const fixedCount = fixedMatch ? parseInt(fixedMatch[1] ?? "0", 10) : 0;
 
         return ok({
-          errors: diagnostics,
+          errors: compactDiagnostics(diagnostics),
           errorCount,
           warningCount,
           fixedCount,
@@ -84,18 +88,8 @@ export function registerNpmLintTool(server: McpServer) {
       } catch {
         // JSON parse failed — return raw output as a single diagnostic
         return err("Failed to parse biome JSON output", {
-          errors: [
-            {
-              file: "",
-              line: 0,
-              column: 0,
-              message: output.slice(0, 500),
-              severity: "error" as const,
-            },
-          ],
+          errors: [{ file: "", items: [`0:0 ${output.slice(0, 500)}`] }],
           errorCount: 1,
-          warningCount: 0,
-          fixedCount: 0,
         });
       }
     },

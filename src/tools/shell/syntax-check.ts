@@ -5,9 +5,9 @@ import { ok } from "#response";
 import { defineTool } from "#tool";
 import {
   diagnosticInputSchema,
+  diagnosticOutputSchema,
   diagnosticsResponse,
 } from "../../parsers/diagnostics-response.js";
-import { diagnosticSchema } from "../../parsers/schemas.js";
 import { parseBashSyntax } from "./parsers/bash-syntax.js";
 
 export function registerBashSyntaxCheckTool(server: McpServer) {
@@ -28,7 +28,7 @@ export function registerBashSyntaxCheckTool(server: McpServer) {
         ...diagnosticInputSchema,
       },
       outputSchema: {
-        errors: z.array(diagnosticSchema),
+        ...diagnosticOutputSchema,
         errorCount: z.number(),
         valid: z.boolean(),
       },
@@ -44,15 +44,10 @@ export function registerBashSyntaxCheckTool(server: McpServer) {
       );
       const diagnostics = results.flatMap((r) => parseBashSyntax(r.stderr));
       const errorCount = diagnostics.length;
-      const structured = {
-        errors: diagnostics,
-        errorCount,
-        valid: errorCount === 0,
-      };
 
-      if (errorCount === 0) return ok(structured);
+      if (errorCount === 0) return ok({ errors: [], errorCount, valid: true });
 
-      return diagnosticsResponse(structured, diagnostics, {
+      return diagnosticsResponse({ errorCount, valid: false }, diagnostics, {
         format,
         fields,
         budget: { detailLevel, maxItems },

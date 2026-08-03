@@ -1,8 +1,1 @@
-fileCount	2
-matchCount	3
----
-src/auth.ts:
-12	if (!token) throw new Error("missing token");
-45	const token = req.headers.authorization;
-src/server.ts:
-88	validateToken(token);
+{"files":[{"file":"src/auth.ts","lines":["12:if (!token) throw new Error(\"missing token\");","45:const token = req.headers.authorization;"]},{"file":"src/server.ts","lines":["88:validateToken(token);"]}],"fileCount":2,"matchCount":3,"truncated":false}

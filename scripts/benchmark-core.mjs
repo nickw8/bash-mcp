@@ -6,8 +6,10 @@
  *
  * Source of truth is fixtures/benchmarks/: a manifest.json of
  * { id, command, weight, budget } plus per-tool raw.txt (CLI capture) and
- * expected.txt (the bash-mcp text block). The doc's results/aggregates/scaling
- * tables are rendered from these — never hand-edited — so they can't drift.
+ * expected.txt (JSON.stringify of the tool's structuredContent — the artifact the
+ * agent is charged for; the text block is not measured, see ADR-0009). The doc's
+ * results/aggregates/scaling tables are rendered from these — never hand-edited —
+ * so they can't drift.
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -111,8 +113,9 @@ export function renderAggregatesTable(rows) {
 }
 
 // Synthetic, homogeneous terraform state list of N resources — used by the
-// scaling section to show how the flat-list gap closes toward ~0% as rows grow
-// (bare per-row cost equals the raw address; only the fixed meta is overhead).
+// scaling section to show what the payload costs over a plain newline list:
+// JSON quoting and commas are a fixed per-row tax that never amortizes, so the
+// gap stays proportional as N grows even after the per-row keys are gone.
 const SCALING_N = [5, 50, 200, 1000];
 
 const tfStateListRaw = (n) =>
@@ -121,8 +124,17 @@ const tfStateListRaw = (n) =>
     (_, i) => `module.network.aws_subnet.public[${i}]`,
   ).join("\n");
 
+// The payload the client receives: addresses only, plus the derived byType
+// count. Not the text block — see ADR-0009.
 const tfStateListStructured = (n) =>
-  `count\t${n}\nbyType\t${JSON.stringify({ aws_subnet: n })}\n---\n${tfStateListRaw(n)}`;
+  JSON.stringify({
+    resources: Array.from(
+      { length: n },
+      (_, i) => `module.network.aws_subnet.public[${i}]`,
+    ),
+    count: n,
+    byType: { aws_subnet: n },
+  });
 
 export async function scalingRows(count) {
   return Promise.all(

@@ -5,9 +5,10 @@ import { err, ok } from "#response";
 import { defineTool } from "#tool";
 import {
   diagnosticInputSchema,
+  diagnosticOutputSchema,
   diagnosticsResponse,
 } from "../../parsers/diagnostics-response.js";
-import { countBySeverity, diagnosticSchema } from "../../parsers/schemas.js";
+import { countBySeverity } from "../../parsers/schemas.js";
 import { parseShellcheckDiagnostics } from "./parsers/shellcheck.js";
 
 export function registerBashLintTool(server: McpServer) {
@@ -34,7 +35,7 @@ export function registerBashLintTool(server: McpServer) {
         ...diagnosticInputSchema,
       },
       outputSchema: {
-        errors: z.array(diagnosticSchema),
+        ...diagnosticOutputSchema,
         errorCount: z.number(),
         warningCount: z.number(),
       },
@@ -49,7 +50,7 @@ export function registerBashLintTool(server: McpServer) {
       if (result.errorCode === "ENOENT") {
         return err(
           "shellcheck is not installed. Install it to enable bash_lint (https://www.shellcheck.net).",
-          { errors: [], errorCount: 0, warningCount: 0 },
+          undefined,
           {
             kind: "missing_binary",
             message: "shellcheck not found on PATH",
@@ -76,16 +77,12 @@ export function registerBashLintTool(server: McpServer) {
         return ok({ errors: [], errorCount, warningCount });
       }
 
-      return diagnosticsResponse(
-        { errors: diagnostics, errorCount, warningCount },
-        diagnostics,
-        {
-          format,
-          fields,
-          budget: { detailLevel, maxItems },
-          meta: { errorCount, warningCount },
-        },
-      );
+      return diagnosticsResponse({ errorCount, warningCount }, diagnostics, {
+        format,
+        fields,
+        budget: { detailLevel, maxItems },
+        meta: { errorCount, warningCount },
+      });
     },
   );
 }

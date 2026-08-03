@@ -18,14 +18,12 @@ import type { Diagnostic } from "#parsers";
 import { err } from "#response";
 import { defineTool } from "#tool";
 import {
+  compactDiagnostics,
   diagnosticInputSchema,
   diagnosticsResponse,
+  fileDiagnosticsSchema,
 } from "../../parsers/diagnostics-response.js";
-import {
-  applyBudget,
-  countBySeverity,
-  diagnosticSchema,
-} from "../../parsers/schemas.js";
+import { applyBudget, countBySeverity } from "../../parsers/schemas.js";
 import { detectSolution } from "./detect.js";
 import { parseMSBuildOutput } from "./parsers/msbuild.js";
 
@@ -93,11 +91,13 @@ export function registerDotnetBuildTool(server: McpServer) {
         ...diagnosticInputSchema,
       },
       outputSchema: {
-        diagnostics: z.array(diagnosticSchema),
+        diagnostics: z.array(fileDiagnosticsSchema),
         exitCode: z.number(),
         errorCount: z.number(),
         warningCount: z.number(),
         summary: z.string(),
+        total: z.number().optional(),
+        truncated: z.boolean().optional(),
       },
     },
     async ({
@@ -148,12 +148,15 @@ export function registerDotnetBuildTool(server: McpServer) {
           : "";
       const summary = `Build ${status}. ${errorCount} error${errorCount !== 1 ? "s" : ""}, ${warningCount} warning${warningCount !== 1 ? "s" : ""}${warnNote}.`;
 
+      // The gate+cap already ran above, so the payload carries the selected
+      // diagnostics grouped by file plus the total they were cut from.
       const structured = {
-        diagnostics,
+        diagnostics: compactDiagnostics(diagnostics),
         exitCode: result.exitCode,
         errorCount,
         warningCount,
         summary,
+        ...(truncated ? { total, truncated } : {}),
       };
 
       if (result.exitCode !== 0 && errorCount === 0) {
@@ -170,6 +173,7 @@ export function registerDotnetBuildTool(server: McpServer) {
         format,
         fields,
         meta,
+        key: "diagnostics",
       });
     },
   );

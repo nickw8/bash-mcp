@@ -1,12 +1,1 @@
-fileCount	2
-matchCount	7
----
-src/config.ts:
-3	DATABASE_URL
-4	PORT
-9	NODE_ENV
-9	TLS_CERT_PATH
-12	AWS_REGION
-src/worker.ts:
-5	QUEUE_NAME
-8	MAX_RETRIES
+{"files":[{"file":"src/config.ts","lines":["3:DATABASE_URL","4:PORT","9:NODE_ENV","9:TLS_CERT_PATH","12:AWS_REGION"]},{"file":"src/worker.ts","lines":["5:QUEUE_NAME","8:MAX_RETRIES"]}],"fileCount":2,"matchCount":7,"truncated":false}

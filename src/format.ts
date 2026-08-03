@@ -1,9 +1,13 @@
 /**
  * Output Format Helpers
  *
- * Serializes arrays of same-shape records into compact text formats
- * optimized for LLM token consumption. JSON is the default; TSV, columnar,
- * bare, and grouped are alternatives that eliminate repeated key names.
+ * Serializes arrays of same-shape records into compact text formats for the
+ * MCP text block. JSON is the default; TSV, columnar, bare, and grouped are
+ * alternatives that eliminate repeated key names.
+ *
+ * These formats shape `content[0].text` only. A client that reads
+ * `structuredContent` — Claude Code does — never sees them, so they are not a
+ * token control; shrink the payload instead (ADR-0009).
  */
 
 export type ListFormat = "json" | "tsv" | "columnar" | "bare" | "grouped";

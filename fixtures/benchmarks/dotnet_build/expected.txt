@@ -1,5 +1,1 @@
-errorCount	1
-warningCount	1
----
-/proj/Services/UserService.cs:
-28:17	CS0103	The name 'cach' does not exist in the current context
+{"diagnostics":[{"file":"/proj/Services/UserService.cs","items":["28:17 CS0103 The name 'cach' does not exist in the current context"]}],"exitCode":1,"errorCount":1,"warningCount":1,"summary":"Build failed. 1 error, 1 warning (warnings omitted; includeWarnings:true to show)."}

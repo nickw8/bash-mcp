@@ -1,13 +1,1 @@
-dirs	5
-files	6
----
-src/index.ts
-src/exec.ts
-src/tools/
-src/tools/git/
-src/tools/git/status.ts
-src/tools/git/log.ts
-src/tools/kubernetes/
-src/tools/kubernetes/kubernetes.ts
-src/parsers/
-src/parsers/types.ts
+{"dirs":5,"files":6,"paths":["src/","src/index.ts","src/exec.ts","src/tools/","src/tools/git/","src/tools/git/status.ts","src/tools/git/log.ts","src/tools/kubernetes/","src/tools/kubernetes/kubernetes.ts","src/parsers/","src/parsers/types.ts"]}
