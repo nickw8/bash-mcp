@@ -61,100 +61,87 @@ function expectPassThrough(command: string) {
   expect(runHook(command), `${command} should pass through`).toBeNull();
 }
 
+// Each case is its own `it`: one hook invocation is a real bash + jq spawn
+// (~0.2s from Node), so batching a category into a single test pushed nine
+// spawns past the default 5s budget under a loaded parallel run.
+
+/** Commands that must hard-stop, and the tool the reason has to name. */
+const BLOCKED: [command: string, tool: string][] = [
+  // filesystem / search / data
+  ["cat foo.txt", "mcp__bash-mcp__cat"],
+  ["ls -la", "mcp__bash-mcp__ls"],
+  ["tree src", "mcp__bash-mcp__tree"],
+  ["du -sh .", "mcp__bash-mcp__du"],
+  ["find . -name '*.ts'", "mcp__bash-mcp__find_files"],
+  ["grep -r foo .", "mcp__bash-mcp__rg"],
+  ["rg foo", "mcp__bash-mcp__rg"],
+  ["jq '.x' a.json", "mcp__bash-mcp__jq"],
+  ["yq '.x' a.yaml", "mcp__bash-mcp__yq"],
+  // git read-only subcommands
+  ["git status", "mcp__bash-mcp__git_status"],
+  ["git log --oneline", "mcp__bash-mcp__git_log"],
+  ["git diff HEAD~1", "mcp__bash-mcp__git_diff"],
+  ["git show HEAD", "mcp__bash-mcp__git_diff_content"],
+  ["git branch -a", "mcp__bash-mcp__git_branches"],
+  // kubernetes implemented reads
+  ["kubectl get pods -A", "mcp__bash-mcp__kube_get"],
+  ["kubectl logs pod-x", "mcp__bash-mcp__kube_logs"],
+  ["kubectl config get-contexts", "mcp__bash-mcp__kube_contexts"],
+  // terraform / tofu implemented reads
+  ["terraform state list", "mcp__bash-mcp__tf_state_list"],
+  ["terraform show", "mcp__bash-mcp__tf_show"],
+  ["terraform plan", "mcp__bash-mcp__tf_plan_summary"],
+  ["terraform workspace list", "mcp__bash-mcp__tf_workspaces"],
+  ["tofu state list", "mcp__bash-mcp__tf_state_list"],
+  ["tofu show", "mcp__bash-mcp__tf_show"],
+  ["tofu plan", "mcp__bash-mcp__tf_plan_summary"],
+  ["tofu workspace list", "mcp__bash-mcp__tf_workspaces"],
+  // terraform / tofu read-only tools (graduated)
+  ["terraform output", "mcp__bash-mcp__tf_outputs"],
+  ["terraform providers", "mcp__bash-mcp__tf_providers"],
+  ["terraform validate", "mcp__bash-mcp__tf_validate_summary"],
+  ["tofu output", "mcp__bash-mcp__tf_outputs"],
+  ["tofu providers", "mcp__bash-mcp__tf_providers"],
+  ["tofu validate", "mcp__bash-mcp__tf_validate_summary"],
+  // helm / argocd implemented reads
+  ["helm get values rel", "mcp__bash-mcp__helm_values"],
+  ["helm list -A", "mcp__bash-mcp__helm_list"],
+  ["helm status rel", "mcp__bash-mcp__helm_status"],
+  ["helm history rel", "mcp__bash-mcp__helm_release_triage"],
+  ["argocd app list", "mcp__bash-mcp__argo_apps"],
+  ["argocd app get app1", "mcp__bash-mcp__argo_app_detail"],
+  ["argocd app diff app1", "mcp__bash-mcp__argo_app_diff"],
+  // node / dotnet / python tooling
+  ["npm run lint", "mcp__bash-mcp__npm_lint"],
+  ["npm run typecheck", "mcp__bash-mcp__npm_typecheck"],
+  ["npm test", "mcp__bash-mcp__npm_test"],
+  ["dotnet build", "mcp__bash-mcp__dotnet_build"],
+  ["dotnet test", "mcp__bash-mcp__dotnet_test"],
+  ["uv run ruff check .", "mcp__bash-mcp__python_lint"],
+  ["uv run pytest -q", "mcp__bash-mcp__python_test"],
+  ["pytest -q", "mcp__bash-mcp__python_test"],
+  ["ruff check .", "mcp__bash-mcp__python_lint"],
+  ["mypy src", "mcp__bash-mcp__python_typecheck"],
+  // shell tooling
+  ["shellcheck script.sh", "mcp__bash-mcp__bash_lint"],
+  ["bats test/demo.bats", "mcp__bash-mcp__bash_test"],
+  ["bash -n script.sh", "mcp__bash-mcp__bash_syntax_check"],
+  // liquibase tooling
+  ["liquibase validate", "mcp__bash-mcp__liquibase_validate"],
+  ["liquibase updateSQL", "mcp__bash-mcp__liquibase_update_sql"],
+  ["liquibase status --verbose", "mcp__bash-mcp__liquibase_status"],
+  // capability discovery (graduated: check_environment now exists)
+  ["which kubectl", "check_environment"],
+  ["command -v jq", "check_environment"],
+  // kubernetes diagnostics (graduated)
+  ["kubectl get events -A", "kube_events_summary"],
+  ["kubectl describe pod x", "kube_diagnose_pod"],
+  ["kubectl rollout status deploy/x", "kube_deployment_status"],
+];
+
 describe("bash-mcp-redirect: implemented tools BLOCK", () => {
-  it("filesystem / search / data", () => {
-    expectBlock("cat foo.txt", "mcp__bash-mcp__cat");
-    expectBlock("ls -la", "mcp__bash-mcp__ls");
-    expectBlock("tree src", "mcp__bash-mcp__tree");
-    expectBlock("du -sh .", "mcp__bash-mcp__du");
-    expectBlock("find . -name '*.ts'", "mcp__bash-mcp__find_files");
-    expectBlock("grep -r foo .", "mcp__bash-mcp__rg");
-    expectBlock("rg foo", "mcp__bash-mcp__rg");
-    expectBlock("jq '.x' a.json", "mcp__bash-mcp__jq");
-    expectBlock("yq '.x' a.yaml", "mcp__bash-mcp__yq");
-  });
-
-  it("git read-only subcommands", () => {
-    expectBlock("git status", "mcp__bash-mcp__git_status");
-    expectBlock("git log --oneline", "mcp__bash-mcp__git_log");
-    expectBlock("git diff HEAD~1", "mcp__bash-mcp__git_diff");
-    expectBlock("git show HEAD", "mcp__bash-mcp__git_diff_content");
-    expectBlock("git branch -a", "mcp__bash-mcp__git_branches");
-  });
-
-  it("kubernetes implemented reads", () => {
-    expectBlock("kubectl get pods -A", "mcp__bash-mcp__kube_get");
-    expectBlock("kubectl logs pod-x", "mcp__bash-mcp__kube_logs");
-    expectBlock("kubectl config get-contexts", "mcp__bash-mcp__kube_contexts");
-  });
-
-  it("terraform / tofu implemented reads", () => {
-    expectBlock("terraform state list", "mcp__bash-mcp__tf_state_list");
-    expectBlock("terraform show", "mcp__bash-mcp__tf_show");
-    expectBlock("terraform plan", "mcp__bash-mcp__tf_plan_summary");
-    expectBlock("terraform workspace list", "mcp__bash-mcp__tf_workspaces");
-    expectBlock("tofu state list", "mcp__bash-mcp__tf_state_list");
-    expectBlock("tofu show", "mcp__bash-mcp__tf_show");
-    expectBlock("tofu plan", "mcp__bash-mcp__tf_plan_summary");
-    expectBlock("tofu workspace list", "mcp__bash-mcp__tf_workspaces");
-  });
-
-  it("terraform / tofu read-only tools (graduated)", () => {
-    expectBlock("terraform output", "mcp__bash-mcp__tf_outputs");
-    expectBlock("terraform providers", "mcp__bash-mcp__tf_providers");
-    expectBlock("terraform validate", "mcp__bash-mcp__tf_validate_summary");
-    expectBlock("tofu output", "mcp__bash-mcp__tf_outputs");
-    expectBlock("tofu providers", "mcp__bash-mcp__tf_providers");
-    expectBlock("tofu validate", "mcp__bash-mcp__tf_validate_summary");
-  });
-
-  it("helm / argocd implemented reads", () => {
-    expectBlock("helm get values rel", "mcp__bash-mcp__helm_values");
-    expectBlock("helm list -A", "mcp__bash-mcp__helm_list");
-    expectBlock("helm status rel", "mcp__bash-mcp__helm_status");
-    expectBlock("helm history rel", "mcp__bash-mcp__helm_release_triage");
-    expectBlock("argocd app list", "mcp__bash-mcp__argo_apps");
-    expectBlock("argocd app get app1", "mcp__bash-mcp__argo_app_detail");
-    expectBlock("argocd app diff app1", "mcp__bash-mcp__argo_app_diff");
-  });
-
-  it("node / dotnet / python tooling", () => {
-    expectBlock("npm run lint", "mcp__bash-mcp__npm_lint");
-    expectBlock("npm run typecheck", "mcp__bash-mcp__npm_typecheck");
-    expectBlock("npm test", "mcp__bash-mcp__npm_test");
-    expectBlock("dotnet build", "mcp__bash-mcp__dotnet_build");
-    expectBlock("dotnet test", "mcp__bash-mcp__dotnet_test");
-    expectBlock("uv run ruff check .", "mcp__bash-mcp__python_lint");
-    expectBlock("uv run pytest -q", "mcp__bash-mcp__python_test");
-    expectBlock("pytest -q", "mcp__bash-mcp__python_test");
-    expectBlock("ruff check .", "mcp__bash-mcp__python_lint");
-    expectBlock("mypy src", "mcp__bash-mcp__python_typecheck");
-  });
-
-  it("shell tooling", () => {
-    expectBlock("shellcheck script.sh", "mcp__bash-mcp__bash_lint");
-    expectBlock("bats test/demo.bats", "mcp__bash-mcp__bash_test");
-    expectBlock("bash -n script.sh", "mcp__bash-mcp__bash_syntax_check");
-  });
-
-  it("liquibase tooling", () => {
-    expectBlock("liquibase validate", "mcp__bash-mcp__liquibase_validate");
-    expectBlock("liquibase updateSQL", "mcp__bash-mcp__liquibase_update_sql");
-    expectBlock(
-      "liquibase status --verbose",
-      "mcp__bash-mcp__liquibase_status",
-    );
-  });
-
-  it("capability discovery (graduated: check_environment now exists)", () => {
-    expectBlock("which kubectl", "check_environment");
-    expectBlock("command -v jq", "check_environment");
-  });
-
-  it("kubernetes diagnostics (graduated)", () => {
-    expectBlock("kubectl get events -A", "kube_events_summary");
-    expectBlock("kubectl describe pod x", "kube_diagnose_pod");
-    expectBlock("kubectl rollout status deploy/x", "kube_deployment_status");
+  it.each(BLOCKED)("blocks `%s` in favour of %s", (command, tool) => {
+    expectBlock(command, tool);
   });
 });
 
@@ -164,18 +151,22 @@ describe("bash-mcp-redirect: roadmap tools WARN", () => {
   });
 });
 
-describe("bash-mcp-redirect: write commands PASS THROUGH", () => {
-  it("mutating git / kubectl / terraform commands are untouched", () => {
-    expectPassThrough("git commit -m wip");
-    expectPassThrough("git push origin main");
-    expectPassThrough("kubectl apply -f x.yaml");
-    expectPassThrough("terraform apply");
-    expectPassThrough("helm upgrade rel chart");
-  });
+/** Commands the hook must leave completely alone. */
+const PASSED_THROUGH = [
+  // mutating git / kubectl / terraform / helm commands
+  "git commit -m wip",
+  "git push origin main",
+  "kubectl apply -f x.yaml",
+  "terraform apply",
+  "helm upgrade rel chart",
+  // unmapped commands
+  "echo hello",
+  "make build",
+];
 
-  it("unmapped commands pass through", () => {
-    expectPassThrough("echo hello");
-    expectPassThrough("make build");
+describe("bash-mcp-redirect: write commands PASS THROUGH", () => {
+  it.each(PASSED_THROUGH)("leaves `%s` untouched", (command) => {
+    expectPassThrough(command);
   });
 });
 
