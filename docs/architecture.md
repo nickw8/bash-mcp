@@ -1,0 +1,48 @@
+# Architecture
+
+Read when tracing how a request flows through the server, or when you need to know which
+module owns a concern before editing.
+
+## Stack
+
+TypeScript, Node.js >= 20 (ESM), MCP SDK, Zod schemas, Vitest, Biome (lint/format), tsup (bundler)
+
+## Key Paths
+
+- src/index.ts — server entry; main() dispatches `--doctor` (runDoctor) and `--install-claude [--check]` (installClaudeAssets) — print report → exit — BEFORE starting the server, else calls registerAll(server) from src/registry.ts and connects stdio transport
+- src/doctor.ts — `bash-mcp --doctor` preflight: runDoctor() returns { checks: Check[], exitCode } (Node version, dist entry, MCP SDK import, PATH, per-CLI availability via env.ts PROBES/runProbe, resolved BASH_MCP_MODE); pure exitCodeFor/formatReport at the edge; injectable DoctorDeps for tests. Critical fails (old Node, SDK not loadable) → non-zero exit; missing CLIs advisory
+- src/install-claude.ts — `bash-mcp --install-claude [--check]`: installClaudeAssets() copies claude/rules/bash-mcp-tools.md + hooks/bash-mcp-redirect.sh into ~/.claude (or reports drift), returning { results, exitCode, missingSource? }; pure formatInstallReport/hookSnippet at the edge; injectable InstallDeps for tests. Path resolution (dirname(dirname(import.meta.url))) works from src (tsx) and the dist bundle, so npm-installed consumers run it via `npx @nickw8/bash-mcp --install-claude` without a clone. scripts/install-claude-assets.mjs is a thin tsx wrapper over the same module (npm run claude:install/claude:check)
+- src/registry.ts — GROUPS (single tool-group list + README category each) drives registerAll (shared with index.ts) + buildRegistry (collects/categorises ToolRecord[] via no-op server) + renderToolDocs (Zod→markdown for docs/tools.md) + renderReadme (regenerates README's "## Tools" tables from the registry and the "Which tool?" table from guidance INTENTS)
+- src/exec.ts — command execution (exec, execJson, execWithStdin), IS_MACOS, TIMEOUT constants; surfaces errorCode/signal/timedOut
+- src/tool.ts — defineTool: wraps registerTool with wide-event logging + uniform error catching (all tools use it); folds equivalentCommands into _meta + records each tool in the registry (getRegisteredTools/resetRegistry)
+- src/error.ts — ToolError taxonomy + classifyError (missing_binary/timeout/permission_denied/...)
+- src/logger.ts — zero-dep structured stderr logger; resolveLevel(BASH_MCP_LOG); logEvent (per-call wide events, level-gated) + logLifecycle (server start/fatal, always emitted, shares static context)
+- src/version.ts — single source of the package VERSION (read by index.ts + logger.ts); src/version.test.ts guards it + server.json against package.json (drift-guard pattern)
+- src/safety.ts — resolveMode(BASH_MCP_MODE) + classifyCommand + checkCommandAllowed (gates run/batch)
+- src/response.ts — MCP response helpers (ok, okList, err); err takes optional 3rd ToolError arg
+- src/format.ts — multi-format list output (TSV, columnar, JSON)
+- src/shell.ts — shell escaping (shellEscape)
+- src/parsers/types.ts — shared interfaces (Diagnostic, TestResult, TestSuite, BudgetParams)
+- src/parsers/schemas.ts — shared Zod schemas (diagnosticSchema, testResultSchema, countBySeverity, budgetSchema, applyBudget)
+- src/parsers/strip-prefix.ts — generic prefix stripping (paths, namespaces)
+- src/parsers/diagnostic-line.ts — generic path(line,col): severity code: msg parser
+- src/parsers/json-output.ts — JSON-ish output parser (jq/yq parse cascade)
+- src/tools/&lt;category&gt;/&lt;category&gt;.ts — tool implementations, each exports registerXTools(server)
+
+## Data flow
+
+1. MCP request → `defineTool` wrapper → handler receives Zod-validated params
+2. Handler builds CLI args, calls `exec(command, args, options)` — the only process-spawn seam
+3. Handler parses stdout, usually via a pure parser module (`parse.ts` / `diagnose.ts`)
+4. Returns `ok()` / `okList()` / `err()`; `defineTool` emits one wide event in `finally`
+
+`run`, `run_seq`, and `batch` share `runStep` (`src/exec.ts`) —
+`checkCommandAllowed` → `exec` → `shapeOutput` → elapsed — so the safety gate has exactly
+one chokepoint.
+
+## Subsystem notes
+
+- **Outline** (`src/tools/file/outline/`) — one regex extractor per language, dispatched by `EXT_MAP` / `EXTRACTORS`, returning `ExtractResult`. Regex, not AST: [ADR-0007](adr/0007-outline-extractors-are-regex.md). The `outline` tool also enriches output with git metadata (branch, commit, mtime) via `getGitMeta()` → `findGitRoot()`, which costs extra exec calls per request.
+- **Redirect hook** — `hooks/bash-mcp-redirect.sh` is a PreToolUse Bash hook steering agents from raw commands to tools via a `RULES` array (block = a tool exists, warn = compound or roadmap). `hooks/bash-mcp-redirect.test.ts` asserts every `RULES` entry plus the write-passthrough, pipeline-demote, and fail-open invariants; the vitest include covers `hooks/`. Test files are excluded from the npm tarball via `"!hooks/**/*.test.ts"` in package.json `files`.
+- **Platform branches** — `ls.ts` and `file.ts` branch on the `IS_MACOS` constant (macOS `ls` has no `--time-style=iso`). Check for a platform branch before modifying any tool that formats dates or sizes.
+- **Build** — tsup bundles to a single `dist/index.js` with shebang; Zod is inlined, the MCP SDK stays external. Typecheck is a separate `tsc --noEmit` — a successful build does not mean a clean typecheck. `js-tiktoken` is a devDependency used only by `scripts/token-benchmark.mjs` and is not bundled. `npm link` puts `bash-mcp` on PATH.

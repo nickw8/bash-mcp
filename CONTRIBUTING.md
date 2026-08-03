@@ -21,7 +21,17 @@ npm run typecheck   # TypeScript type checking
 npm test            # Vitest unit tests
 ```
 
+If you have `BASH_MCP_MODE=off` exported in your shell, run the suite as
+`env -u BASH_MCP_MODE npx vitest run` — otherwise `safety.test.ts` passes for the wrong
+reason. Run `npm run typecheck` explicitly: the build does not typecheck.
+
 4. Open a pull request against `main`
+
+## Commits
+
+Conventional Commits (`feat`/`fix`/`chore`/`docs`/`refactor`/`test`/…), one concern per
+commit. No `Co-Authored-By` and no `Changelog:` trailers — this is a GitHub repo and
+neither applies.
 
 ## Adding a New Tool
 
@@ -29,9 +39,11 @@ npm test            # Vitest unit tests
 2. Define input and output schemas using Zod
 3. Implement the handler using `exec()` or `execJson()` from `src/exec.ts`
 4. Add a file-level JSDoc comment and doc comments on any helpers
-5. Register the tool in `src/index.ts`
+5. Register the tool with `defineTool()` from `#tool` — not `server.registerTool` directly. A new group also gets an entry in the `GROUPS` table in `src/registry.ts` (not `src/index.ts`)
 6. Add tests in a co-located `*.test.ts` file
-7. Update the tool table in `README.md`
+7. Run `npm run docs:tools` — the tool tables in `README.md` and `docs/tools.md` are generated, so never edit them by hand
+
+See [docs/adding-tools.md](docs/adding-tools.md) for the full guide.
 
 ## Code Style
 
