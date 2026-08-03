@@ -1,13 +1,14 @@
 /**
- * Tests for the kube-context flag builders.
+ * Tests for the shared kube inputs.
  *
- * The only thing worth pinning is that the two CLIs keep their different
+ * The context flags are worth pinning because the two CLIs keep different
  * spellings — a helper that emitted one flag for both would look right and
- * silently target the wrong cluster.
+ * silently target the wrong cluster. namespaceSchema is worth pinning because
+ * its default is what makes `?? "default"` dead in every handler body.
  */
 
 import { describe, expect, it } from "vitest";
-import { helmContext, kubectlContext } from "#kube-context";
+import { helmContext, kubectlContext, namespaceSchema } from "#kube-args";
 
 describe("kubectlContext", () => {
   it("spells the flag --context", () => {
@@ -26,5 +27,15 @@ describe("helmContext", () => {
 
   it("emits nothing without a context", () => {
     expect(helmContext(undefined)).toEqual([]);
+  });
+});
+
+describe("namespaceSchema", () => {
+  it("fills in `default` before the handler sees it", () => {
+    expect(namespaceSchema.parse(undefined)).toBe("default");
+  });
+
+  it("passes an explicit namespace through", () => {
+    expect(namespaceSchema.parse("kube-system")).toBe("kube-system");
   });
 });

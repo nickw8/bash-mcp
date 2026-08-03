@@ -14,7 +14,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
-import { kubectlContext } from "#kube-context";
+import { kubectlContext, namespaceSchema } from "#kube-args";
 import {
   applyBudget,
   budgetSchema,
@@ -61,28 +61,32 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         "suggested next commands, and evidence (CrashLoopBackOff/ImagePullBackOff/OOMKilled/Unschedulable/restarts).",
       inputSchema: {
         pod: z.string().describe("Pod name"),
-        namespace: z
-          .string()
-          .optional()
-          .default("default")
-          .describe("Namespace"),
+        namespace: namespaceSchema,
         context: z.string().optional().describe("Kubectl context"),
       },
       outputSchema: triageSchema,
       annotations: { readOnlyHint: true },
     },
     async ({ pod, namespace, context }) => {
-      const ns = namespace ?? "default";
       const res = await execJson<KubeResource>(
         "kubectl",
-        ["get", "pod", pod, "-n", ns, "-o", "json", ...kubectlContext(context)],
+        [
+          "get",
+          "pod",
+          pod,
+          "-n",
+          namespace,
+          "-o",
+          "json",
+          ...kubectlContext(context),
+        ],
         { timeout: TIMEOUT.INFRA },
       );
       if (res.error) {
         if (isUnrunnable(res.detail)) return err(res.error, {}, res.detail);
         return okDiagnosis(
           unknownTriage(`kubectl get pod failed: ${res.error}`, [
-            `kube_events_summary namespace=${ns}`,
+            `kube_events_summary namespace=${namespace}`,
           ]),
         );
       }
@@ -103,11 +107,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       description:
         "List unhealthy pods in a namespace with their failure reason and evidence — one call instead of get + describe per pod.",
       inputSchema: {
-        namespace: z
-          .string()
-          .optional()
-          .default("default")
-          .describe("Namespace"),
+        namespace: namespaceSchema,
         allNamespaces: z.boolean().optional().describe("Search all namespaces"),
         context: z.string().optional().describe("Kubectl context"),
         ...budgetSchema,
@@ -128,8 +128,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     async ({ namespace, allNamespaces, context, detailLevel, maxItems }) => {
-      const ns = namespace ?? "default";
-      const scope = allNamespaces ? ["--all-namespaces"] : ["-n", ns];
+      const scope = allNamespaces ? ["--all-namespaces"] : ["-n", namespace];
       const res = await execJson<KubeList>(
         "kubectl",
         ["get", "pods", ...scope, "-o", "json", ...kubectlContext(context)],
@@ -149,7 +148,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         .filter(({ d }) => !healthy.has(d.status) || d.evidence.length > 0)
         .map(({ p, d }) => ({
           name: p.metadata?.name ?? "",
-          namespace: p.metadata?.namespace ?? ns,
+          namespace: p.metadata?.namespace ?? namespace,
           status: d.status,
           evidence: d.evidence,
         }));
@@ -196,18 +195,13 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         "Report a deployment's rollout health (ready/desired replicas, conditions) as a structured diagnosis.",
       inputSchema: {
         name: z.string().describe("Deployment name"),
-        namespace: z
-          .string()
-          .optional()
-          .default("default")
-          .describe("Namespace"),
+        namespace: namespaceSchema,
         context: z.string().optional().describe("Kubectl context"),
       },
       outputSchema: triageSchema,
       annotations: { readOnlyHint: true },
     },
     async ({ name, namespace, context }) => {
-      const ns = namespace ?? "default";
       const res = await execJson<KubeResource>(
         "kubectl",
         [
@@ -215,7 +209,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
           "deployment",
           name,
           "-n",
-          ns,
+          namespace,
           "-o",
           "json",
           ...kubectlContext(context),
@@ -242,11 +236,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         "Summarize Warning events in a namespace (grouped by reason, ordered by count) instead of scrolling raw kubectl get events.",
       equivalentCommands: ["kubectl get events -n <ns>"],
       inputSchema: {
-        namespace: z
-          .string()
-          .optional()
-          .default("default")
-          .describe("Namespace"),
+        namespace: namespaceSchema,
         allNamespaces: z.boolean().optional().describe("Search all namespaces"),
         context: z.string().optional().describe("Kubectl context"),
         ...budgetSchema,
@@ -259,8 +249,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     async ({ namespace, allNamespaces, context, detailLevel, maxItems }) => {
-      const ns = namespace ?? "default";
-      const scope = allNamespaces ? ["--all-namespaces"] : ["-n", ns];
+      const scope = allNamespaces ? ["--all-namespaces"] : ["-n", namespace];
       const res = await execJson<{ items: KubeEvent[] }>(
         "kubectl",
         ["get", "events", ...scope, "-o", "json", ...kubectlContext(context)],

@@ -34,7 +34,7 @@ TypeScript, Node.js >= 20 (ESM), MCP SDK, Zod schemas, Vitest, Biome (lint/forma
 - src/parsers/diagnostic-line.ts — generic path(line,col): severity code: msg parser
 - src/parsers/json-output.ts — JSON-ish output parser (jq/yq parse cascade)
 - src/tools/&lt;group&gt;/payload.ts — the CLI payload: the subset of that CLI's `-o json` output the group reads, one declaration per command, every field optional (Kubernetes keeps its KubeResource/KubeList in parse.ts)
-- src/tools/kube-context.ts — the `#kube-context` subpath: kubectlContext (`--context`) and helmContext (`--kube-context`), the same input spelled differently per CLI. argocd is deliberately absent — its `--kube-context` only applies under `--core`
+- src/tools/kube-args.ts — the `#kube-args` subpath: inputs the kubectl and helm groups share. kubectlContext (`--context`) / helmContext (`--kube-context`) — the same input spelled differently per CLI, argocd deliberately absent because its `--kube-context` only applies under `--core` — plus namespaceSchema, whose Zod default is why a handler never needs `namespace ?? "default"`
 - src/tools/&lt;category&gt;/&lt;category&gt;.ts — tool implementations, each exports registerXTools(server)
 
 ## Data flow

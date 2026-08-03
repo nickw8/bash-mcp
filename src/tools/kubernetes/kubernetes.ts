@@ -10,7 +10,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execJson, execWithStdin, TIMEOUT } from "#exec";
 import type { ListFormat } from "#format";
-import { kubectlContext } from "#kube-context";
+import { kubectlContext, namespaceSchema } from "#kube-args";
 import { applyBudget, budgetSchema, parseJsonishOutput } from "#parsers";
 import { err, ok, okList } from "#response";
 import { defineTool } from "#tool";
@@ -204,11 +204,7 @@ export function registerKubernetesTools(server: McpServer) {
       equivalentCommands: ["kubectl logs <pod> -n <ns>"],
       inputSchema: {
         pod: z.string().describe("Pod name (or deployment/xxx)"),
-        namespace: z
-          .string()
-          .optional()
-          .default("default")
-          .describe("Namespace"),
+        namespace: namespaceSchema,
         container: z.string().optional().describe("Container name"),
         tail: z
           .number()
@@ -259,7 +255,7 @@ export function registerKubernetesTools(server: McpServer) {
         "logs",
         pod,
         "-n",
-        namespace ?? "default",
+        namespace,
         "--timestamps",
         `--tail=${tail ?? 100}`,
       ];

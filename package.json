@@ -45,7 +45,7 @@
     "#response": "./src/response.ts",
     "#safety": "./src/safety.ts",
     "#tool": "./src/tool.ts",
-    "#kube-context": "./src/tools/kube-context.ts",
+    "#kube-args": "./src/tools/kube-args.ts",
     "#parsers": "./src/parsers/index.ts",
     "#platform": "./src/platform.ts",
     "#shape": "./src/shape.ts",

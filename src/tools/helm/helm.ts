@@ -8,7 +8,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
-import { helmContext } from "#kube-context";
+import { helmContext, namespaceSchema } from "#kube-args";
 import { isUnrunnable, triageSchema, unknownTriage } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
@@ -87,11 +87,7 @@ export function registerHelmTools(server: McpServer) {
       equivalentCommands: ["helm status <release> -n <ns>"],
       inputSchema: {
         release: z.string().describe("Release name"),
-        namespace: z
-          .string()
-          .optional()
-          .default("default")
-          .describe("Namespace"),
+        namespace: namespaceSchema,
         context: z.string().optional().describe("Kubectl context"),
       },
       outputSchema: {
@@ -106,14 +102,7 @@ export function registerHelmTools(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     async ({ release, namespace, context }) => {
-      const args = [
-        "status",
-        release,
-        "-n",
-        namespace ?? "default",
-        "-o",
-        "json",
-      ];
+      const args = ["status", release, "-n", namespace, "-o", "json"];
       args.push(...helmContext(context));
 
       const result = await execJson<HelmStatus>("helm", args, {
@@ -125,7 +114,7 @@ export function registerHelmTools(server: McpServer) {
           result.error ?? "helm status: no data",
           {
             name: release,
-            namespace: namespace ?? "default",
+            namespace,
             status: "error",
             description: result.error ?? "",
           },
@@ -136,7 +125,7 @@ export function registerHelmTools(server: McpServer) {
       const d = result.data;
       return ok({
         name: d.name ?? release,
-        namespace: d.namespace ?? namespace ?? "default",
+        namespace: d.namespace ?? namespace,
         revision: d.version ?? 0,
         status: d.info?.status ?? "",
         description: d.info?.description ?? "",
@@ -157,11 +146,7 @@ export function registerHelmTools(server: McpServer) {
       equivalentCommands: ["helm get values <release> -n <ns>"],
       inputSchema: {
         release: z.string().describe("Release name"),
-        namespace: z
-          .string()
-          .optional()
-          .default("default")
-          .describe("Namespace"),
+        namespace: namespaceSchema,
         allValues: z
           .boolean()
           .optional()
@@ -174,15 +159,7 @@ export function registerHelmTools(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     async ({ release, namespace, allValues, context }) => {
-      const args = [
-        "get",
-        "values",
-        release,
-        "-n",
-        namespace ?? "default",
-        "-o",
-        "json",
-      ];
+      const args = ["get", "values", release, "-n", namespace, "-o", "json"];
       if (allValues) args.push("--all");
       args.push(...helmContext(context));
 
@@ -213,11 +190,7 @@ export function registerHelmTools(server: McpServer) {
         "current status, likely causes, suggested next commands, and recent-revision evidence.",
       inputSchema: {
         release: z.string().describe("Release name"),
-        namespace: z
-          .string()
-          .optional()
-          .default("default")
-          .describe("Namespace"),
+        namespace: namespaceSchema,
         context: z.string().optional().describe("Kubectl context"),
       },
       outputSchema: {
@@ -229,11 +202,10 @@ export function registerHelmTools(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     async ({ release, namespace, context }) => {
-      const ns = namespace ?? "default";
       const ctxArgs = helmContext(context);
       const statusRes = await execJson<HelmStatus>(
         "helm",
-        ["status", release, "-n", ns, "-o", "json", ...ctxArgs],
+        ["status", release, "-n", namespace, "-o", "json", ...ctxArgs],
         { timeout: TIMEOUT.INFRA },
       );
       if (statusRes.error || !statusRes.data) {
@@ -248,7 +220,7 @@ export function registerHelmTools(server: McpServer) {
           revision: 0,
           revisions: 0,
           ...unknownTriage(`helm status failed: ${why}`, [
-            `helm_list namespace=${ns}`,
+            `helm_list namespace=${namespace}`,
           ]),
         });
       }
@@ -256,7 +228,7 @@ export function registerHelmTools(server: McpServer) {
       // History is best-effort — a missing history shouldn't fail the triage.
       const histRes = await execJson<HelmHistoryEntry[]>(
         "helm",
-        ["history", release, "-n", ns, "-o", "json", ...ctxArgs],
+        ["history", release, "-n", namespace, "-o", "json", ...ctxArgs],
         { timeout: TIMEOUT.INFRA },
       );
 
