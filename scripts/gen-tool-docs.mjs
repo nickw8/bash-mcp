@@ -4,7 +4,7 @@
  *
  * Single source of truth is the tool registry: defineTool records each tool, and
  * src/registry.ts `buildRegistry()` runs every group against a no-op server to
- * collect them. Two artifacts are rendered deterministically (re-running is a
+ * collect them, and src/docs/render.ts renders it. Two artifacts are rendered deterministically (re-running is a
  * no-op), mirroring scripts/token-benchmark.mjs (generator) + its fixtures guard:
  *   - docs/tools.md      — full reference (`renderToolDocs`)
  *   - README.md regions  — "Which tool?" table + grouped "## Tools" (`renderReadme`,
@@ -21,11 +21,11 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  buildRegistry,
   renderAgentRules,
   renderReadme,
   renderToolDocs,
-} from "../src/registry.js";
+} from "../src/docs/render.js";
+import { buildRegistry } from "../src/registry.js";
 import { INTENTS } from "../src/tools/guidance/guidance.js";
 
 const here = dirname(fileURLToPath(import.meta.url));

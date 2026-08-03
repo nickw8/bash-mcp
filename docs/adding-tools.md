@@ -26,7 +26,7 @@ Read when writing a new tool, changing an existing one, or adding a tool group.
 
 - `docs/tools.md`
 - the README generated regions (`<!-- BEGIN/END GENERATED: tools|which-tool -->` — grouped tool tables + the "Which tool?" intent table)
-- the agent-facing rules file `claude/rules/bash-mcp-tools.md` (via `renderAgentRules` — one row per registry category; `CATEGORY_AVOID` in `src/registry.ts` holds the curated "instead of" cell and a missing entry throws)
+- the agent-facing rules file `claude/rules/bash-mcp-tools.md` (via `renderAgentRules` — one row per registry category; `CATEGORY_AVOID` in `src/docs/render.ts` holds the curated "instead of" cell and a missing entry throws)
 
 Run it after touching a tool's title/description, `equivalentCommands`, the `GROUPS`
 table, or guidance `INTENTS`, or the registry guard test fails. `npm run docs:tools -- --check`
@@ -39,7 +39,8 @@ the failure surfaces far from the change:
 
 | File | What to add |
 |---|---|
-| `src/registry.ts` | `GROUPS` entry, plus `CATEGORY_ORDER` and `CATEGORY_AVOID` for a new category |
+| `src/registry.ts` | `GROUPS` entry |
+| `src/docs/render.ts` | new category only: a `CATEGORY_ORDER` and a `CATEGORY_AVOID` entry |
 | `src/tools/env/env.ts` + `env.test.ts` | a `PROBES` entry for the new CLI, and its name in the test's list |
 | `src/tools/guidance/guidance.ts` + `guidance.test.ts` | an `INTENTS` entry, and the tool name in `KNOWN_TOOLS` |
 | `hooks/bash-mcp-redirect.sh` + its test | a `RULES` entry (or an `EXEMPT` reason) |

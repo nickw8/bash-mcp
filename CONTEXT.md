@@ -17,6 +17,7 @@ from the model, not to add features the underlying CLI lacks.
 | **Group** | A directory under `src/tools/<group>/` whose barrel exports `register<Group>Tools(server)`. The unit of registration. |
 | **Category** | The README/docs heading a group's tools appear under ("Git", "Kubernetes"). Set per group in the `GROUPS` table; several groups may share one. |
 | **Registry** | The module-level list of `ToolRecord`s that `defineTool` populates. The single source for every generated doc. |
+| **Renderer** | A pure function from `ToolRecord[]` (plus `INTENTS`) to the text of one generated artifact — `docs/tools.md`, a README region, the agent rules file. Lives in `src/docs/render.ts`, off the server's boot path. See [ADR-0002](docs/adr/0002-registry-generates-all-docs.md). |
 | **ToolRecord** | A flattened tool description — name, title, description, readOnlyHint, equivalentCommands, schemas, category. |
 | **Diagnostic tool** | A tool that collapses multi-call triage into one answer: `{ status/healthy, likelyCauses[], suggestedNextCommands[], evidence[] }`. |
 | **Diagnostic** | A single lint/typecheck/build finding (`file`, `line`, `column`, `severity`, `rule`, `message`). Different thing from a *diagnostic tool*. |

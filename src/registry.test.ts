@@ -1,29 +1,14 @@
 /**
- * Tool registry + generated-doc guard.
+ * Tool registry tests.
  *
- * Mirrors src/benchmark.fixtures.test.ts: the committed docs/tools.md must equal
- * what the generator renders right now, so the reference can never silently drift
- * from the code. Regenerate intentionally with `npm run docs:tools`.
+ * What the registry claims: one record per registered tool, no duplicates across
+ * repeated builds, and every tool tagged with its group's README category. How
+ * that registry becomes docs — and the guards on the committed artifacts — is
+ * src/docs/render.test.ts.
  */
 
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import {
-  buildRegistry,
-  renderAgentRules,
-  renderReadme,
-  renderToolDocs,
-  renderToolsSection,
-  renderWhichToolTable,
-} from "./registry.js";
-import { INTENTS } from "./tools/guidance/guidance.js";
-
-const here = dirname(fileURLToPath(import.meta.url));
-const docPath = join(here, "..", "docs", "tools.md");
-const readmePath = join(here, "..", "README.md");
-const rulesPath = join(here, "..", "claude", "rules", "bash-mcp-tools.md");
+import { buildRegistry } from "./registry.js";
 
 describe("buildRegistry", () => {
   it("returns one record per registered tool, deduplicated across calls", () => {
@@ -55,92 +40,5 @@ describe("buildRegistry", () => {
     // Two register groups (git.ts + diff.ts) share the "Git" category.
     expect(byName.get("git_status")?.category).toBe("Git");
     expect(byName.get("git_diff_content")?.category).toBe("Git");
-  });
-});
-
-describe("renderToolsSection", () => {
-  it("groups tools under category headers with a Tool/Description table", () => {
-    const md = renderToolsSection(buildRegistry());
-    expect(md).toContain("### Kubernetes");
-    expect(md).toContain("| Tool | Description |");
-    // Description is the first sentence of the tool's MCP description.
-    expect(md).toContain(
-      "| `kube_get` | Get Kubernetes resources as structured data. |",
-    );
-  });
-});
-
-describe("renderWhichToolTable", () => {
-  it("renders intent → preferred tool rows with raw-command anti-patterns", () => {
-    const md = renderWhichToolTable(INTENTS);
-    expect(md).toContain("| I want to… | Use this | Instead of |");
-    expect(md).toContain(
-      "| diagnose a crashing or failing Kubernetes pod | `kube_diagnose_pod` |",
-    );
-    // The `run: ` prefix is stripped from avoid entries for display.
-    expect(md).not.toContain("run: kubectl");
-    expect(md).toContain("`kubectl describe pod`");
-  });
-});
-
-describe("renderToolDocs", () => {
-  it("is deterministic (sorted; re-render is byte-identical)", () => {
-    const tools = buildRegistry();
-    expect(renderToolDocs(tools)).toBe(renderToolDocs(tools));
-  });
-
-  it("renders an Equivalent commands block only when present", () => {
-    const md = renderToolDocs(buildRegistry());
-    expect(md).toContain("**Equivalent commands:**");
-    expect(md).toContain("argocd app get <name> -o json");
-  });
-});
-
-describe("docs/tools.md", () => {
-  it("matches the generator output (run `npm run docs:tools` if this fails)", () => {
-    const committed = readFileSync(docPath, "utf8");
-    expect(committed).toBe(renderToolDocs(buildRegistry()));
-  });
-});
-
-describe("README.md generated regions", () => {
-  it("match the registry + intents (run `npm run docs:tools` if this fails)", () => {
-    const readme = readFileSync(readmePath, "utf8");
-    // renderReadme is idempotent: regenerating the committed README is a no-op.
-    expect(readme).toBe(renderReadme(readme, buildRegistry(), INTENTS));
-  });
-});
-
-describe("renderAgentRules", () => {
-  it("advertises every registered tool so none can silently go missing", () => {
-    const tools = buildRegistry();
-    const md = renderAgentRules(tools);
-    for (const t of tools) {
-      expect(md).toContain(`\`${t.name}\``);
-    }
-  });
-
-  it("renders one row per category with a curated 'instead of' note", () => {
-    const md = renderAgentRules(buildRegistry());
-    expect(md).toContain("| Category | Use bash-mcp | Instead of |");
-    expect(md).toContain("| Liquibase | `liquibase_validate`");
-    expect(md).toContain("`Bash(liquibase)`");
-  });
-
-  it("throws when a registry category lacks a CATEGORY_AVOID entry", () => {
-    const tools = buildRegistry();
-    expect(() =>
-      renderAgentRules([
-        ...tools,
-        { name: "fake_tool", category: "Brand New Category" },
-      ]),
-    ).toThrow(/CATEGORY_AVOID/);
-  });
-});
-
-describe("claude/rules/bash-mcp-tools.md", () => {
-  it("matches the generator output (run `npm run docs:tools` if this fails)", () => {
-    const committed = readFileSync(rulesPath, "utf8");
-    expect(committed).toBe(renderAgentRules(buildRegistry()));
   });
 });

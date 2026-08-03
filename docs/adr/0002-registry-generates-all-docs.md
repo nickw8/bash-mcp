@@ -18,11 +18,17 @@ category. `registerAll` iterates it (so `src/index.ts` never gains per-group cal
 `buildRegistry()` replays the same registrations against a no-op server to collect
 `ToolRecord`s.
 
-Pure renderers turn that into every published list: `renderToolDocs` → `docs/tools.md`,
-`renderToolsSection` → the README `<!-- GENERATED: tools -->` region, `renderWhichToolTable`
-→ the `<!-- GENERATED: which-tool -->` region from guidance `INTENTS`, `renderAgentRules` →
+Pure renderers in `src/docs/render.ts` turn that into every published list:
+`renderToolDocs` → `docs/tools.md`, `renderToolsSection` → the README
+`<!-- GENERATED: tools -->` region, `renderWhichToolTable` → the
+`<!-- GENERATED: which-tool -->` region from guidance `INTENTS`, `renderAgentRules` →
 `claude/rules/bash-mcp-tools.md`. `npm run docs:tools` writes them; `-- --check` fails when
-stale; `src/registry.test.ts` guards it in CI.
+stale; `src/docs/render.test.ts` guards it in CI.
+
+Being the registry and publishing it are separate modules. `src/registry.ts` is on the
+server's boot path and holds only `GROUPS`, `registerAll` and `buildRegistry`; the
+renderers are reached solely by the generator and its guard. The dependency runs one way —
+renderers read a `ToolRecord[]`, the registry knows nothing about markdown.
 
 A tool carrying `equivalentCommands` must also appear in the redirect hook's `RULES` (or
 be listed `EXEMPT`); a parity test enforces it.
