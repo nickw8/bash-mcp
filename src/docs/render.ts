@@ -147,25 +147,40 @@ const WHICH_TOOL_END = "<!-- END GENERATED: which-tool -->";
 const TOOLS_BEGIN = "<!-- BEGIN GENERATED: tools -->";
 const TOOLS_END = "<!-- END GENERATED: tools -->";
 
-/** Order README categories explicitly (groups not listed fall to the end, sorted). */
-const CATEGORY_ORDER = [
-  "Environment",
-  "Filesystem",
-  "Search",
-  "File",
-  "Git",
-  "Kubernetes",
-  "Terraform",
-  "Helm",
-  "ArgoCD",
-  "Data Processing",
-  ".NET",
-  "Liquibase",
-  "Node.js",
-  "Python",
-  "Shell",
-  "Execution",
-];
+/**
+ * The one curated per-category table: array order is the order categories appear
+ * in the README and the agent rules file, and the second element is that
+ * category's "Instead of" cell (the Claude Code built-ins and raw commands it
+ * replaces) — the single piece of knowledge not derivable from the registry.
+ *
+ * Presentation order deliberately differs from the `GROUPS` registration order
+ * in src/registry.ts: that one is boot order, this one is reading order.
+ *
+ * A registry category missing from here THROWS (`categoryTable`), so a new tool
+ * group can't ship un-ordered or un-advertised the way the liquibase wrapper once did.
+ */
+const CATEGORIES = [
+  ["Environment", "guessing which CLIs exist"],
+  ["Filesystem", "`Bash(ls/tree/du/find)`, `Glob`"],
+  ["Search", "`Grep`, `Bash(grep)`"],
+  ["File", "`Read` (Read only immediately before Edit)"],
+  ["Git", "`Bash(git)`"],
+  ["Kubernetes", "`Bash(kubectl)`"],
+  ["Terraform", "`Bash(terraform/tofu)`"],
+  ["Helm", "`Bash(helm)`"],
+  ["ArgoCD", "`Bash(argocd)`"],
+  ["Data Processing", "`Read` + manual parsing"],
+  [".NET", "`Bash(dotnet)`"],
+  ["Liquibase", "`Bash(liquibase)`"],
+  ["Node.js", "`Bash(npm)`"],
+  ["Python", "`Bash(ruff/pytest/mypy)`"],
+  ["Shell", "`Bash(shellcheck/bats/bash -n)`"],
+  ["Execution", "`Bash(cd && cmd)`, sequential one-off calls"],
+] as const satisfies readonly (readonly [string, string])[];
+
+const CATEGORY_INDEX = new Map<string, number>(
+  CATEGORIES.map(([name], i) => [name, i]),
+);
 
 /** Escape table-breaking characters and collapse whitespace for a markdown cell. */
 function cell(text: string): string {
@@ -179,8 +194,13 @@ function firstSentence(description: string): string {
   return idx === -1 ? trimmed : trimmed.slice(0, idx + 1);
 }
 
-/** Group tools by category, ordered by CATEGORY_ORDER then alphabetically. */
-function byCategoryInOrder(tools: ToolRecord[]): [string, ToolRecord[]][] {
+/**
+ * Group tools by category and put the groups in `CATEGORIES` order, carrying each
+ * category's "Instead of" cell along. Throws if a tool's category isn't listed.
+ */
+function categoryTable(
+  tools: ToolRecord[],
+): { category: string; avoid: string; tools: ToolRecord[] }[] {
   const byCategory = new Map<string, ToolRecord[]>();
   for (const t of tools) {
     const cat = t.category ?? "Other";
@@ -188,23 +208,31 @@ function byCategoryInOrder(tools: ToolRecord[]): [string, ToolRecord[]][] {
     list.push(t);
     byCategory.set(cat, list);
   }
-  const categories = [
-    ...CATEGORY_ORDER.filter((c) => byCategory.has(c)),
-    ...[...byCategory.keys()]
-      .filter((c) => !CATEGORY_ORDER.includes(c))
-      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)),
-  ];
-  return categories.map((c) => [c, byCategory.get(c) ?? []]);
+  for (const cat of byCategory.keys()) {
+    if (!CATEGORY_INDEX.has(cat)) {
+      throw new Error(
+        `categoryTable: category "${cat}" is not in CATEGORIES. ` +
+          `Add it in src/docs/render.ts so the docs order and advertise it.`,
+      );
+    }
+  }
+  return CATEGORIES.filter(([name]) => byCategory.has(name)).map(
+    ([category, avoid]) => ({
+      category,
+      avoid,
+      tools: byCategory.get(category) ?? [],
+    }),
+  );
 }
 
 /**
  * Render the grouped "## Tools" body: one `### Category` table per category, in
- * `CATEGORY_ORDER`, tools in registration order within each. Descriptions are the
+ * `CATEGORIES` order, tools in registration order within each. Descriptions are the
  * first sentence of each tool's MCP description (full text lives in docs/tools.md).
  */
 export function renderToolsSection(tools: ToolRecord[]): string {
-  return byCategoryInOrder(tools)
-    .map(([category, list]) => {
+  return categoryTable(tools)
+    .map(({ category, tools: list }) => {
       const rows = list
         .map(
           (t) =>
@@ -278,28 +306,8 @@ export function renderReadme(
 //
 // The "Instead of" column is the one piece of curated knowledge not derivable
 // from the registry (it names Claude Code built-ins like `Read`/`Grep`/`Glob`).
-// `CATEGORY_AVOID` holds it, and `renderAgentRules` THROWS if a registry category
-// lacks an entry — so adding a category forces a matching avoidance note.
-
-/** Per-category "Instead of" cell: the built-in / raw commands to avoid. */
-const CATEGORY_AVOID: Record<string, string> = {
-  Environment: "guessing which CLIs exist",
-  Filesystem: "`Bash(ls/tree/du/find)`, `Glob`",
-  Search: "`Grep`, `Bash(grep)`",
-  File: "`Read` (Read only immediately before Edit)",
-  Git: "`Bash(git)`",
-  Kubernetes: "`Bash(kubectl)`",
-  Terraform: "`Bash(terraform/tofu)`",
-  Helm: "`Bash(helm)`",
-  ArgoCD: "`Bash(argocd)`",
-  "Data Processing": "`Read` + manual parsing",
-  ".NET": "`Bash(dotnet)`",
-  Liquibase: "`Bash(liquibase)`",
-  "Node.js": "`Bash(npm)`",
-  Python: "`Bash(ruff/pytest/mypy)`",
-  Shell: "`Bash(shellcheck/bats/bash -n)`",
-  Execution: "`Bash(cd && cmd)`, sequential one-off calls",
-};
+// `CATEGORIES` holds it next to the presentation order, and `categoryTable`
+// THROWS on an unlisted category — so adding a category forces both.
 
 /** A tool is a "diagnostic" tool if its output carries the triage shape. */
 function isDiagnostic(t: ToolRecord): boolean {
@@ -308,21 +316,14 @@ function isDiagnostic(t: ToolRecord): boolean {
 
 /**
  * Render the agent-facing rules markdown from the registry. Categories appear in
- * `CATEGORY_ORDER`; tools within each keep registration order. The diagnostic
+ * `CATEGORIES` order; tools within each keep registration order. The diagnostic
  * callout is derived from the registry (tools whose output has `likelyCauses`).
  *
- * Throws if a registry category has no `CATEGORY_AVOID` entry, so a new tool
- * group can't ship without a corresponding "use this, not that" row.
+ * Throws (via `categoryTable`) if a registry category isn't in `CATEGORIES`, so a
+ * new tool group can't ship without a corresponding "use this, not that" row.
  */
 export function renderAgentRules(tools: ToolRecord[]): string {
-  const rows = byCategoryInOrder(tools).map(([category, list]) => {
-    const avoid = CATEGORY_AVOID[category];
-    if (avoid === undefined) {
-      throw new Error(
-        `renderAgentRules: category "${category}" has no CATEGORY_AVOID entry. ` +
-          `Add one in src/docs/render.ts so the rules file advertises it.`,
-      );
-    }
+  const rows = categoryTable(tools).map(({ category, avoid, tools: list }) => {
     const use = list.map((t) => `\`${t.name}\``).join(", ");
     return `| ${category} | ${use} | ${avoid} |`;
   });

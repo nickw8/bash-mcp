@@ -127,14 +127,17 @@ describe("renderAgentRules", () => {
     expect(md).toContain("`Bash(liquibase)`");
   });
 
-  it("throws when a registry category lacks a CATEGORY_AVOID entry", () => {
+  // One table owns both the order and the "Instead of" cell, so an unlisted
+  // category fails the same way in every renderer that groups by category —
+  // it can no longer sort silently to the end of the README.
+  it.each([
+    ["renderAgentRules", renderAgentRules],
+    ["renderToolsSection", renderToolsSection],
+  ])("%s throws when a registry category is not in CATEGORIES", (_, render) => {
     const tools = buildRegistry();
     expect(() =>
-      renderAgentRules([
-        ...tools,
-        { name: "fake_tool", category: "Brand New Category" },
-      ]),
-    ).toThrow(/CATEGORY_AVOID/);
+      render([...tools, { name: "fake_tool", category: "Brand New Category" }]),
+    ).toThrow(/CATEGORIES/);
   });
 });
 
