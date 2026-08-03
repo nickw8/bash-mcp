@@ -8,7 +8,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec, execJson, execWithStdin, TIMEOUT } from "#exec";
+import { exec, execJson, TIMEOUT } from "#exec";
 import type { ListFormat } from "#format";
 import { kubectlContext, namespaceSchema } from "#kube-args";
 import { applyBudget, budgetSchema, parseJsonishOutput } from "#parsers";
@@ -105,11 +105,9 @@ export function registerKubernetesTools(server: McpServer) {
         if (kubectlResult.exitCode !== 0) {
           return err(kubectlResult.stderr || kubectlResult.stdout);
         }
-        const jqResult = await execWithStdin(
-          "jq",
-          [jqFilter],
-          kubectlResult.stdout,
-        );
+        const jqResult = await exec("jq", [jqFilter], {
+          stdin: kubectlResult.stdout,
+        });
         if (jqResult.exitCode !== 0) {
           return err(jqResult.stderr);
         }

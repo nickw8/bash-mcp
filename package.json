@@ -49,8 +49,7 @@
     "#parsers": "./src/parsers/index.ts",
     "#platform": "./src/platform.ts",
     "#shape": "./src/shape.ts",
-    "#step": "./src/step.ts",
-    "#shell": "./src/shell.ts"
+    "#step": "./src/step.ts"
   },
   "exports": {
     ".": "./dist/index.js"

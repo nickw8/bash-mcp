@@ -8,7 +8,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec, execWithStdin } from "#exec";
+import { exec } from "#exec";
 import { parseJsonishOutput } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
@@ -74,7 +74,7 @@ export function registerYamlTools(server: McpServer) {
         return toYqResult(result.stdout, fmt);
       }
 
-      const result = await execWithStdin("yq", args, input ?? "");
+      const result = await exec("yq", args, { stdin: input ?? "" });
 
       if (result.exitCode !== 0) {
         return err(result.stderr, { format: "error" });

@@ -22,7 +22,7 @@ consumers use `npx @nickw8/bash-mcp --install-claude [--check]` instead of `clau
 1. **Register tools with `defineTool(server, name, config, handler)` from `#tool`** — never `server.registerTool` directly. It adds wide-event logging, uniform error catching, and registry recording.
 2. **Generated content is never hand-edited.** `docs/tools.md`, the README `<!-- BEGIN/END GENERATED: tools|which-tool -->` regions, and `claude/rules/bash-mcp-tools.md` come from `npm run docs:tools`. Edit the source, run the command; a guard test fails otherwise.
 3. **New tool groups go in the `GROUPS` table in `src/registry.ts`**, not `src/index.ts`.
-4. **Use subpath imports**: `#exec`, `#shape`, `#step`, `#platform`, `#response`, `#shell`, `#format`, `#parsers`, `#kube-args`, `#tool`, `#error`, `#logger`, `#safety` (package.json `"imports"`).
+4. **Use subpath imports**: `#exec`, `#shape`, `#step`, `#platform`, `#response`, `#format`, `#parsers`, `#kube-args`, `#tool`, `#error`, `#logger`, `#safety` (package.json `"imports"`).
 5. **All schemas are Zod** (`inputSchema`, `outputSchema`); every tool returns `{ content: [...], structuredContent: {...}, isError?: true }` and never throws.
 
 Diagnostic tools (kube_diagnose_pod, `*_summary`, helm_release_triage,

@@ -37,6 +37,44 @@ describe("exec", () => {
     expect(result.stdout.trim()).toBe("/tmp");
   });
 
+  // The stdin option replaced an `sh -c "echo '<doc>' | cmd"` string. That form
+  // corrupted every document containing a backslash escape, because a POSIX
+  // `echo` interprets them — `\n` inside a JSON string reached jq as a literal
+  // newline and failed the parse. Bytes down the pipe are what these pin.
+  describe("stdin option", () => {
+    it("delivers the document verbatim, backslash escapes intact", async () => {
+      const doc = JSON.stringify({ msg: "line1\nline2", path: "C:\\tmp" });
+      const result = await exec("jq", ["-c", "."], { stdin: doc });
+      expect(result.stderr).toBe("");
+      expect(result.exitCode).toBe(0);
+      expect(JSON.parse(result.stdout)).toEqual({
+        msg: "line1\nline2",
+        path: "C:\\tmp",
+      });
+    });
+
+    it("passes single quotes through without shell escaping", async () => {
+      const result = await exec("cat", [], { stdin: "it's a 'quoted' word" });
+      expect(result.stdout).toBe("it's a 'quoted' word");
+    });
+
+    it("carries a document larger than ARG_MAX", async () => {
+      // 4 MB — well past the 1 MB command-line ceiling the old shell string hit.
+      const doc = "x".repeat(4 * 1024 * 1024);
+      const result = await exec("wc", ["-c"], { stdin: doc });
+      expect(result.exitCode).toBe(0);
+      expect(Number(result.stdout.trim())).toBe(doc.length);
+    });
+
+    it("resolves with the child's failure when it exits before reading stdin", async () => {
+      // A bad jq program exits immediately; the unread stdin write must not
+      // surface as an unhandled EPIPE.
+      const result = await exec("jq", ["not a filter"], { stdin: "{}" });
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr.length).toBeGreaterThan(0);
+    });
+  });
+
   it("merges env option with process.env", async () => {
     const result = await exec("sh", ["-c", "echo $TEST_VAR_BASH_MCP"], {
       env: { TEST_VAR_BASH_MCP: "test-value" },

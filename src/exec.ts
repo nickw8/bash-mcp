@@ -10,11 +10,13 @@
  *   - exec()     — returns raw stdout/stderr/exitCode
  *   - execJson() — parses stdout as JSON, returns typed data, error and a
  *                  classified ToolError
+ *
+ * Nothing here builds a shell string. A filter that needs a document on stdin
+ * gets it through `options.stdin`, written down the pipe.
  */
 
 import { execFile } from "node:child_process";
 import { classifyError, type ToolError } from "#error";
-import { shellEscape } from "#shell";
 
 /** Raw output from a command execution. */
 export interface ExecResult {
@@ -46,6 +48,12 @@ export interface ExecOptions {
   timeout?: number;
   /** Maximum stdout/stderr buffer size in bytes (default: 10 MB). */
   maxBuffer?: number;
+  /**
+   * Text written to the child's stdin, then closed. Goes down the pipe as
+   * bytes — it is never part of the command line, so it is not subject to
+   * ARG_MAX and no shell ever sees it.
+   */
+  stdin?: string;
 }
 
 /** Default max buffer for stdout/stderr (10 MB). */
@@ -68,9 +76,13 @@ export const TIMEOUT = {
  * Always resolves (never rejects) so callers can inspect exitCode
  * without try/catch.
  *
+ * Pass `options.stdin` to feed the process input; it is written to the pipe
+ * and the stream closed, so a filter like `jq` or `yq` gets its document
+ * without a shell and without an ARG_MAX ceiling.
+ *
  * @param command - The binary to execute (e.g. "kubectl", "git")
  * @param args - Array of arguments passed to the command
- * @param options - Execution options (cwd, env, timeout, maxBuffer)
+ * @param options - Execution options (cwd, env, timeout, maxBuffer, stdin)
  * @returns Resolved result with stdout, stderr, and exitCode
  */
 export function exec(
@@ -79,7 +91,7 @@ export function exec(
   options: ExecOptions = {},
 ): Promise<ExecResult> {
   return new Promise((resolve) => {
-    execFile(
+    const child = execFile(
       command,
       args,
       {
@@ -109,6 +121,14 @@ export function exec(
         });
       },
     );
+
+    if (options.stdin !== undefined) {
+      // A filter can exit before reading its whole input (a bad jq program, a
+      // missing binary); the resulting EPIPE is the child's failure to report,
+      // not ours, so swallow it and let the callback above resolve normally.
+      child.stdin?.on("error", () => {});
+      child.stdin?.end(options.stdin);
+    }
   });
 }
 
@@ -169,18 +189,4 @@ export function execJson<T>(
       };
     }
   });
-}
-
-export function execWithStdin(
-  command: string,
-  args: string[],
-  stdin: string,
-  options: ExecOptions = {},
-): Promise<ExecResult> {
-  const escapedArgs = args.map(shellEscape).join(" ");
-  return exec(
-    "sh",
-    ["-c", `echo ${shellEscape(stdin)} | ${command} ${escapedArgs}`],
-    options,
-  );
 }
