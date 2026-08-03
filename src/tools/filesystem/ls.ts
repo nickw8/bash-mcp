@@ -1,7 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec, IS_MACOS } from "#exec";
+import { exec } from "#exec";
 import type { ListFormat } from "#format";
+import { lsTimeArgs } from "#platform";
 import { err, okList } from "#response";
 import { defineTool } from "#tool";
 
@@ -75,13 +76,9 @@ export function registerLsTool(server: McpServer) {
     },
     async ({ path, all, recursive, nameOnly, format, fields }) => {
       const fmt = (format ?? "tsv") as ListFormat;
-      // Pin one column layout on both platforms: `perms links owner group
-      // size YYYY-MM-DD HH:MM name`. Without this BSD ls emits `Aug  3 13:12`
-      // (an extra column) and swaps the time for a year on files older than
-      // six months — three layouts for one parser to guess at.
-      const args = IS_MACOS
-        ? ["-lh", "-D", "%Y-%m-%d %H:%M"]
-        : ["-lh", "--time-style=iso"];
+      // One column layout on both platforms (see #platform): `perms links
+      // owner group size YYYY-MM-DD HH:MM name`.
+      const args = ["-lh", ...lsTimeArgs];
       if (all) args.push("-A");
       if (recursive) args.push("-R");
       args.push(path);

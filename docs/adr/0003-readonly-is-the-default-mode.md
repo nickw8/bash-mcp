@@ -16,8 +16,8 @@ the server is allowed to do.
 `resolveMode()` returns `readOnly` for unset and for any unrecognised value. Mutating
 commands — classified by a const rule table in `src/safety.ts` — are blocked unless the
 operator explicitly sets `off` or `dangerous`. `confirmWrites` is the middle setting.
-`checkCommandAllowed` is the single gate, called from `runStep` so `run`, `run_seq`, and
-`batch` cannot diverge.
+`checkCommandAllowed` is the single gate: `run_seq` and `batch` reach it through `runStep`
+(`src/step.ts`), `run` calls it directly, so the three cannot diverge on what is blocked.
 
 ## Consequences
 

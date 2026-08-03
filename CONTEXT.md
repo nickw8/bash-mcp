@@ -27,7 +27,8 @@ from the model, not to add features the underlying CLI lacks.
 | **equivalentCommands** | The raw CLI invocation a tool approximates. Drives `_meta`, the generated docs, and the redirect hook. |
 | **Redirect hook** | `hooks/bash-mcp-redirect.sh` — a PreToolUse Bash hook steering agents off raw commands onto the equivalent tool. |
 | **Budget** | The `detailLevel` / `maxItems` / `includeRaw` input fragment plus `applyBudget`, capping variable-size lists. |
-| **Shaping** | Trimming a command's output to a head/tail window (`shapeOutput` in `src/exec.ts`). |
+| **Shaping** | Trimming a command's output to a head/tail window (`shapeOutput` in `src/shape.ts`). |
+| **Step** | One command run through the guarded pipeline — gate, spawn, shape — by `runStep`. The unit `run_seq` and `batch` are each a list of. |
 | **Text block vs structuredContent** | Every response carries both. `structuredContent` is the complete typed payload and **the artifact the agent is charged tokens for** — a client that understands it renders it and ignores the text block. The text block is the compact rendering for clients that don't. They are deliberately not the same. See [ADR-0009](docs/adr/0009-structuredcontent-is-what-the-agent-reads.md). |
 | **Mode** | The `BASH_MCP_MODE` safety setting gating mutating `run`/`batch` commands. |
 | **Zero payload** | The payload a tool's `outputSchema` describes with every field empty, derived by `zeroOf` and merged under the error result by `defineTool`. An `err(...)` carries only what the zero cannot know. See [ADR-0011](docs/adr/0011-the-outputschema-defines-the-error-payload.md). |

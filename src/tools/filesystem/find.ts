@@ -1,7 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec, IS_MACOS } from "#exec";
+import { exec } from "#exec";
 import type { ListFormat } from "#format";
+import { statArgs } from "#platform";
 import { err, okList } from "#response";
 import { defineTool } from "#tool";
 
@@ -144,10 +145,10 @@ export function registerFindTool(server: McpServer) {
 
       if (withMetadata && files.length > 0) {
         // Run stat on all files in a single call
-        const statArgs = IS_MACOS
-          ? ["-f", "%z %m %N", ...files]
-          : ["--format=%s %Y %n", ...files];
-        const statResult = await exec("stat", statArgs);
+        const statResult = await exec(
+          "stat",
+          statArgs(["size", "mtime", "name"], files),
+        );
 
         if (statResult.exitCode !== 0) {
           return err(statResult.stderr, { files, count: files.length });

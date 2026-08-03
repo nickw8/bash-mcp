@@ -10,9 +10,10 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec, shapeOutput } from "#exec";
+import { exec } from "#exec";
 import { err, ok } from "#response";
 import { checkCommandAllowed } from "#safety";
+import { shapeOutput } from "#shape";
 import { defineTool } from "#tool";
 
 /** Register the run tool on the MCP server. */
@@ -85,7 +86,7 @@ export function registerRunTools(server: McpServer) {
 
       const result = await exec(command, args, { cwd, timeout });
 
-      // shapeOutput is the shared tail/head/byte trimmer (see #exec); stderr is
+      // shapeOutput is the shared tail/head/byte trimmer (see #shape); stderr is
       // trimmed with the same policy so a noisy failure can't blow the budget.
       const shape = { mode, maxLines, maxBytes };
       const stdout = shapeOutput(result.stdout, shape);

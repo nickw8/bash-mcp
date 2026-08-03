@@ -9,8 +9,8 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { runStep } from "#exec";
 import { ok } from "#response";
+import { runStep } from "#step";
 import { defineTool } from "#tool";
 
 /** Register the batch tool on the MCP server. */

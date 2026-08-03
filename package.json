@@ -46,6 +46,9 @@
     "#safety": "./src/safety.ts",
     "#tool": "./src/tool.ts",
     "#parsers": "./src/parsers/types.ts",
+    "#platform": "./src/platform.ts",
+    "#shape": "./src/shape.ts",
+    "#step": "./src/step.ts",
     "#shell": "./src/shell.ts"
   },
   "exports": {

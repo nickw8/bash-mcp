@@ -9,7 +9,8 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec, IS_MACOS } from "#exec";
+import { exec } from "#exec";
+import { statArgs } from "#platform";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
 import { detectLanguage, extractOutline } from "./outline/index.js";
@@ -186,10 +187,7 @@ async function readFromDisk(
   { startLine, endLine, maxLines, lineNumbers }: CatParams,
 ): Promise<CatResult> {
   // Size + mtime in one stat call.
-  const statResult = await exec(
-    "stat",
-    IS_MACOS ? ["-f", "%z %m", path] : ["--format=%s %Y", path],
-  );
+  const statResult = await exec("stat", statArgs(["size", "mtime"], [path]));
   if (statResult.exitCode !== 0) {
     return {
       ...emptyCat(path),
@@ -467,10 +465,7 @@ export function registerFileTools(server: McpServer) {
         content = catResult.stdout;
 
         // Get mtime
-        const statResult = await exec(
-          "stat",
-          IS_MACOS ? ["-f", "%m", path] : ["--format=%Y", path],
-        );
+        const statResult = await exec("stat", statArgs(["mtime"], [path]));
         if (statResult.exitCode === 0) {
           mtime = parseInt(statResult.stdout.trim(), 10) || 0;
         }

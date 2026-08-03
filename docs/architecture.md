@@ -14,7 +14,10 @@ TypeScript, Node.js >= 20 (ESM), MCP SDK, Zod schemas, Vitest, Biome (lint/forma
 - src/install-claude.ts — `bash-mcp --install-claude [--check]`: installClaudeAssets() copies claude/rules/bash-mcp-tools.md + hooks/bash-mcp-redirect.sh into ~/.claude (or reports drift), returning { results, exitCode, missingSource? }; pure formatInstallReport/hookSnippet at the edge; injectable InstallDeps for tests. Path resolution (dirname(dirname(import.meta.url))) works from src (tsx) and the dist bundle, so npm-installed consumers run it via `npx @nickw8/bash-mcp --install-claude` without a clone. scripts/install-claude-assets.mjs is a thin tsx wrapper over the same module (npm run claude:install/claude:check)
 - src/registry.ts — GROUPS (single tool-group list + README category each) drives registerAll (shared with index.ts) + buildRegistry (collects/categorises ToolRecord[] via no-op server, one group at a time). Boot path only; no rendering
 - src/docs/render.ts — the renderers over a ToolRecord[]: renderToolDocs (Zod→markdown for docs/tools.md), renderReadme/renderToolsSection/renderWhichToolTable (README's "## Tools" tables from the registry, "Which tool?" from guidance INTENTS), renderAgentRules (claude/rules/bash-mcp-tools.md, CATEGORY_AVOID). Imported only by scripts/gen-tool-docs.mjs and src/docs/render.test.ts
-- src/exec.ts — command execution (exec, execJson, execWithStdin), IS_MACOS, TIMEOUT constants; surfaces errorCode/signal/timedOut
+- src/exec.ts — spawn only: exec, execJson, execWithStdin, TIMEOUT constants; surfaces errorCode/signal/timedOut. execJson also returns `detail` — the failure already classified through error.ts — because those raw fields are otherwise lost to a JSON caller
+- src/shape.ts — Shaping (shapeOutput): trimming output to a head/tail line + byte window. Text in, text out
+- src/step.ts — runStep: the guarded step runner shared by run_seq and batch (gate → spawn → shape)
+- src/platform.ts — BSD vs GNU coreutils flags in one place: statArgs(fields, paths), lsTimeArgs, IS_MACOS
 - src/tool.ts — defineTool: wraps registerTool with wide-event logging + uniform error catching (all tools use it); folds equivalentCommands into _meta + records each tool in the registry (getRegisteredTools/resetRegistry)
 - src/error.ts — ToolError taxonomy + classifyError (missing_binary/timeout/permission_denied/...)
 - src/logger.ts — zero-dep structured stderr logger; resolveLevel(BASH_MCP_LOG); logEvent (per-call wide events, level-gated) + logLifecycle (server start/fatal, always emitted, shares static context)
@@ -37,13 +40,14 @@ TypeScript, Node.js >= 20 (ESM), MCP SDK, Zod schemas, Vitest, Biome (lint/forma
 3. Handler parses stdout, usually via a pure parser module (`parse.ts` / `diagnose.ts`)
 4. Returns `ok()` / `okList()` / `err()`; `defineTool` emits one wide event in `finally`
 
-`run`, `run_seq`, and `batch` share `runStep` (`src/exec.ts`) —
+`run_seq` and `batch` share `runStep` (`src/step.ts`) —
 `checkCommandAllowed` → `exec` → `shapeOutput` → elapsed — so the safety gate has exactly
-one chokepoint.
+one chokepoint. `run` gates itself (it reports the block differently) and calls `exec` +
+`shapeOutput` directly.
 
 ## Subsystem notes
 
 - **Outline** (`src/tools/file/outline/`) — one regex extractor per language, dispatched by `EXT_MAP` / `EXTRACTORS`, returning `ExtractResult`. Regex, not AST: [ADR-0007](adr/0007-outline-extractors-are-regex.md). The `outline` tool also enriches output with git metadata (branch, commit, mtime) via `getGitMeta()` → `findGitRoot()`, which costs extra exec calls per request.
 - **Redirect hook** — `hooks/bash-mcp-redirect.sh` is a PreToolUse Bash hook steering agents from raw commands to tools via a `RULES` array (block = a tool exists, warn = compound or roadmap). `hooks/bash-mcp-redirect.test.ts` asserts every `RULES` entry plus the write-passthrough, pipeline-demote, and fail-open invariants; the vitest include covers `hooks/`. Test files are excluded from the npm tarball via `"!hooks/**/*.test.ts"` in package.json `files`.
-- **Platform branches** — `ls.ts` and `file.ts` branch on the `IS_MACOS` constant (macOS `ls` has no `--time-style=iso`). Check for a platform branch before modifying any tool that formats dates or sizes.
+- **Platform branches** — BSD and GNU coreutils take different flags for the same information (macOS `ls` has no `--time-style=iso`; `stat` is `-f "%z"` vs `--format=%s`). All of it lives in `src/platform.ts` — `statArgs()` and `lsTimeArgs`. A tool that formats dates or sizes asks for the fields it wants; it does not branch on the platform itself.
 - **Build** — tsup bundles to a single `dist/index.js` with shebang; Zod is inlined, the MCP SDK stays external. Typecheck is a separate `tsc --noEmit` — a successful build does not mean a clean typecheck. `js-tiktoken` is a devDependency used only by `scripts/token-benchmark.mjs` and is not bundled. `npm link` puts `bash-mcp` on PATH.
