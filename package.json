@@ -1,6 +1,6 @@
 {
   "name": "@nickw8/bash-mcp",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "description": "MCP server that wraps CLI tools and returns structured JSON instead of raw text output",
   "license": "Apache-2.0",
   "repository": {

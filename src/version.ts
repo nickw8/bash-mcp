@@ -9,4 +9,4 @@
  *
  * tsup inlines this at build time; under tsx/vitest it resolves to source.
  */
-export const VERSION = "1.3.2";
+export const VERSION = "1.4.0";
