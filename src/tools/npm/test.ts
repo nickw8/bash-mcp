@@ -1,9 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, TIMEOUT } from "#exec";
+import { testResultSchema } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
-import { testResultSchema } from "../../parsers/schemas.js";
 import { parseVitestResults } from "./parsers/vitest.js";
 
 /** Register the npm_test tool for structured vitest results. */

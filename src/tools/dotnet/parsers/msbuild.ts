@@ -10,8 +10,7 @@
  * then strips the common path prefix so file paths are relative and compact.
  */
 
-import { parseDiagnosticLines } from "../../../parsers/diagnostic-line.js";
-import { stripCommonPrefix } from "../../../parsers/strip-prefix.js";
+import { parseDiagnosticLines, stripCommonPrefix } from "#parsers";
 
 /** Regex matching MSBuild diagnostic lines: path(line,col): severity code: message */
 const DIAG_PATTERN =

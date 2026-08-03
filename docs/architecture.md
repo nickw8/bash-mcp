@@ -26,8 +26,10 @@ TypeScript, Node.js >= 20 (ESM), MCP SDK, Zod schemas, Vitest, Biome (lint/forma
 - src/response.ts — MCP response helpers (ok, okList, err); err takes optional 3rd ToolError arg
 - src/format.ts — multi-format list output (TSV, columnar, JSON)
 - src/shell.ts — shell escaping (shellEscape)
+- src/parsers/index.ts — the `#parsers` barrel; import shared parser code through the subpath, never `../../parsers/x.js` (a group has its own `src/tools/&lt;group&gt;/parsers/`, so the relative form is ambiguous)
 - src/parsers/types.ts — shared interfaces (Diagnostic, TestResult, TestSuite, BudgetParams)
-- src/parsers/schemas.ts — shared Zod schemas (diagnosticSchema, testResultSchema, countBySeverity, budgetSchema, applyBudget)
+- src/parsers/schemas.ts — shared Zod schemas (diagnosticSchema, testResultSchema, countBySeverity, budgetSchema, applyBudget) + the Triage envelope, declared once as a Zod object and exposed both ways: `triageSchema` (its `.shape`, spread into outputSchema) and `type Triage` (its `z.infer`)
+- src/parsers/diagnostics-response.ts — diagnosticsResponse + the input/output schema fragments shared by the diagnostic-emitting tools (typecheck/lint/build)
 - src/parsers/strip-prefix.ts — generic prefix stripping (paths, namespaces)
 - src/parsers/diagnostic-line.ts — generic path(line,col): severity code: msg parser
 - src/parsers/json-output.ts — JSON-ish output parser (jq/yq parse cascade)

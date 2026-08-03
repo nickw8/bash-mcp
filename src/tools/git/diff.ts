@@ -9,9 +9,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
+import { stringOrArray, toArray } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
-import { stringOrArray, toArray } from "../../parsers/schemas.js";
 
 /** Parse unified diff output into structured per-file sections with hunks. */
 export function parseDiff(raw: string) {

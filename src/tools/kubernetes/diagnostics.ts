@@ -13,13 +13,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
+import { applyBudget, budgetSchema, triageSchema } from "#parsers";
 import { ok } from "#response";
 import { defineTool } from "#tool";
-import {
-  applyBudget,
-  budgetSchema,
-  triageSchema,
-} from "../../parsers/schemas.js";
 import {
   type Diagnosis,
   diagnoseDeployment,

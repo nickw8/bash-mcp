@@ -5,6 +5,10 @@
  * (MSBuild, tsc, Biome, Vitest, TRX, etc.). Keeping them in one place ensures
  * consistent output across tool groups and makes it easy to add new parsers
  * that produce the same shapes.
+ *
+ * A shape that also has to exist as a Zod schema lives in schemas.ts instead,
+ * declared once and inferred (see `Triage`) — two hand-synced declarations of
+ * the same thing is the failure mode this file exists to prevent.
  */
 
 /** Caller-supplied output-budget controls for variable-size tools. */
@@ -43,25 +47,6 @@ export interface TestResult {
   duration: number;
   /** Failure message including assertion details. Only present for failed tests. */
   failureMessage?: string;
-}
-
-/**
- * Diagnostic/triage envelope shared by the "what's wrong?" tools
- * (kube_diagnose_pod, helm_release_triage, argo_app_health_summary, …): a
- * one-call answer of overall status plus the likely causes, suggested next
- * commands, and the evidence behind them. Tool-specific fields (healthy, name,
- * revision, pods, …) extend this base; the four fields here stay identical
- * across tool groups.
- */
-export interface Triage {
-  /** Overall status string (failure reason, phase, or "Healthy"/"Unknown"). */
-  status: string;
-  /** Human-readable hypotheses for what is wrong. */
-  likelyCauses: string[];
-  /** Tool invocations the agent should run next to dig deeper. */
-  suggestedNextCommands: string[];
-  /** Concrete observations supporting the status/causes. */
-  evidence: string[];
 }
 
 /** Aggregated results for a single test file or suite. */

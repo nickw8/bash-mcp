@@ -1,5 +1,5 @@
 import type { TestResult, TestSuite } from "#parsers";
-import { stripCommonPrefix } from "../../../parsers/strip-prefix.js";
+import { stripCommonPrefix } from "#parsers";
 
 const TESTCASE_PATTERN =
   /<testcase\s[^>]*classname="([^"]*)"[^>]*name="([^"]*)"[^>]*time="([^"]*)"[^/>]*(?:\/>|>([\s\S]*?)<\/testcase>)/g;

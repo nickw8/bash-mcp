@@ -8,7 +8,7 @@
  */
 
 import type { TestResult } from "#parsers";
-import { stripCommonPrefix } from "../../../parsers/strip-prefix.js";
+import { stripCommonPrefix } from "#parsers";
 
 /**
  * Regex capturing UnitTestResult elements with their attributes and body.

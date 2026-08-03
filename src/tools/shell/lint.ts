@@ -1,14 +1,14 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, TIMEOUT } from "#exec";
-import { err, ok } from "#response";
-import { defineTool } from "#tool";
 import {
+  countBySeverity,
   diagnosticInputSchema,
   diagnosticOutputSchema,
   diagnosticsResponse,
-} from "../../parsers/diagnostics-response.js";
-import { countBySeverity } from "../../parsers/schemas.js";
+} from "#parsers";
+import { err, ok } from "#response";
+import { defineTool } from "#tool";
 import { parseShellcheckDiagnostics } from "./parsers/shellcheck.js";
 
 export function registerBashLintTool(server: McpServer) {

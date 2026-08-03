@@ -6,4 +6,4 @@ export type {
   Diagnostic,
   TestResult,
   TestSuite,
-} from "../../../parsers/types.js";
+} from "#parsers";

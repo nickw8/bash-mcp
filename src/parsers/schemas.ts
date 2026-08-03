@@ -67,19 +67,36 @@ export const budgetSchema = {
 };
 
 /**
- * Shared output-schema fragment for diagnostic/triage tools. Spread into a
- * tool's `outputSchema` so the { status, likelyCauses, suggestedNextCommands,
- * evidence } envelope stays identical across kube/helm/argo; add tool-specific
- * fields (healthy, name, revision, pods, …) alongside the spread:
- *   outputSchema: { healthy: z.boolean(), ...triageSchema }
- * Matches the {@link Triage} interface in types.ts.
+ * The triage envelope shared by the "what's wrong?" tools (kube_diagnose_pod,
+ * helm_release_triage, argo_app_health_summary, …): a one-call answer of
+ * overall `status` (a failure reason, a phase, or "Healthy"/"Unknown") plus the
+ * `likelyCauses` hypotheses, the `suggestedNextCommands` to dig deeper, and the
+ * `evidence` behind them.
+ *
+ * This object is the single definition — {@link triageSchema} spreads its
+ * fields into a tool's `outputSchema`, {@link Triage} is the same shape as a
+ * type. Neither can drift from the other.
  */
-export const triageSchema = {
+const triageObject = z.object({
   status: z.string(),
   likelyCauses: z.array(z.string()),
   suggestedNextCommands: z.array(z.string()),
   evidence: z.array(z.string()),
-};
+});
+
+/**
+ * The envelope as `outputSchema` fields. Spread it, then add the tool-specific
+ * fields (healthy, name, revision, pods, …) alongside:
+ *   outputSchema: { healthy: z.boolean(), ...triageSchema }
+ */
+export const triageSchema = triageObject.shape;
+
+/**
+ * The envelope as a type — what a pure triage function returns, usually
+ * intersected with the same tool-specific fields:
+ *   Triage & { healthy: boolean; revision: number }
+ */
+export type Triage = z.infer<typeof triageObject>;
 
 /** Default item caps per detailLevel; full (and unset) means no cap. */
 const DETAIL_CAPS = { summary: 20, normal: 100, full: Infinity } as const;

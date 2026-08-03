@@ -1,4 +1,4 @@
-import { parseDiagnosticLines } from "../../../parsers/diagnostic-line.js";
+import { parseDiagnosticLines } from "#parsers";
 
 const TSC_PATTERN =
   /^(.+?)\((\d+),(\d+)\):\s+(error|warning)\s+(TS\d+):\s+(.+)$/;

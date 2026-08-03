@@ -16,9 +16,9 @@ import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, TIMEOUT } from "#exec";
+import { testResultSchema } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
-import { testResultSchema } from "../../parsers/schemas.js";
 import { detectSolution } from "./detect.js";
 import { aggregateTrx } from "./parsers/trx.js";
 

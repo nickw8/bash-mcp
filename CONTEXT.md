@@ -19,7 +19,8 @@ from the model, not to add features the underlying CLI lacks.
 | **Registry** | The module-level list of `ToolRecord`s that `defineTool` populates. The single source for every generated doc. |
 | **Renderer** | A pure function from `ToolRecord[]` (plus `INTENTS`) to the text of one generated artifact — `docs/tools.md`, a README region, the agent rules file. Lives in `src/docs/render.ts`, off the server's boot path. See [ADR-0002](docs/adr/0002-registry-generates-all-docs.md). |
 | **ToolRecord** | A flattened tool description — name, title, description, readOnlyHint, equivalentCommands, schemas, category. |
-| **Diagnostic tool** | A tool that collapses multi-call triage into one answer: `{ status/healthy, likelyCauses[], suggestedNextCommands[], evidence[] }`. |
+| **Diagnostic tool** | A tool that collapses multi-call triage into one answer: a Triage plus its tool-specific fields. |
+| **Triage** | The four-field envelope every Diagnostic tool answers with — `status`, `likelyCauses[]`, `suggestedNextCommands[]`, `evidence[]`. One declaration in `src/parsers/schemas.ts`, used as a schema (`triageSchema`) and as a type (`Triage`). |
 | **Diagnostic** | A single lint/typecheck/build finding (`file`, `line`, `column`, `severity`, `rule`, `message`). Different thing from a *diagnostic tool*. |
 | **Wide event** | The one structured JSON line `defineTool` emits per call, to stderr. |
 | **Probe** | A capability check that a CLI is installed (`PROBES` / `runProbe` in `env.ts`), used by `check_environment` and `--doctor`. |

@@ -1,13 +1,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, TIMEOUT } from "#exec";
-import { ok } from "#response";
-import { defineTool } from "#tool";
 import {
   diagnosticInputSchema,
   diagnosticOutputSchema,
   diagnosticsResponse,
-} from "../../parsers/diagnostics-response.js";
+} from "#parsers";
+import { ok } from "#response";
+import { defineTool } from "#tool";
 import { parseBashSyntax } from "./parsers/bash-syntax.js";
 
 export function registerBashSyntaxCheckTool(server: McpServer) {

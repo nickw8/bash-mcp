@@ -10,10 +10,9 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execJson, execWithStdin, TIMEOUT } from "#exec";
 import type { ListFormat } from "#format";
+import { applyBudget, budgetSchema, parseJsonishOutput } from "#parsers";
 import { err, ok, okList } from "#response";
 import { defineTool } from "#tool";
-import { parseJsonishOutput } from "../../parsers/json-output.js";
-import { applyBudget, budgetSchema } from "../../parsers/schemas.js";
 import { registerKubeDiagnosticTools } from "./diagnostics.js";
 import {
   type KubeList,

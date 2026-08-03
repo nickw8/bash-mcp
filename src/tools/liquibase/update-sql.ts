@@ -15,9 +15,9 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { classifyError } from "#error";
 import { exec, TIMEOUT } from "#exec";
+import { applyBudget, budgetSchema } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
-import { applyBudget, budgetSchema } from "../../parsers/schemas.js";
 import { liquibaseArgs, liquibaseCommonInput } from "./args.js";
 import { type Changeset, parseUpdateSql } from "./parsers/update-sql.js";
 

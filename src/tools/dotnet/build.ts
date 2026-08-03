@@ -15,15 +15,16 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, TIMEOUT } from "#exec";
 import type { Diagnostic } from "#parsers";
-import { err } from "#response";
-import { defineTool } from "#tool";
 import {
+  applyBudget,
   compactDiagnostics,
+  countBySeverity,
   diagnosticInputSchema,
   diagnosticsResponse,
   fileDiagnosticsSchema,
-} from "../../parsers/diagnostics-response.js";
-import { applyBudget, countBySeverity } from "../../parsers/schemas.js";
+} from "#parsers";
+import { err } from "#response";
+import { defineTool } from "#tool";
 import { detectSolution } from "./detect.js";
 import { parseMSBuildOutput } from "./parsers/msbuild.js";
 

@@ -1,13 +1,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
-import { err, ok } from "#response";
-import { defineTool } from "#tool";
 import {
   compactDiagnostics,
+  countBySeverity,
   diagnosticOutputSchema,
-} from "../../parsers/diagnostics-response.js";
-import { countBySeverity } from "../../parsers/schemas.js";
+} from "#parsers";
+import { err, ok } from "#response";
+import { defineTool } from "#tool";
 import { parseBiomeDiagnostics } from "./parsers/biome.js";
 
 /** Register the npm_lint tool for structured biome diagnostics. */
