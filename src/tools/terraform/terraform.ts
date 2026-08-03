@@ -144,7 +144,7 @@ export function registerTerraformTools(server: McpServer) {
       );
 
       if (result.error) {
-        return err(result.error);
+        return err(result.error, {}, result.detail);
       }
 
       const rawResources = result.data?.values?.root_module?.resources ?? [];
@@ -364,7 +364,7 @@ export function registerTerraformTools(server: McpServer) {
         cwd,
         timeout: TIMEOUT.INFRA,
       });
-      if (res.error) return err(res.error);
+      if (res.error) return err(res.error, {}, res.detail);
       const outputs = parseOutputs(res.data ?? {});
       // Text view drops the verbose `type` column.
       const rows = outputs.map((o) => ({
@@ -422,7 +422,7 @@ export function registerTerraformTools(server: McpServer) {
         cwd,
         timeout: TIMEOUT.INFRA,
       });
-      if (res.error) return err(res.error);
+      if (res.error) return err(res.error, {}, res.detail);
       return ok(parseProviders(res.data ?? {}));
     },
   );

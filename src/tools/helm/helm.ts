@@ -62,7 +62,7 @@ export function registerHelmTools(server: McpServer) {
       });
 
       if (result.error) {
-        return err(result.error);
+        return err(result.error, {}, result.detail);
       }
 
       const releases = (result.data ?? []).map((r) => ({
@@ -123,12 +123,16 @@ export function registerHelmTools(server: McpServer) {
       });
 
       if (result.error || !result.data) {
-        return err(result.error ?? "helm status: no data", {
-          name: release,
-          namespace: namespace ?? "default",
-          status: "error",
-          description: result.error ?? "",
-        });
+        return err(
+          result.error ?? "helm status: no data",
+          {
+            name: release,
+            namespace: namespace ?? "default",
+            status: "error",
+            description: result.error ?? "",
+          },
+          result.detail,
+        );
       }
 
       const d = result.data;
@@ -189,7 +193,7 @@ export function registerHelmTools(server: McpServer) {
       });
 
       if (result.error) {
-        return err(result.error);
+        return err(result.error, {}, result.detail);
       }
 
       return ok({ values: result.data ?? {} });
@@ -235,9 +239,11 @@ export function registerHelmTools(server: McpServer) {
         { timeout: TIMEOUT.INFRA },
       );
       if (statusRes.error || !statusRes.data) {
-        return err(statusRes.error ?? "helm status: no data", {
-          status: "error",
-        });
+        return err(
+          statusRes.error ?? "helm status: no data",
+          { status: "error" },
+          statusRes.detail,
+        );
       }
 
       // History is best-effort — a missing history shouldn't fail the triage.

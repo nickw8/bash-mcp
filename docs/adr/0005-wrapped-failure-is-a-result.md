@@ -27,6 +27,12 @@ bare `exitCode ≠ 0` because they exit 0 on success.
 Tools never throw. `defineTool` converts an escaped throw into `err()` as a backstop, not
 as the expected path.
 
+`execJson()` narrows its result to `data | error`, which discards the very fields
+`classifyError` reads. So it classifies before narrowing and returns the `ToolError` as
+`detail`; callers pass it straight to `err()`'s third argument. Without that, every
+JSON-speaking tool — all of Kubernetes, Helm, Terraform and ArgoCD — could only report an
+unclassified string, and their wide events carried no `errorKind`.
+
 ## Consequences
 
 - An agent can distinguish "your code has problems" from "I couldn't check your code".

@@ -63,7 +63,7 @@ export function registerArgocdTools(server: McpServer) {
       });
 
       if (result.error) {
-        return err(result.error);
+        return err(result.error, {}, result.detail);
       }
 
       const rawApps = Array.isArray(result.data) ? result.data : [];
@@ -135,7 +135,11 @@ export function registerArgocdTools(server: McpServer) {
       );
 
       if (result.error || !result.data) {
-        return err(result.error ?? "argocd app get: no data", { name });
+        return err(
+          result.error ?? "argocd app get: no data",
+          { name },
+          result.detail,
+        );
       }
 
       const app = result.data;
@@ -234,11 +238,15 @@ export function registerArgocdTools(server: McpServer) {
         { timeout: TIMEOUT.INFRA },
       );
       if (result.error || !result.data) {
-        return err(result.error ?? "argocd app get: no data", {
-          name,
-          status: "Unknown",
-          syncStatus: "Unknown",
-        });
+        return err(
+          result.error ?? "argocd app get: no data",
+          {
+            name,
+            status: "Unknown",
+            syncStatus: "Unknown",
+          },
+          result.detail,
+        );
       }
       const summary = summarizeAppHealth(result.data);
       return ok({ ...summary, name: summary.name || name });

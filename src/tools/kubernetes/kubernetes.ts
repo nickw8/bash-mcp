@@ -129,7 +129,7 @@ export function registerKubernetesTools(server: McpServer) {
       });
 
       if (result.error) {
-        return err(result.error, { resource });
+        return err(result.error, { resource }, result.detail);
       }
 
       const rawItems =
