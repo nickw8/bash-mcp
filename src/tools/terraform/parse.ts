@@ -74,6 +74,28 @@ export function parseBackend(raw: {
   return { type: raw?.backend?.type ?? "", config };
 }
 
+/**
+ * Count one resource change's actions. A replace is `["delete","create"]` (or
+ * the reverse), so it counts as both an add and a destroy — the tallies are
+ * independent, not a first-match dispatch.
+ *
+ * Shared by both plan paths: `parsePlanJson` (from `terraform show -json`) and
+ * the `-json` stream loop in `tf_plan_summary`. They previously counted
+ * replaces differently, so one tool reported two different numbers depending
+ * on whether `planFile` was passed.
+ */
+export function tallyActions(actions: string[]): {
+  add: number;
+  change: number;
+  destroy: number;
+} {
+  return {
+    add: actions.includes("create") ? 1 : 0,
+    change: actions.includes("update") ? 1 : 0,
+    destroy: actions.includes("delete") ? 1 : 0,
+  };
+}
+
 /** Parse `terraform show -json <plan>` resource_changes into a change summary. */
 export function parsePlanJson(raw: {
   resource_changes?: Array<{
@@ -101,10 +123,10 @@ export function parsePlanJson(raw: {
       address: rc.address ?? "",
       type: rc.type ?? "",
     });
-    // A replace is ["delete","create"] (or ["create","delete"]) → counts both.
-    if (actions.includes("create")) add++;
-    if (actions.includes("delete")) destroy++;
-    if (actions.includes("update")) change++;
+    const t = tallyActions(actions);
+    add += t.add;
+    change += t.change;
+    destroy += t.destroy;
   }
 
   return {

@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec, IS_MACOS } from "#exec";
+import { exec } from "#exec";
 import type { ListFormat } from "#format";
 import { err, okList } from "#response";
 import { defineTool } from "#tool";
@@ -25,8 +25,8 @@ export function registerDuTool(server: McpServer) {
     {
       title: "Disk usage",
       description:
-        "Show disk usage for paths. Returns structured size data. The text view omits " +
-        "the derived sizeHuman field (computable from sizeBytes); it remains in structuredContent.",
+        "Show disk usage for paths. Returns one { path, sizeBytes } entry per path, largest-first ordering as du emits it. " +
+        "Use maxDepth to control how deep the summary goes.",
       equivalentCommands: ["du -sh <path>"],
       inputSchema: {
         path: z.string().describe("Path to measure"),
@@ -43,15 +43,16 @@ export function registerDuTool(server: McpServer) {
           .array(z.string())
           .optional()
           .describe(
-            "Limit the text view to these columns (structuredContent keeps all)",
+            "Limit the text view to these columns (text block only, not the returned payload)",
           ),
       },
       outputSchema: {
+        // sizeHuman is derived from sizeBytes, so it is rendered in the text
+        // view only — the payload pays for one of the two (ADR-0009).
         entries: z.array(
           z.object({
             path: z.string(),
             sizeBytes: z.number(),
-            sizeHuman: z.string(),
           }),
         ),
       },
@@ -60,33 +61,29 @@ export function registerDuTool(server: McpServer) {
     async ({ path, maxDepth, format, fields }) => {
       const fmt = (format ?? "tsv") as ListFormat;
       const depth = maxDepth ?? 1;
-      const duArgs = IS_MACOS
-        ? ["-k", "-d", String(depth), path]
-        : ["-b", `--max-depth=${depth}`, path];
-      const result = await exec("du", duArgs);
+      // `-k` and `-d` are portable (POSIX; GNU has -d since coreutils 8.6).
+      // BSD du has no byte mode, so 1K blocks are the only unit both platforms
+      // can report — worth more than Linux's exact bytes, because it makes the
+      // payload identical everywhere.
+      const result = await exec("du", ["-k", "-d", String(depth), path]);
 
       if (result.exitCode !== 0) {
-        return err(result.stderr, { entries: [] });
+        return err(result.stderr);
       }
 
-      const sizeMultiplier = IS_MACOS ? 1024 : 1;
       const entries = result.stdout
         .trim()
         .split("\n")
         .filter(Boolean)
         .map((line) => {
           const [sizeStr, ...pathParts] = line.split("\t");
-          const sizeBytes = parseInt(sizeStr ?? "0", 10) * sizeMultiplier;
-          return {
-            path: pathParts.join("\t"),
-            sizeBytes,
-            sizeHuman: humanSize(sizeBytes),
-          };
+          const sizeBytes = parseInt(sizeStr ?? "0", 10) * 1024;
+          return { path: pathParts.join("\t"), sizeBytes };
         });
 
       const rows = entries.map(({ path: p, sizeBytes }) => ({
         path: p,
-        sizeBytes,
+        size: humanSize(sizeBytes),
       }));
       return okList({ entries }, rows, {}, fmt, { fields });
     },

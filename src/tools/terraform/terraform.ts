@@ -22,6 +22,7 @@ import {
   parsePlanJson,
   parseProviders,
   parseValidate,
+  tallyActions,
 } from "./parse.js";
 
 /**
@@ -55,8 +56,8 @@ export function registerTerraformTools(server: McpServer) {
     {
       title: "Terraform state list",
       description:
-        "List resources in Terraform state. Returns structured resource addresses grouped by type. " +
-        "Text view lists addresses only (type/name/module are parsed from each address); the byType rollup is in meta.",
+        "List resources in Terraform state. Returns the resource addresses plus a byType rollup " +
+        "(type, name, and module are all readable from each address, so they are not repeated per resource).",
       equivalentCommands: ["terraform state list"],
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
@@ -67,14 +68,10 @@ export function registerTerraformTools(server: McpServer) {
           .describe("Output format (default: bare — one address per line)"),
       },
       outputSchema: {
-        resources: z.array(
-          z.object({
-            address: z.string(),
-            type: z.string(),
-            name: z.string(),
-            module: z.string(),
-          }),
-        ),
+        // Addresses only: `module.network.aws_subnet.public[0]` already carries
+        // module, type, and name — repeating them per row tripled the payload
+        // and never amortized (ADR-0009).
+        resources: z.array(z.string()),
         count: z.number(),
         byType: z.record(z.number()),
       },
@@ -88,34 +85,24 @@ export function registerTerraformTools(server: McpServer) {
       });
 
       if (result.exitCode !== 0) {
-        return err(result.stderr, { resources: [], count: 0, byType: {} });
+        return err(result.stderr);
       }
 
-      const resources = result.stdout
-        .trim()
-        .split("\n")
-        .filter(Boolean)
-        .map((address) => {
-          const moduleMatch = address.match(/^(module\.[^.]+)\./);
-          const module = moduleMatch?.[1] ?? "";
-          const nonModule = module ? address.slice(module.length + 1) : address;
-          const typeParts = nonModule.split(".");
-          return {
-            address,
-            type: typeParts[0] ?? "",
-            name: typeParts.slice(1).join("."),
-            module,
-          };
-        });
+      const resources = result.stdout.trim().split("\n").filter(Boolean);
 
       const byType: Record<string, number> = {};
-      for (const r of resources) {
-        byType[r.type] = (byType[r.type] ?? 0) + 1;
+      for (const address of resources) {
+        const moduleMatch = address.match(/^(module\.[^.]+)\./);
+        const module = moduleMatch?.[1] ?? "";
+        const type = (
+          module ? address.slice(module.length + 1) : address
+        ).split(".")[0];
+        if (type) byType[type] = (byType[type] ?? 0) + 1;
       }
 
       return okList(
         { resources, count: resources.length, byType },
-        resources.map(({ address }) => ({ address })),
+        resources.map((address) => ({ address })),
         { count: resources.length, byType },
         fmt,
       );
@@ -157,7 +144,7 @@ export function registerTerraformTools(server: McpServer) {
       );
 
       if (result.error) {
-        return err(result.error, { resources: [], count: 0 });
+        return err(result.error);
       }
 
       const rawResources = result.data?.values?.root_module?.resources ?? [];
@@ -229,10 +216,6 @@ export function registerTerraformTools(server: McpServer) {
           return ok(parsePlanJson(JSON.parse(showRes.stdout)));
         } catch {
           return err(showRes.stderr || "terraform show -json failed", {
-            add: 0,
-            change: 0,
-            destroy: 0,
-            changes: [],
             noChanges: true,
           });
         }
@@ -265,9 +248,12 @@ export function registerTerraformTools(server: McpServer) {
               address: c.resource?.addr ?? "",
               type: c.resource?.resource_type ?? "",
             });
-            if (action.includes("create")) add++;
-            else if (action.includes("delete")) destroy++;
-            else if (action.includes("update")) change++;
+            const t = tallyActions(
+              Array.isArray(c.action) ? c.action : [action],
+            );
+            add += t.add;
+            change += t.change;
+            destroy += t.destroy;
           }
         } catch {
           /* skip non-json lines */
@@ -339,7 +325,7 @@ export function registerTerraformTools(server: McpServer) {
     {
       title: "Terraform outputs",
       description:
-        "List Terraform/OpenTofu outputs (name, type, value) with sensitive values redacted.",
+        "List Terraform/OpenTofu outputs (name, value) with sensitive values redacted — a redacted output carries sensitive:true and no value.",
       equivalentCommands: ["terraform output -json"],
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
@@ -352,16 +338,18 @@ export function registerTerraformTools(server: McpServer) {
           .array(z.string())
           .optional()
           .describe(
-            "Limit the text view to these columns (structuredContent keeps all)",
+            "Limit the text view to these columns (text block only, not the returned payload)",
           ),
       },
       outputSchema: {
+        // `type` is readable off the value and `sensitive:false` was on every
+        // non-secret row — both dropped from the payload (ADR-0009). The text
+        // view still shows the sensitive column.
         outputs: z.array(
           z.object({
             name: z.string(),
-            type: z.string(),
-            sensitive: z.boolean(),
             value: z.string().optional(),
+            sensitive: z.boolean().optional(),
           }),
         ),
         count: z.number(),
@@ -376,16 +364,21 @@ export function registerTerraformTools(server: McpServer) {
         cwd,
         timeout: TIMEOUT.INFRA,
       });
-      if (res.error) return err(res.error, { outputs: [], count: 0 });
+      if (res.error) return err(res.error);
       const outputs = parseOutputs(res.data ?? {});
-      // Text view drops the verbose `type` column (kept in structuredContent).
+      // Text view drops the verbose `type` column.
       const rows = outputs.map((o) => ({
         name: o.name,
         value: o.value ?? "",
         sensitive: o.sensitive,
       }));
+      const slim = outputs.map((o) =>
+        o.sensitive
+          ? { name: o.name, sensitive: true }
+          : { name: o.name, value: o.value ?? "" },
+      );
       return okList(
-        { outputs, count: outputs.length },
+        { outputs: slim, count: outputs.length },
         rows,
         {
           count: outputs.length,
@@ -429,7 +422,7 @@ export function registerTerraformTools(server: McpServer) {
         cwd,
         timeout: TIMEOUT.INFRA,
       });
-      if (res.error) return err(res.error, { version: "", providers: [] });
+      if (res.error) return err(res.error);
       return ok(parseProviders(res.data ?? {}));
     },
   );
@@ -476,12 +469,7 @@ export function registerTerraformTools(server: McpServer) {
       try {
         return ok(parseValidate(JSON.parse(result.stdout)));
       } catch {
-        return err(result.stderr || "terraform validate failed", {
-          valid: false,
-          errorCount: 0,
-          warningCount: 0,
-          diagnostics: [],
-        });
+        return err(result.stderr || "terraform validate failed");
       }
     },
   );
@@ -521,7 +509,6 @@ export function registerTerraformTools(server: McpServer) {
       } catch {
         return err(
           "Could not read .terraform/modules/modules.json — run `terraform init` first.",
-          { modules: [], count: 0 },
         );
       }
     },
@@ -555,7 +542,6 @@ export function registerTerraformTools(server: McpServer) {
       } catch {
         return err(
           "Could not read .terraform/terraform.tfstate — run `terraform init` first.",
-          { type: "", config: {} },
         );
       }
     },

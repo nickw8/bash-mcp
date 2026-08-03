@@ -14,9 +14,14 @@ interface TreeNode {
 
 type TreeEntry = { path: string; type: "file" | "dir"; depth: number };
 
-/** Single-column rows for the text view: path with a trailing "/" for dirs. */
-function treeRows(flat: TreeEntry[]): { path: string }[] {
-  return flat.map((n) => ({ path: n.type === "dir" ? `${n.path}/` : n.path }));
+/**
+ * One path per node, dirs marked with a trailing "/". Type and depth are
+ * readable off the string itself, so the payload carries paths only — the
+ * `{path,type,depth}` object tripled the cost of the same information
+ * (ADR-0009). Used for both `structuredContent` and the text rows.
+ */
+function treePaths(flat: TreeEntry[]): string[] {
+  return flat.map((n) => (n.type === "dir" ? `${n.path}/` : n.path));
 }
 
 /** Recursively flatten tree's nested JSON into a flat array with depth. */
@@ -51,14 +56,32 @@ async function treeFallback(
   const result = await exec("find", args);
   const lines = result.stdout.trim().split("\n").filter(Boolean);
 
+  // `find` does not say which entries are directories, and neither BSD nor GNU
+  // agree on a portable -printf. A second -type d pass is the cheap way to keep
+  // the trailing-"/" contract the tree binary path guarantees.
+  let dirPaths: Set<string>;
+  if (dirsOnly) {
+    dirPaths = new Set(lines);
+  } else {
+    const dirResult = await exec("find", [...args, "-type", "d"]);
+    dirPaths = new Set(dirResult.stdout.trim().split("\n").filter(Boolean));
+  }
+
   const tree: TreeEntry[] = lines.map((p) => ({
     path: p,
-    type: "file" as const,
+    type: dirPaths.has(p) ? ("dir" as const) : ("file" as const),
     depth: p.replace(path, "").split("/").filter(Boolean).length,
   }));
 
-  const meta = { dirs: 0, files: tree.length };
-  return okList({ ...meta, tree }, treeRows(tree), meta, fmt);
+  const dirs = tree.filter((n) => n.type === "dir").length;
+  const meta = { dirs, files: tree.length - dirs };
+  const paths = treePaths(tree);
+  return okList(
+    { ...meta, paths },
+    paths.map((path) => ({ path })),
+    meta,
+    fmt,
+  );
 }
 
 /** Register the tree tool for structured directory tree output. */
@@ -98,13 +121,9 @@ export function registerTreeTool(server: McpServer) {
       outputSchema: {
         dirs: z.number(),
         files: z.number(),
-        tree: z.array(
-          z.object({
-            path: z.string(),
-            type: z.enum(["file", "dir"]),
-            depth: z.number(),
-          }),
-        ),
+        // Paths only, directories marked with a trailing "/" — depth is the
+        // number of separators, type is the trailing slash.
+        paths: z.array(z.string()),
       },
       annotations: { readOnlyHint: true },
     },
@@ -138,7 +157,13 @@ export function registerTreeTool(server: McpServer) {
         const dirs = flat.filter((n) => n.type === "dir").length;
         const files = flat.filter((n) => n.type === "file").length;
         const meta = { dirs, files };
-        return okList({ ...meta, tree: flat }, treeRows(flat), meta, fmt);
+        const paths = treePaths(flat);
+        return okList(
+          { ...meta, paths },
+          paths.map((path) => ({ path })),
+          meta,
+          fmt,
+        );
       } catch {
         return await treeFallback(path, maxDepth ?? 3, dirsOnly ?? false, fmt);
       }

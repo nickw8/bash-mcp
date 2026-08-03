@@ -5,10 +5,14 @@ import type { ListFormat } from "#format";
 import { err, okList } from "#response";
 import { defineTool } from "#tool";
 
-/** Parse a timespan string (e.g. "7d", "1h", "30m") into minutes for find -mmin. */
-function parseTimespan(s: string): number {
+/**
+ * Parse a timespan string (e.g. "7d", "1h", "30m") into minutes for find -mmin.
+ * Returns null on anything unrecognized — a 0 here silently dropped the filter
+ * and widened the search instead of reporting the bad input.
+ */
+function parseTimespan(s: string): number | null {
   const match = s.match(/^(\d+)([mhdw])$/);
-  if (!match) return 0;
+  if (!match) return null;
   const num = parseInt(match[1] ?? "0", 10);
   const unit = match[2] ?? "";
   const multipliers: Record<string, number> = {
@@ -111,7 +115,19 @@ export function registerFindTool(server: McpServer) {
       }
       if (modifiedWithin) {
         const minutes = parseTimespan(modifiedWithin);
-        if (minutes > 0) args.push("-mmin", `-${minutes}`);
+        if (minutes === null) {
+          return err(
+            `Unrecognized modifiedWithin: '${modifiedWithin}'. Use <number><m|h|d|w>, e.g. '7d'.`,
+            undefined,
+            {
+              kind: "invalid_input",
+              message: `Unrecognized modifiedWithin: '${modifiedWithin}'`,
+              command: "find",
+              suggestion: "Use a value like '30m', '6h', '7d', or '2w'.",
+            },
+          );
+        }
+        args.push("-mmin", `-${minutes}`);
       }
       args.push(
         "-not",

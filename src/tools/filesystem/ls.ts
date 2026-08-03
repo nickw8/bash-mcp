@@ -29,8 +29,8 @@ export function registerLsTool(server: McpServer) {
     {
       title: "List directory",
       description:
-        "List files in a directory. Returns structured entries with name, type, size, and permissions. Much more compact than raw ls output. " +
-        "Use recursive for one level of subdirectories. Use all to include hidden files.",
+        "List files in a directory. Returns structured entries with name, size, permissions, and modified date — directories end with '/' and links with '@'. " +
+        "Use nameOnly for names alone, recursive for one level of subdirectories, all to include hidden files.",
       equivalentCommands: ["ls -la <path>"],
       inputSchema: {
         path: z.string().describe("Directory path to list"),
@@ -53,17 +53,19 @@ export function registerLsTool(server: McpServer) {
           .array(z.string())
           .optional()
           .describe(
-            "Limit the text view to these columns (structuredContent keeps all)",
+            "Limit the text view to these columns (text block only, not the returned payload)",
           ),
       },
       outputSchema: {
+        // Directories carry a trailing "/" and links a trailing "@", so the
+        // type needs no key of its own; nameOnly returns just the names
+        // (ADR-0009 — every key here is paid for on every entry).
         entries: z.array(
           z.object({
             name: z.string(),
-            type: z.enum(["file", "dir", "link", "other"]),
-            size: z.number(),
-            permissions: z.string(),
-            modified: z.string(),
+            size: z.number().optional(),
+            permissions: z.string().optional(),
+            modified: z.string().optional(),
           }),
         ),
         total: z.number(),
@@ -73,7 +75,13 @@ export function registerLsTool(server: McpServer) {
     },
     async ({ path, all, recursive, nameOnly, format, fields }) => {
       const fmt = (format ?? "tsv") as ListFormat;
-      const args = IS_MACOS ? ["-lh"] : ["-lh", "--time-style=iso"];
+      // Pin one column layout on both platforms: `perms links owner group
+      // size YYYY-MM-DD HH:MM name`. Without this BSD ls emits `Aug  3 13:12`
+      // (an extra column) and swaps the time for a year on files older than
+      // six months — three layouts for one parser to guess at.
+      const args = IS_MACOS
+        ? ["-lh", "-D", "%Y-%m-%d %H:%M"]
+        : ["-lh", "--time-style=iso"];
       if (all) args.push("-A");
       if (recursive) args.push("-R");
       args.push(path);
@@ -81,39 +89,30 @@ export function registerLsTool(server: McpServer) {
       const result = await exec("ls", args, { cwd: path });
 
       if (result.exitCode !== 0) {
-        return err(result.stderr, { entries: [], total: 0, path });
+        return err(result.stderr, { path });
       }
 
       const entries = result.stdout
         .split("\n")
         .filter((line) => line.length > 0 && !line.startsWith("total"))
         .map((line) => {
+          // 7 fixed columns, then the name — which may itself contain spaces,
+          // so it is everything after the time column, not a single field.
           const parts = line.split(/\s+/);
           const permissions = parts[0] ?? "";
           const size = parseSize(parts[4] ?? "0");
           const modified = parts[5] ?? "";
-          const name = parts.slice(6).join(" ");
-          const type = permissions.startsWith("d")
-            ? "dir"
+          const name = parts.slice(7).join(" ");
+          // Mark the type in the name itself (ls -F convention) instead of
+          // spending a `type` key on every entry.
+          const suffix = permissions.startsWith("d")
+            ? "/"
             : permissions.startsWith("l")
-              ? "link"
-              : permissions.startsWith("-")
-                ? "file"
-                : "other";
-          const entryType =
-            type === "dir" || type === "link" || type === "file"
-              ? type
-              : "other";
-          if (nameOnly) {
-            return {
-              name,
-              type: entryType,
-              size: 0,
-              permissions: "",
-              modified: "",
-            };
-          }
-          return { name, type: entryType, size, permissions, modified };
+              ? "@"
+              : "";
+          const marked = name ? `${name}${suffix}` : name;
+          if (nameOnly) return { name: marked };
+          return { name: marked, size, permissions, modified };
         })
         .filter((e) => e.name.length > 0);
 

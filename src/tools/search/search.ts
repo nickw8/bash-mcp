@@ -6,13 +6,18 @@
  * of line-oriented text.
  */
 
+import { isAbsolute, relative } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
 import type { ListFormat } from "#format";
 import { err, okList } from "#response";
 import { defineTool } from "#tool";
-import { parseRgJson } from "./parse.js";
+import { groupMatchesByFile, parseRgJson } from "./parse.js";
+
+/** Shorten an absolute path to cwd-relative — the payload repeats it per file. */
+const relPath = (file: string) =>
+  isAbsolute(file) ? relative(process.cwd(), file) || file : file;
 
 /** Register all search tools on the MCP server. */
 export function registerSearchTools(server: McpServer) {
@@ -44,8 +49,10 @@ export function registerSearchTools(server: McpServer) {
         maxResults: z
           .number()
           .optional()
-          .default(100)
-          .describe("Max results to return across all files (default 100)"),
+          .default(30)
+          .describe(
+            "Max results to return across all files (default 30). When the cap bites, the response reports the true totalMatches so you can decide whether to narrow the pattern or raise the cap",
+          ),
         maxPerFile: z
           .number()
           .optional()
@@ -85,9 +92,9 @@ export function registerSearchTools(server: McpServer) {
         maxLineLength: z
           .number()
           .optional()
-          .default(300)
+          .default(120)
           .describe(
-            "Window matched line text to ~this many chars centered on the match, so long/minified lines don't dump in full (0 = unlimited, default 300)",
+            "Window matched line text to ~this many chars centered on the match, so long/minified lines don't dump in full (0 = unlimited, default 120)",
           ),
         format: z
           .enum(["json", "tsv", "columnar", "bare", "grouped"])
@@ -99,24 +106,24 @@ export function registerSearchTools(server: McpServer) {
           .array(z.string())
           .optional()
           .describe(
-            "Limit the text view to these columns (e.g. ['file','line']); structuredContent keeps all",
+            "Limit the text view to these columns (e.g. ['file','line']); text view only",
           ),
       },
       outputSchema: {
-        matches: z.array(
+        // Grouped by file: the path is paid for once, and each hit is one
+        // "<line>:<text>" string ("<line>-<text>" for a context line) rather
+        // than an object repeating the same two keys (ADR-0009).
+        files: z.array(
           z.object({
             file: z.string(),
-            line: z.number(),
-            text: z.string(),
-            kind: z.enum(["match", "context"]).optional(),
+            lines: z.array(z.string()).optional(),
+            count: z.number().optional(),
           }),
         ),
         fileCount: z.number(),
         matchCount: z.number(),
         truncated: z.boolean(),
-        fileCounts: z
-          .array(z.object({ file: z.string(), count: z.number() }))
-          .optional(),
+        totalMatches: z.number().optional(),
       },
       annotations: { readOnlyHint: true },
     },
@@ -137,7 +144,7 @@ export function registerSearchTools(server: McpServer) {
       format,
       fields,
     }) => {
-      const limit = maxResults ?? 100;
+      const limit = maxResults ?? 30;
       const globs = glob ? (Array.isArray(glob) ? glob : [glob]) : [];
       const pushGlobs = (args: string[]) => {
         for (const g of globs) args.push("-g", g);
@@ -155,38 +162,32 @@ export function registerSearchTools(server: McpServer) {
         const result = await exec("rg", args);
 
         if (result.exitCode !== 0 && result.exitCode !== 1) {
-          return err(result.stderr, {
-            matches: [],
-            fileCount: 0,
-            matchCount: 0,
-            truncated: false,
-          });
+          return err(result.stderr);
         }
 
-        const fileCounts: { file: string; count: number }[] = [];
+        const files: { file: string; count: number }[] = [];
         let totalMatches = 0;
 
         for (const line of result.stdout.trim().split("\n").filter(Boolean)) {
           const lastColon = line.lastIndexOf(":");
           if (lastColon === -1) continue;
-          const file = line.slice(0, lastColon);
+          const file = relPath(line.slice(0, lastColon));
           const count = parseInt(line.slice(lastColon + 1), 10);
           if (Number.isNaN(count)) continue;
-          fileCounts.push({ file, count });
+          files.push({ file, count });
           totalMatches += count;
         }
 
         const structured = {
-          matches: [] as { file: string; line: number; text: string }[],
-          fileCount: fileCounts.length,
+          files,
+          fileCount: files.length,
           matchCount: totalMatches,
           truncated: false,
-          fileCounts,
         };
         return okList(
           structured,
-          fileCounts,
-          { fileCount: fileCounts.length, matchCount: totalMatches },
+          files,
+          { fileCount: files.length, matchCount: totalMatches },
           fmt,
           { fields },
         );
@@ -202,17 +203,28 @@ export function registerSearchTools(server: McpServer) {
         if (path) args.push(path);
 
         const result = await exec("rg", args);
-        const files = result.stdout.trim().split("\n").filter(Boolean);
-        const fileRows = files.map((f) => ({ file: f }));
+
+        // Same rule as the other rg paths: 1 is "no matches", >= 2 is a real
+        // failure (bad regex, unreadable path). Without this a broken pattern
+        // reported an empty result set instead of the error rg printed.
+        if (result.exitCode !== 0 && result.exitCode !== 1) {
+          return err(result.stderr);
+        }
+
+        const files = result.stdout
+          .trim()
+          .split("\n")
+          .filter(Boolean)
+          .map((f) => ({ file: relPath(f) }));
         const structured = {
-          matches: files.map((f) => ({ file: f, line: 0, text: "" })),
+          files,
           fileCount: files.length,
           matchCount: files.length,
           truncated: false,
         };
         return okList(
           structured,
-          fileRows,
+          files,
           { fileCount: files.length, matchCount: files.length },
           fmt,
           { fields },
@@ -220,7 +232,7 @@ export function registerSearchTools(server: McpServer) {
       }
 
       const fmt = (format ?? "grouped") as ListFormat;
-      const maxLen = maxLineLength ?? 0;
+      const maxLen = maxLineLength ?? 120;
       // Extract mode: emit matched substrings (or capture-group rewrites)
       // instead of whole lines. `replace` implies extraction.
       const extract = only === true || replace !== undefined;
@@ -239,12 +251,7 @@ export function registerSearchTools(server: McpServer) {
 
       // rg exit 1 = no matches (not an error), only fail on exit >= 2
       if (result.exitCode !== 0 && result.exitCode !== 1) {
-        return err(result.stderr, {
-          matches: [],
-          fileCount: 0,
-          matchCount: 0,
-          truncated: false,
-        });
+        return err(result.stderr);
       }
 
       // Collect matches and (when requested) context lines, in rg's emit order.
@@ -257,34 +264,49 @@ export function registerSearchTools(server: McpServer) {
       });
 
       const truncated = matchCount >= limit;
-      const withContext = Boolean(context) && !extract;
 
-      // structuredContent keeps numeric lines; carry `kind` only when context
-      // was requested (otherwise every entry is a match — keep the lean shape).
-      const matches = entries.map((e) =>
-        withContext
-          ? { file: e.file, line: e.line, text: e.text, kind: e.kind }
-          : { file: e.file, line: e.line, text: e.text },
-      );
+      // The cap hides how much was left behind, so pay one extra `rg
+      // --count-matches` pass (counts only, no line text) for the true total.
+      let totalMatches: number | undefined;
+      if (truncated) {
+        const countArgs = ["--count-matches", "--no-heading"];
+        if (ignoreCase) countArgs.push("-i");
+        pushGlobs(countArgs);
+        if (fixedStrings) countArgs.push("-F");
+        countArgs.push(pattern);
+        if (path) countArgs.push(path);
+        const counted = await exec("rg", countArgs);
+        if (counted.exitCode === 0) {
+          totalMatches = counted.stdout
+            .trim()
+            .split("\n")
+            .filter(Boolean)
+            .reduce((sum, line) => {
+              const n = parseInt(line.slice(line.lastIndexOf(":") + 1), 10);
+              return Number.isNaN(n) ? sum : sum + n;
+            }, 0);
+        }
+      }
 
       // Text rows mark context lines with a trailing `-` on the line number
       // (ripgrep's grep convention), so grouped/tsv output distinguishes them.
       const textRows = entries.map((e) => ({
-        file: e.file,
+        file: relPath(e.file),
         line: e.kind === "context" ? `${e.line}-` : e.line,
         text: e.text,
       }));
 
       const structured = {
-        matches,
+        files: groupMatchesByFile(entries, relPath),
         fileCount,
         matchCount,
         truncated,
+        ...(totalMatches !== undefined ? { totalMatches } : {}),
       };
       return okList(
         structured,
         textRows,
-        { fileCount, matchCount, truncated },
+        { fileCount, matchCount, truncated, totalMatches },
         fmt,
         { fields },
       );
@@ -319,6 +341,13 @@ export function registerSearchTools(server: McpServer) {
       const args = ["--files", "-g", pattern];
 
       const result = await exec("rg", args, cwd ? { cwd } : {});
+
+      // `--files` exits 1 when nothing matched the glob; >= 2 means rg refused
+      // the glob or the directory, which is an error, not an empty listing.
+      if (result.exitCode !== 0 && result.exitCode !== 1) {
+        return err(result.stderr);
+      }
+
       const files = result.stdout.trim().split("\n").filter(Boolean);
       const structured = { files, count: files.length };
       const fileRows = files.map((f) => ({ file: f }));
