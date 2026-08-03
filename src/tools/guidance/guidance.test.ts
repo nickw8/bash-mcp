@@ -7,29 +7,11 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { describe, expect, it } from "vitest";
+import { buildRegistry } from "../../registry.js";
 import { INTENTS, registerGuidanceTools } from "./guidance.js";
 
-/** Tools referenced by INTENTS — kept in sync with the registered tool names. */
-const KNOWN_TOOLS = new Set([
-  "kube_diagnose_pod",
-  "kube_pod_failure_summary",
-  "kube_deployment_status",
-  "kube_events_summary",
-  "tf_plan_summary",
-  "git_pr_context",
-  "repo_health_summary",
-  "outline",
-  "cat",
-  "rg",
-  "helm_release_triage",
-  "argo_app_health_summary",
-  "liquibase_validate",
-  "liquibase_update_sql",
-  "liquibase_status",
-  "check_environment",
-  "bash_lint",
-  "bash_test",
-]);
+/** Every registered tool name — the registry answers "is this a real tool" exactly. */
+const KNOWN_TOOLS = new Set(buildRegistry().map((t) => t.name));
 
 describe("INTENTS", () => {
   it("is non-empty and well-formed", () => {
@@ -44,25 +26,10 @@ describe("INTENTS", () => {
   });
 
   it("only recommends real bash-mcp tools", () => {
-    for (const entry of INTENTS) {
-      expect(KNOWN_TOOLS.has(entry.preferredTool)).toBe(true);
-    }
-  });
-
-  it("covers the intents seeded from next-steps #3", () => {
-    const tools = INTENTS.map((e) => e.preferredTool);
-    for (const expected of [
-      "kube_diagnose_pod",
-      "kube_pod_failure_summary",
-      "kube_deployment_status",
-      "tf_plan_summary",
-      "git_pr_context",
-      "repo_health_summary",
-      "outline",
-      "rg",
-    ]) {
-      expect(tools).toContain(expected);
-    }
+    const unknown = INTENTS.map((e) => e.preferredTool).filter(
+      (name) => !KNOWN_TOOLS.has(name),
+    );
+    expect(unknown, "INTENTS names tools that are not registered").toEqual([]);
   });
 });
 
