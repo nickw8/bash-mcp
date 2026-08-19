@@ -1,8 +1,9 @@
 # Output Conventions
 
 Read when deciding what a tool returns, or why its text block differs from its
-`structuredContent`. The mechanics come from [ADR-0006](../adr/0006-compact-text-block-via-oklist.md);
-this is how to apply them.
+`structuredContent`. The mechanics come from
+[ADR-0006](../adr/0006-compact-text-block-via-oklist.md) and
+[ADR-0012](../adr/0012-the-text-block-is-a-summary.md); this is how to apply them.
 
 **Before you optimise anything here:** `structuredContent` is what the agent is charged
 tokens for — a client that understands it renders it and ignores the text block
@@ -10,6 +11,23 @@ tokens for — a client that understands it renders it and ignores the text bloc
 and row curation shape the **text block only** and save the model nothing. To cut tokens,
 shrink the payload: fewer fields, shorter values, and payload-shrinking parameters
 (`maxResults`, `maxLineLength`, `only`, `filesOnly`, the `budgetSchema` params).
+
+## The text block is a summary line
+
+`ok()` never serializes the payload into `content[0].text`. It writes a **summary line**:
+one line of `key=value` / `key[n]` / `key{n}`, long strings reduced to `key=<bytes>B`,
+low-signal fields dropped, the whole thing capped at 300 characters (`summarize` in
+`src/format.ts`).
+
+Pass a better one when you have it — `ok(payload, "3 errors in 2 files")` beats any
+mechanical rendering of the same payload. If everything in the payload is low-signal the
+summary is empty, and `defineTool` substitutes the tool name so the response never looks
+dropped.
+
+`okList` summarizes for its default `json` format too. `tsv`, `columnar`, `bare`, and
+`grouped` still render rows: a caller asking for those is asking for a text view.
+`src/response.test.ts` enforces the rule across every registered tool — the text block must
+stay shorter than the serialized payload and must never carry a long field's contents.
 
 ## Which helper
 
@@ -57,7 +75,8 @@ Emit `total`/`truncated` when a cap bit, so a truncated payload says so.
 
 ## Curating rows
 
-`rows` and `meta` drive the text block. Curating them is a text-only change: safe for
+`rows` and `meta` drive the text block **for the row formats** — under the default `json`
+they are unused, because that path summarizes. Curating them is a text-only change: safe for
 consumers, and worth no tokens to the agent (ADR-0009) — do it for readability, not for
 size. Multi-column list tools also accept `fields: string[]` →
 `okList(s, rows, meta, fmt, { fields })`, projecting the text block to those columns only.

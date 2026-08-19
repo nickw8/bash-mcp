@@ -30,6 +30,12 @@ pair plus a manifest entry, then re-run with `--write`.
 benchmark measures `JSON.stringify(structuredContent)`, the artifact the agent is actually
 charged tokens for. See [ADR-0009](../adr/0009-structuredcontent-is-what-the-agent-reads.md).
 
+Since 2.0.0 the text block is a one-line summary rather than a copy of the payload
+([ADR-0012](../adr/0012-the-text-block-is-a-summary.md)), which cut the **wire** size of a
+response by roughly half. None of the numbers here move: this corpus only ever priced
+`structuredContent`, and that is unchanged. Shrinking the payload remains the only lever
+that saves the agent tokens.
+
 Until 2026-08-03 this suite measured the **text block** instead — the compact `bare`/TSV/
 `grouped` rendering — for the 17 wrappers that build one. That artifact never reached the
 agent, so the published headline (62% token-weighted) described work the model never saw.
