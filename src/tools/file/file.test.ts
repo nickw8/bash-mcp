@@ -158,6 +158,65 @@ describe("readFileContent (disk)", () => {
   });
 });
 
+/**
+ * AC-2: the text block is a summary, the payload is not.
+ *
+ * The helper tests above cover what `cat` reads; this one covers what it
+ * *returns* — the two halves of the payload-hardening contract in one call.
+ * `structuredContent.content` must still be the file byte-for-byte, while
+ * `content[0].text` must have stopped repeating it.
+ */
+describe("cat's response shape on a 4 KB file", () => {
+  let dir: string;
+  let file: string;
+  // 100 lines × ~40 B ≈ 4 KB, under cat's 200-line default so nothing truncates.
+  const body = Array.from(
+    { length: 100 },
+    (_, i) => `line ${String(i).padStart(3, "0")} ${"x".repeat(31)}`,
+  ).join("\n");
+
+  // `any` matches the MCP handler signature under test; noExplicitAny is off
+  // for test files, so a biome-ignore here would itself be flagged as unused.
+  let cat: (args: any, extra: any) => Promise<any>;
+
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), "bashmcp-cat-ac2-"));
+    file = join(dir, "big.txt");
+    writeFileSync(file, `${body}\n`);
+
+    // A server that keeps the handlers, so the tool can be called end to end.
+    const handlers = new Map<string, any>();
+    registerFileTools({
+      registerTool: (name: string, _c: unknown, handler: unknown) => {
+        handlers.set(name, handler);
+        return undefined;
+      },
+    } as unknown as McpServer);
+    cat = handlers.get("cat");
+  });
+
+  afterAll(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("keeps the payload byte-identical and summarizes the text block", async () => {
+    const res = await cat({ path: file }, {});
+
+    expect(Buffer.byteLength(body)).toBeGreaterThan(4000);
+    expect(res.structuredContent.content).toBe(body);
+    expect(res.structuredContent.truncated).toBe(false);
+
+    const text: string = res.content[0].text;
+    expect(text.length).toBeLessThan(200);
+    // The whole point: the block reports the size, it does not carry the bytes.
+    expect(text).toContain(`content=${Buffer.byteLength(body)}B`);
+    expect(text).not.toContain("xxxxx");
+    expect(text.length).toBeLessThan(
+      JSON.stringify(res.structuredContent).length,
+    );
+  });
+});
+
 describe("readFileContent (git ref)", () => {
   // git-source.test.ts makes the exact claims about reading a ref, against a
   // temp repo. What is left to check here is the windowing readFromRef layers
