@@ -45,6 +45,30 @@ const server = new McpServer(
 // ── Register all tool groups (shared list lives in src/registry.ts) ────
 registerAll(server);
 
+/**
+ * Log one lifecycle event and exit non-zero.
+ *
+ * A stdio server that dies without this leaves the client holding a closed pipe
+ * and no reason for it — the transport reports a parse/connection failure, and
+ * the actual error is gone. Exiting non-zero is what tells the client to restart
+ * rather than wait.
+ */
+function fatal(event: string, error: unknown): never {
+  logLifecycle({
+    event,
+    error:
+      error instanceof Error
+        ? { message: error.message, type: error.name }
+        : String(error),
+  });
+  process.exit(1);
+}
+
+process.on("uncaughtException", (error) => fatal("uncaught_exception", error));
+process.on("unhandledRejection", (reason) =>
+  fatal("unhandled_rejection", reason),
+);
+
 async function main() {
   const args = process.argv.slice(2);
 
@@ -70,13 +94,4 @@ async function main() {
   logLifecycle({ event: "server_start", transport: "stdio" });
 }
 
-main().catch((error) => {
-  logLifecycle({
-    event: "server_error",
-    error:
-      error instanceof Error
-        ? { message: error.message, type: error.name }
-        : String(error),
-  });
-  process.exit(1);
-});
+main().catch((error) => fatal("server_error", error));
