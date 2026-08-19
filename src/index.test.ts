@@ -28,8 +28,13 @@ interface Exit {
  * the way a runtime defect would — after the server is already connected.
  * Without it the child is killed once `waitMs` elapses, which is the clean-boot
  * case.
+ *
+ * A crashing child exits on its own, so `waitMs` is only a safety net there and
+ * is set generously: under a loaded full-suite run, spawning node and importing
+ * the bundle can outlast a short timer, and killing the child first reads as an
+ * empty stderr rather than a missing handler.
  */
-function boot(after = "", waitMs = 400): Promise<Exit> {
+function boot(after = "", waitMs = 5000): Promise<Exit> {
   const source = `await import(${JSON.stringify(distPath)});\n${after}`;
   const child = spawn(process.execPath, ["--input-type=module", "-e", source], {
     cwd: repoRoot,
@@ -85,8 +90,10 @@ describe.skipIf(!existsSync(distPath))("the server process", () => {
 
   it("writes nothing to stderr on a clean boot", async () => {
     // A client that reads handshake-time stderr as a failed start must see an
-    // empty channel; `server_start` moved behind BASH_MCP_LOG=info.
-    expect((await boot()).stderr).toBe("");
+    // empty channel; `server_start` moved behind BASH_MCP_LOG=info. This child
+    // never exits by itself, so the wait is the whole cost of the test — long
+    // enough to have booted, short enough not to drag the suite.
+    expect((await boot("", 1500)).stderr).toBe("");
   });
 });
 
