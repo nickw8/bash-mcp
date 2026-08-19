@@ -10,7 +10,9 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { describe, expect, it } from "vitest";
+import type { ZodTypeAny } from "zod";
 import type { Logger, WideEvent } from "./logger.js";
+import { registerAll } from "./registry.js";
 import { err, ok } from "./response.js";
 import { defineTool, getRegisteredTools, resetRegistry } from "./tool.js";
 
@@ -261,5 +263,64 @@ describe("defineTool", () => {
     expect(e.cwd).toBe("/tmp");
     expect(JSON.stringify(e)).not.toContain("TOKEN");
     expect(JSON.stringify(e)).not.toContain("aws");
+  });
+});
+
+/**
+ * The arg contract as the real tools declare it, not as a fake tool declares it.
+ * `buildRegistry`'s stub throws the handlers away, so this registers every group
+ * against a server that keeps them.
+ */
+function realTools() {
+  const handlers = new Map<string, Handler>();
+  const configs = new Map<
+    string,
+    { inputSchema?: Record<string, ZodTypeAny> }
+  >();
+  const server = {
+    registerTool(name: string, config: unknown, handler: Handler) {
+      handlers.set(name, handler);
+      configs.set(name, config as { inputSchema?: Record<string, ZodTypeAny> });
+      return undefined;
+    },
+  } as unknown as McpServer;
+  resetRegistry();
+  registerAll(server);
+  return { handlers, configs };
+}
+
+describe("the registered tools' arg contract", () => {
+  const { handlers, configs } = realTools();
+
+  it.each([
+    ["rg", "pattern"],
+    ["dotnet_build", "cwd"],
+    ["npm_lint", "cwd"],
+  ])("%s without %s answers invalid_input, not a protocol error", async (tool, arg) => {
+    const res = await handlers.get(tool)?.({}, {});
+    expect(res.isError).toBe(true);
+    expect(res.structuredContent.error).toMatchObject({
+      kind: "invalid_input",
+      command: tool,
+    });
+    expect(res.content[0].text).toContain(`missing required argument ${arg}`);
+    expect(res.structuredContent.error.suggestion).toContain(`${arg}: <value>`);
+  });
+
+  it("find_files without path searches '.' instead of failing", () => {
+    const path = configs.get("find_files")?.inputSchema?.path;
+    expect(path?.parse(undefined)).toBe(".");
+    const required = getRegisteredTools().find(
+      (t) => t.name === "find_files",
+    )?.required;
+    expect(required ?? []).not.toContain("path");
+  });
+
+  it("bash_syntax_check treats files: 'x.sh' as files: ['x.sh']", async () => {
+    const check = handlers.get("bash_syntax_check");
+    const one = await check?.({ files: "hooks/bash-mcp-redirect.sh" }, {});
+    const many = await check?.({ files: ["hooks/bash-mcp-redirect.sh"] }, {});
+    expect(one.structuredContent).toEqual(many.structuredContent);
+    expect(one.structuredContent).toMatchObject({ valid: true, errorCount: 0 });
   });
 });
