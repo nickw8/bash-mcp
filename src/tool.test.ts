@@ -108,6 +108,71 @@ describe("defineTool", () => {
     resetRegistry();
   });
 
+  describe("required args", () => {
+    const define = (required: string[], calls: unknown[] = []) => {
+      const { server, captured } = fakeServer();
+      const { logger, events } = capturingLogger();
+      defineTool(
+        server,
+        "t",
+        { inputSchema: {}, required },
+        async (args: unknown) => {
+          calls.push(args);
+          return ok({ x: 1 });
+        },
+        logger,
+      );
+      return {
+        handler: captured[0]!.handler,
+        config: captured[0]!.config,
+        events,
+      };
+    };
+
+    it("fails with invalid_input and never calls the handler", async () => {
+      const calls: unknown[] = [];
+      const { handler, events } = define(["pattern"], calls);
+      const res = await handler({}, {});
+      expect(res.isError).toBe(true);
+      expect(res.structuredContent.error).toMatchObject({
+        kind: "invalid_input",
+        command: "t",
+      });
+      expect(res.content[0].text).toContain(
+        "missing required argument pattern",
+      );
+      expect(res.structuredContent.error.suggestion).toContain(
+        "pattern: <value>",
+      );
+      expect(calls).toEqual([]);
+      expect(events[0]).toMatchObject({
+        outcome: "error",
+        errorKind: "invalid_input",
+      });
+    });
+
+    it("names every missing argument, not just the first", async () => {
+      const { handler } = define(["resource", "namespace"]);
+      const res = await handler({}, {});
+      expect(res.content[0].text).toContain(
+        "missing required arguments resource, namespace",
+      );
+    });
+
+    it("accepts falsy-but-present values and runs the handler", async () => {
+      const calls: unknown[] = [];
+      const { handler } = define(["pattern"], calls);
+      const res = await handler({ pattern: "" }, {});
+      expect(res.isError).toBeUndefined();
+      expect(calls).toHaveLength(1);
+    });
+
+    it("keeps required out of the config the SDK sees", () => {
+      const { config } = define(["pattern"]);
+      expect("required" in (config as object)).toBe(false);
+    });
+  });
+
   it("names the tool when the payload summarizes to nothing", async () => {
     const { server, captured } = fakeServer();
     const { logger } = capturingLogger();

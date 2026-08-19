@@ -42,6 +42,17 @@ interface ToolConfig<
    * in the tool registry for the generated reference (`docs/tools.md`).
    */
   equivalentCommands?: string[];
+  /**
+   * Arguments the tool cannot run without, checked here rather than by the SDK.
+   *
+   * A Zod-required field is rejected at the SDK boundary as `MCP error -32602`
+   * before any of this wrapper runs: the caller gets a protocol error with no
+   * `structuredContent`, no error kind, and no hint about which argument was
+   * missing. Declaring the field `.optional()` in `inputSchema` and naming it
+   * here moves the check inside, so an omitted argument comes back as an
+   * ordinary `invalid_input` result the agent can read and retry from.
+   */
+  required?: string[];
 }
 
 /**
@@ -55,6 +66,8 @@ export interface ToolRecord {
   description?: string;
   readOnlyHint?: boolean;
   equivalentCommands?: string[];
+  /** Arguments enforced by the wrapper rather than by the schema. */
+  required?: string[];
   inputSchema?: ZodRawShape;
   outputSchema?: ZodRawShape;
   /**
@@ -82,6 +95,20 @@ interface ResultShape {
   isError?: boolean;
   content?: { type: string; text: string }[];
   structuredContent?: { error?: { kind?: string } };
+}
+
+/**
+ * Which of a tool's `required` arguments the caller left out.
+ *
+ * `undefined` and `null` count as absent; `""`, `0`, and `false` do not — an
+ * empty string is a caller's answer, not a missing one.
+ */
+function missingArgs(required: string[] | undefined, args: unknown): string[] {
+  if (!required || required.length === 0) return [];
+  const record = (args ?? {}) as Record<string, unknown>;
+  return required.filter(
+    (key) => record[key] === undefined || record[key] === null,
+  );
 }
 
 /**
@@ -113,6 +140,31 @@ export function defineTool<
     let errorKind: string | undefined;
 
     try {
+      const missing = missingArgs(config.required, args);
+      if (missing.length > 0) {
+        outcome = "error";
+        errorKind = "invalid_input";
+        const message = `${name}: missing required argument${
+          missing.length > 1 ? "s" : ""
+        } ${missing.join(", ")}`;
+        const failed = err(
+          message,
+          {},
+          {
+            kind: "invalid_input",
+            message,
+            command: name,
+            suggestion: `Call ${name} with ${missing
+              .map((a) => `${a}: <value>`)
+              .join(", ")}.`,
+          },
+        );
+        return {
+          ...failed,
+          structuredContent: { ...zero, ...failed.structuredContent },
+        };
+      }
+
       const result = (await call(...callArgs)) as ResultShape;
       if (result?.isError) {
         outcome = "error";
@@ -160,7 +212,7 @@ export function defineTool<
 
   // Fold equivalentCommands into _meta (preserving any caller _meta) and keep it
   // out of the config the SDK sees. Capture a flattened record for doc gen.
-  const { equivalentCommands, ...rest } = config;
+  const { equivalentCommands, required, ...rest } = config;
   const meta = equivalentCommands
     ? { ...config._meta, equivalentCommands }
     : config._meta;
@@ -172,6 +224,7 @@ export function defineTool<
     description: config.description,
     readOnlyHint: config.annotations?.readOnlyHint,
     equivalentCommands,
+    required,
     inputSchema: config.inputSchema,
     outputSchema: config.outputSchema,
   });
