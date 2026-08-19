@@ -344,6 +344,7 @@ Find files by name pattern, type, or modification time. Returns structured list 
 
 - `path`: string _(optional)_ — Root directory to search (default: '.')
 - `name`: string _(optional)_ — Filename glob pattern (e.g. '*.ts')
+- `pattern`: string _(optional)_ — Alias for name — filename glob pattern (e.g. '*.ts')
 - `names`: string[] _(optional)_ — Multiple filename glob patterns (e.g. ['*.ts', '*.py', '*.sh']). Combined with OR logic.
 - `type`: "file" | "dir" | "link" _(optional)_ — Filter by type
 - `maxDepth`: number _(optional)_ — Max search depth

@@ -46,6 +46,12 @@ export function registerFindTool(server: McpServer) {
           .string()
           .optional()
           .describe("Filename glob pattern (e.g. '*.ts')"),
+        // `rg` and `glob` both call this argument `pattern`, and callers reach
+        // for that here too. Accepting it costs a line; refusing it costs a turn.
+        pattern: z
+          .string()
+          .optional()
+          .describe("Alias for name — filename glob pattern (e.g. '*.ts')"),
         names: z
           .array(z.string())
           .optional()
@@ -90,6 +96,7 @@ export function registerFindTool(server: McpServer) {
     async ({
       path,
       name,
+      pattern,
       names,
       type,
       maxDepth,
@@ -98,7 +105,8 @@ export function registerFindTool(server: McpServer) {
       format,
     }) => {
       const fmt = (format ?? "tsv") as ListFormat;
-      const allNames = names ?? (name ? [name] : []);
+      const single = name ?? pattern;
+      const allNames = names ?? (single ? [single] : []);
       const args = [path];
       if (maxDepth !== undefined) args.push("-maxdepth", String(maxDepth));
       if (type) {
