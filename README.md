@@ -151,7 +151,7 @@ client works the same way — point it at the `bash-mcp` binary or `npx -y @nick
 
 Optional Claude Code hooks in [`hooks/`](hooks) steer agents toward the structured tools by blocking raw shell commands (`git status`, `kubectl get`, `cat`, …) that have a bash-mcp equivalent, while letting write commands (`git commit`, `kubectl apply`) pass through.
 
-See [docs/recommended-hooks-setup.md](docs/recommended-hooks-setup.md) for setup.
+See [docs/runbooks/hooks-setup.md](docs/runbooks/hooks-setup.md) for setup.
 
 ## Why Structured Output?
 
@@ -166,7 +166,7 @@ nginx-7c5b8d6c88-abc12  1/1     Running   0          3d
 { "name": "nginx-7c5b8d6c88-abc12", "status": "Running", "age": "3d", ... }
 ```
 
-See [docs/token-benchmarks.md](docs/token-benchmarks.md) for measured savings (e.g.
+See [docs/guides/token-benchmarks.md](docs/guides/token-benchmarks.md) for measured savings (e.g.
 `kubectl describe pod` → `kube_diagnose_pod` is ~64% fewer tokens).
 
 ## Philosophy: structured tools first, `run` is the escape hatch
@@ -540,7 +540,7 @@ export function registerMyTools(server: McpServer) {
 }
 ```
 
-See [docs/adding-tools.md](docs/adding-tools.md) for the full guide.
+See [docs/guides/adding-tools.md](docs/guides/adding-tools.md) for the full guide.
 
 ## Prerequisites
 

@@ -28,7 +28,7 @@ pair plus a manifest entry, then re-run with `--write`.
 (the typed JSON payload) and a `content` text block. **A client that understands
 `structuredContent` renders that and ignores the text block** — Claude Code does. So the
 benchmark measures `JSON.stringify(structuredContent)`, the artifact the agent is actually
-charged tokens for. See [ADR-0009](adr/0009-structuredcontent-is-what-the-agent-reads.md).
+charged tokens for. See [ADR-0009](../adr/0009-structuredcontent-is-what-the-agent-reads.md).
 
 Until 2026-08-03 this suite measured the **text block** instead — the compact `bare`/TSV/
 `grouped` rendering — for the 17 wrappers that build one. That artifact never reached the

@@ -5,7 +5,7 @@ import { formatList, type ListFormat } from "./format.js";
 /**
  * Token-budget regression guard.
  *
- * The compact-format work (docs/token-benchmarks.md) cut the flat-list tools'
+ * The compact-format work (docs/guides/token-benchmarks.md) cut the flat-list tools'
  * text output by routing it through formatList with bare/tsv defaults. This test
  * exercises the SAME code path with representative payloads and asserts each
  * default text view (a) stays under a token budget and (b) is strictly smaller

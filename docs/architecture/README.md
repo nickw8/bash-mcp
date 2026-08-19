@@ -3,6 +3,9 @@
 Read when tracing how a request flows through the server, or when you need to know which
 module owns a concern before editing.
 
+Also in this folder: [`configuration.md`](configuration.md) — env vars, timeouts, CLI
+prerequisites, and what `run`/`batch` refuse to execute.
+
 ## Stack
 
 TypeScript, Node.js >= 20 (ESM), MCP SDK, Zod schemas, Vitest, Biome (lint/format), tsup (bundler)
@@ -50,7 +53,7 @@ one chokepoint. `run` gates itself (it reports the block differently) and calls 
 
 ## Subsystem notes
 
-- **Outline** (`src/tools/file/outline/`) — one regex extractor per language, dispatched by `EXT_MAP` / `EXTRACTORS`, returning `ExtractResult`. Regex, not AST: [ADR-0007](adr/0007-outline-extractors-are-regex.md).
+- **Outline** (`src/tools/file/outline/`) — one regex extractor per language, dispatched by `EXT_MAP` / `EXTRACTORS`, returning `ExtractResult`. Regex, not AST: [ADR-0007](../adr/0007-outline-extractors-are-regex.md).
 - **Git Source** (`src/tools/file/git-source.ts`) — how `cat --ref` and `outline --ref` read a file out of git: `resolveRepo` (the one `rev-parse`), `readAtRef`, `gitMeta`. Locating the repo is a separate call because it is the spawn; a handler resolves once and passes the `Repo` to the rest. `outline` also pays `gitMeta`'s two spawns per request to enrich its payload with branch and commit.
 - **Redirect hook** — `hooks/bash-mcp-redirect.sh` is a PreToolUse Bash hook steering agents from raw commands to tools via a `RULES` array (block = a tool exists, warn = compound or roadmap). `hooks/bash-mcp-redirect.test.ts` asserts every `RULES` entry plus the write-passthrough, pipeline-demote, and fail-open invariants; the vitest include covers `hooks/`. Test files are excluded from the npm tarball via `"!hooks/**/*.test.ts"` in package.json `files`.
 - **Platform branches** — BSD and GNU coreutils take different flags for the same information (macOS `ls` has no `--time-style=iso`; `stat` is `-f "%z"` vs `--format=%s`). All of it lives in `src/platform.ts` — `statArgs()` and `lsTimeArgs`. A tool that formats dates or sizes asks for the fields it wants; it does not branch on the platform itself.

@@ -11,13 +11,14 @@ entry file. Six memories (`architecture`, `conventions`, `gotchas`, `next-steps-
 |---|---|
 | Commands, every-task invariants, routing | `AGENTS.md` (canonical; `CLAUDE.md` is a one-line import) |
 | Domain vocabulary | `CONTEXT.md` |
-| Settled decisions + rationale | `docs/adr/0001`–`0008` |
-| Module map, data flow, subsystem notes | `docs/architecture.md` |
-| Adding/editing a tool, wiring allowlists | `docs/adding-tools.md` |
-| Response helpers, formats, budgets, rg, benchmarks | `docs/output-conventions.md` |
-| Env vars, timeouts, prerequisites | `docs/configuration.md` |
+| Settled decisions + rationale | `docs/adr/0001`–`0011` |
+| Module map, data flow, subsystem notes | `docs/architecture/README.md` |
+| Adding/editing a tool, wiring allowlists | `docs/guides/adding-tools.md` |
+| Response helpers, formats, budgets, rg, benchmarks | `docs/guides/output-conventions.md` |
+| Env vars, timeouts, prerequisites | `docs/architecture/configuration.md` |
 | Branching, tests, commit style | `CONTRIBUTING.md` |
 | Issue tracker, triage labels, domain-doc rules | `docs/agents/` |
+| Any other guide — the docs index | `docs/README.md` (architecture/ guides/ runbooks/ adr/ agents/) |
 
 **Write new findings to those files, not to a memory.** A memory that restates a doc will
 drift from it; that is exactly what happened here. Where a given instruction belongs is

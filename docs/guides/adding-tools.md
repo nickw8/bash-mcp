@@ -17,7 +17,7 @@ Read when writing a new tool, changing an existing one, or adding a tool group.
 - Read-only tools carry `annotations: { readOnlyHint: true }`. Excluded as mutating or arbitrary-exec: `run`, `batch`, `npm_lint` / `python_lint` (they have `--fix`), `npm_test` / `python_test` / `dotnet_test` / `dotnet_build`
 - Add `equivalentCommands: ["..."]` for the raw CLI the tool approximates — set this by default for any tool wrapping a real CLI; leave it unset only when the tool maps to no single CLI invocation (e.g. batch, list_guidance, outline, tf_modules_summary, tf_backend_info)
 - The README table blurbs are the first sentence of each tool's description — keep that sentence self-contained
-- All tools return: `{ content: [{ type: "text", text }], structuredContent: {...}, isError?: true }`. Tools always return a result, never throw — a command that ran and failed is `ok(...)`, only an unrunnable one is `err(...)` ([ADR-0005](adr/0005-wrapped-failure-is-a-result.md))
+- All tools return: `{ content: [{ type: "text", text }], structuredContent: {...}, isError?: true }`. Tools always return a result, never throw — a command that ran and failed is `ok(...)`, only an unrunnable one is `err(...)` ([ADR-0005](../adr/0005-wrapped-failure-is-a-result.md))
 - Which response helper to use, and how to shape the text block: [output-conventions.md](output-conventions.md)
 
 ## Generated docs — never hand-edit
@@ -89,6 +89,6 @@ variable-size lists.
 - Each tool file exports a single `register<ToolName>Tool(server)` function
 - Barrel files call all sub-registrations so the `GROUPS` entry stays unchanged
 - Use `#parsers` for shared types, tool-local `parsers/` for format-specific logic
-- Timeouts use the `TIMEOUT` constants from `src/exec.ts` (DEFAULT, INFRA, BUILD, TYPECHECK) — see [configuration.md](configuration.md)
+- Timeouts use the `TIMEOUT` constants from `src/exec.ts` (DEFAULT, INFRA, BUILD, TYPECHECK) — see [configuration.md](../architecture/configuration.md)
 - Co-located tests: `<name>.test.ts` next to `<name>.ts`; pure parsers extracted to `parse.ts` / `diagnose.ts` with fixture-driven tests reading from `fixtures/`
 - Build with tsup (single-file bundle with shebang), dev with tsx (fast reload)

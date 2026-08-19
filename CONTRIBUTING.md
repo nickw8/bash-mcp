@@ -43,7 +43,7 @@ neither applies.
 6. Add tests in a co-located `*.test.ts` file
 7. Run `npm run docs:tools` — the tool tables in `README.md` and `docs/tools.md` are generated, so never edit them by hand
 
-See [docs/adding-tools.md](docs/adding-tools.md) for the full guide.
+See [docs/guides/adding-tools.md](docs/guides/adding-tools.md) for the full guide.
 
 ## Code Style
 

@@ -58,7 +58,7 @@ and compaction lever is measured against `JSON.stringify(structuredContent)`.
   `tf_state_list`, `tf_outputs`, `kube_contexts` and the shared diagnostics list took the
   headline to 59% token-weighted / 29% median / 50% frequency-weighted and cut the total
   weighted excess from 2343 tokens across 15 tools to 449 across 9. See the worst-offender
-  table in [token-benchmarks.md](../token-benchmarks.md).
+  table in [token-benchmarks.md](../guides/token-benchmarks.md).
 - `src/format.budget.test.ts` still guards the formatter, but it guards text nobody is
   charged for; `src/benchmark.fixtures.test.ts` is now the guard that matters.
 - Curating `rows` is still safe (text-only) — and still saves the agent nothing.

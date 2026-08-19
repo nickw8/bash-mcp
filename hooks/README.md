@@ -18,4 +18,4 @@ drift) — same copy, no clone needed. Either way it prints the global `settings
 hook snippet to paste in.
 
 Full setup, behavior tiers, customizing, and the roadmap mappings:
-**[../docs/recommended-hooks-setup.md](../docs/recommended-hooks-setup.md)**.
+**[../docs/runbooks/hooks-setup.md](../docs/runbooks/hooks-setup.md)**.

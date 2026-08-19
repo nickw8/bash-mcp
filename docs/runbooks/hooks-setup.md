@@ -2,7 +2,7 @@
 
 bash-mcp ships optional [Claude Code hooks](https://docs.claude.com/en/docs/claude-code/hooks)
 that steer agents toward the structured tools instead of raw shell. They live in
-the [`hooks/`](../hooks) directory and are **opt-in** — you wire them into your own
+the [`hooks/`](../../hooks) directory and are **opt-in** — you wire them into your own
 Claude Code settings.
 
 ## How hooks work (two pieces)
@@ -41,7 +41,7 @@ The full mapping is the `RULES` array at the top of the script.
 
 Add the hook to the **target project's** `.claude/settings.json` (the project
 you're working in, not bash-mcp itself), pointing at wherever you keep the
-script. The easiest path is to copy [`hooks/bash-mcp-redirect.sh`](../hooks/bash-mcp-redirect.sh)
+script. The easiest path is to copy [`hooks/bash-mcp-redirect.sh`](../../hooks/bash-mcp-redirect.sh)
 into that project, then register it:
 
 ```json
@@ -66,7 +66,7 @@ into that project, then register it:
 
 `$CLAUDE_PROJECT_DIR` resolves to the project root, so the path works for anyone
 who clones the project. This snippet is also provided as
-[`hooks/settings.example.json`](../hooks/settings.example.json) — copy its `hooks`
+[`hooks/settings.example.json`](../../hooks/settings.example.json) — copy its `hooks`
 block into your settings.
 
 ## Install — global (all projects)
@@ -99,5 +99,5 @@ picked up.
 - The hook **fails open**: if `jq` is missing or the script errors, the command is
   allowed rather than blocked — a hook bug never wedges your agent.
 
-See [`hooks/README.md`](../hooks/README.md) for the per-tier behavior table and the
+See [`hooks/README.md`](../../hooks/README.md) for the per-tier behavior table and the
 current list of roadmap mappings.

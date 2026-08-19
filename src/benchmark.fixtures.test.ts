@@ -25,11 +25,11 @@ import {
  *   1. Each tool's structured (expected) text stays under its recorded token
  *      budget — the per-tool "standard". A format regression that re-inflates a
  *      tool's output trips here (NOT a blanket "smaller than raw": several tools
- *      are legitimately negative on tiny inputs — see docs/token-benchmarks.md —
+ *      are legitimately negative on tiny inputs — see docs/guides/token-benchmarks.md —
  *      so each carries its own ceiling instead).
  *   2. Every manifest id has both fixture files and they're non-empty.
  *   3. The doc's generated tables match what the fixtures render right now, so
- *      docs/token-benchmarks.md can never drift from the data. Regenerate with
+ *      docs/guides/token-benchmarks.md can never drift from the data. Regenerate with
  *      `node scripts/token-benchmark.mjs --write` if this fails intentionally.
  *
  * Counts use o200k_base (a GPT proxy for Claude), matching the committed doc and

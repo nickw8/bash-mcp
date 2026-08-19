@@ -35,19 +35,21 @@ triage into one answer. New diagnostics follow that shape, and handle a failed p
 
 | Read when | Guide |
 |---|---|
-| Adding or editing a tool, or adding a group | [docs/adding-tools.md](docs/adding-tools.md) |
-| Deciding what a tool returns, or shaping its text block | [docs/output-conventions.md](docs/output-conventions.md) |
-| Tracing how the server, registry, or exec layer fits together | [docs/architecture.md](docs/architecture.md) |
-| A tool times out, a CLI is missing, or `run`/`batch` is blocked | [docs/configuration.md](docs/configuration.md) |
+| Adding or editing a tool, or adding a group | [docs/guides/adding-tools.md](docs/guides/adding-tools.md) |
+| Deciding what a tool returns, or shaping its text block | [docs/guides/output-conventions.md](docs/guides/output-conventions.md) |
+| Tracing how the server, registry, or exec layer fits together | [docs/architecture/README.md](docs/architecture/README.md) |
+| A tool times out, a CLI is missing, or `run`/`batch` is blocked | [docs/architecture/configuration.md](docs/architecture/configuration.md) |
 | Looking up a tool's name, args, or output shape | [docs/tools.md](docs/tools.md) (generated) |
-| Wiring the redirect hook into a Claude install | [docs/recommended-hooks-setup.md](docs/recommended-hooks-setup.md) |
-| Justifying a tool's token savings | [docs/token-benchmarks.md](docs/token-benchmarks.md) |
+| Wiring the redirect hook into a Claude install | [docs/runbooks/hooks-setup.md](docs/runbooks/hooks-setup.md) |
+| Justifying a tool's token savings | [docs/guides/token-benchmarks.md](docs/guides/token-benchmarks.md) |
+| Looking for any other guide | [docs/README.md](docs/README.md) |
 | Branching, PRs, code style | [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 Domain vocabulary is in [CONTEXT.md](CONTEXT.md) — use its terms in issues, test names,
 and proposals. Settled decisions are in [docs/adr/](docs/adr/); read the relevant one
 before changing registration, logging, output shape, or safety defaults, and if your
-change contradicts one, say so rather than quietly overriding it.
+change contradicts one, say so rather than quietly overriding it. Conventions for both:
+[docs/agents/domain.md](docs/agents/domain.md).
 
 `AGENTS.md` is canonical; `CLAUDE.md` is a one-line import of it. Where a new instruction
 belongs is in [.claude/rules/instructions.md](.claude/rules/instructions.md).
@@ -61,8 +63,3 @@ GitHub Issues on `nickw8/bash-mcp`, via the `gh` CLI. See [docs/agents/issue-tra
 ### Triage labels
 
 The five canonical roles, label string = role name. See [docs/agents/triage-labels.md](docs/agents/triage-labels.md).
-
-### Domain docs
-
-Single-context — `CONTEXT.md` + `docs/adr/` at the repo root (neither exists yet;
-`/domain-modeling` creates them lazily). See [docs/agents/domain.md](docs/agents/domain.md).

@@ -21,7 +21,7 @@ import { fileURLToPath } from "node:url";
 // its own js-tiktoken encoder and only the paths are deduped here.
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 export const fixturesRoot = join(repoRoot, "fixtures", "benchmarks");
-export const docPath = join(repoRoot, "docs", "token-benchmarks.md");
+export const docPath = join(repoRoot, "docs", "guides", "token-benchmarks.md");
 
 /** Read the manifest and inline each case's raw/expected fixture text. */
 export function loadCases(root) {

@@ -1,12 +1,12 @@
 # Output Conventions
 
 Read when deciding what a tool returns, or why its text block differs from its
-`structuredContent`. The mechanics come from [ADR-0006](adr/0006-compact-text-block-via-oklist.md);
+`structuredContent`. The mechanics come from [ADR-0006](../adr/0006-compact-text-block-via-oklist.md);
 this is how to apply them.
 
 **Before you optimise anything here:** `structuredContent` is what the agent is charged
 tokens for — a client that understands it renders it and ignores the text block
-([ADR-0009](adr/0009-structuredcontent-is-what-the-agent-reads.md)). `format`, `fields`,
+([ADR-0009](../adr/0009-structuredcontent-is-what-the-agent-reads.md)). `format`, `fields`,
 and row curation shape the **text block only** and save the model nothing. To cut tokens,
 shrink the payload: fewer fields, shorter values, and payload-shrinking parameters
 (`maxResults`, `maxLineLength`, `only`, `filesOnly`, the `budgetSchema` params).
@@ -99,7 +99,7 @@ Text rows follow the same curation: `line`/`column` collapse into one `loc` cell
 never the text block), and a `manifest.json` (`{ id, command, weight, budget }`).
 Budget = `ceil(o200k(expected) * 1.1 / 5) * 5` (measured count + ~10% headroom, rounded to 5).
 
-- `scripts/token-benchmark.mjs` reads them; `--write` regenerates the tables in `docs/token-benchmarks.md` between the `<!-- BENCHMARK:... -->` markers. Rendering and aggregation live in `scripts/benchmark-core.mjs`, shared with the test.
+- `scripts/token-benchmark.mjs` reads them; `--write` regenerates the tables in `docs/guides/token-benchmarks.md` between the `<!-- BENCHMARK:... -->` markers. Rendering and aggregation live in `scripts/benchmark-core.mjs`, shared with the test.
 - Two CI guards: `src/format.budget.test.ts` (synthetic rows stay under budget and under JSON — guards the formatter) and `src/benchmark.fixtures.test.ts` (each tool's `expected.txt` is within its recorded budget, and the doc tables still match the fixtures).
 
 When you intentionally change a tool's output: update `expected.txt`, re-baseline the
