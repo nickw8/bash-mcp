@@ -10,7 +10,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { describe, expect, it } from "vitest";
-import type { ZodTypeAny } from "zod";
+import type { ZodObject, ZodRawShape, ZodTypeAny } from "zod";
 import type { Logger, WideEvent } from "./logger.js";
 import { registerAll } from "./registry.js";
 import { err, ok } from "./response.js";
@@ -49,8 +49,18 @@ describe("defineTool", () => {
     };
     defineTool(server, "t", config, async () => ok({ x: 1 }), logger);
     expect(captured[0]!.name).toBe("t");
-    // config is rebuilt (equivalentCommands folded into _meta), so compare by value.
-    expect(captured[0]!.config).toEqual(config);
+    // config is rebuilt (equivalentCommands folded into _meta, inputSchema
+    // wrapped in a strict object), so compare the forwarded fields by value.
+    const forwarded = captured[0]!.config as Record<string, unknown>;
+    expect(forwarded).toMatchObject({
+      title: "T",
+      description: "d",
+      annotations: { readOnlyHint: true },
+      _meta: { foo: "bar" },
+    });
+    // An undeclared argument is refused rather than silently dropped.
+    const schema = forwarded.inputSchema as ZodObject<ZodRawShape>;
+    expect(schema.safeParse({ nope: 1 }).success).toBe(false);
   });
 
   it("folds equivalentCommands into _meta, preserving caller _meta", () => {
@@ -275,12 +285,15 @@ function realTools() {
   const handlers = new Map<string, Handler>();
   const configs = new Map<
     string,
-    { inputSchema?: Record<string, ZodTypeAny> }
+    { inputSchema?: ZodObject<Record<string, ZodTypeAny>> }
   >();
   const server = {
     registerTool(name: string, config: unknown, handler: Handler) {
       handlers.set(name, handler);
-      configs.set(name, config as { inputSchema?: Record<string, ZodTypeAny> });
+      configs.set(
+        name,
+        config as { inputSchema?: ZodObject<Record<string, ZodTypeAny>> },
+      );
       return undefined;
     },
   } as unknown as McpServer;
@@ -308,7 +321,7 @@ describe("the registered tools' arg contract", () => {
   });
 
   it("find_files without path searches '.' instead of failing", () => {
-    const path = configs.get("find_files")?.inputSchema?.path;
+    const path = configs.get("find_files")?.inputSchema?.shape.path;
     expect(path?.parse(undefined)).toBe(".");
     const required = getRegisteredTools().find(
       (t) => t.name === "find_files",

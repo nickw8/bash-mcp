@@ -21,7 +21,7 @@ import type {
   ToolCallback,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
-import type { ZodRawShape } from "zod";
+import { type ZodRawShape, z } from "zod";
 import { logger as defaultLogger, type Logger, type WideEvent } from "#logger";
 import { err, zeroOf } from "#response";
 
@@ -226,7 +226,20 @@ export function defineTool<
   const meta = equivalentCommands
     ? { ...config._meta, equivalentCommands }
     : config._meta;
-  const registerConfig = meta ? { ...rest, _meta: meta } : rest;
+  // An argument the tool does not declare is an error, not something to drop.
+  // The SDK builds a strip-mode object out of a raw shape, so
+  // `git_diff_content({ repoPath, commit, nameOnly })` lost all three keys,
+  // diffed the default repo at the default ref, and answered as if that were
+  // the question. The advertised JSON Schema already says
+  // `additionalProperties: false`; `.strict()` makes the server agree with it
+  // and name the keys it refused, which is what lets the agent retry.
+  const registerConfig = {
+    ...rest,
+    ...(config.inputSchema
+      ? { inputSchema: z.object(config.inputSchema).strict() }
+      : {}),
+    ...(meta ? { _meta: meta } : {}),
+  } as unknown as ToolConfig<InputArgs, OutputArgs>;
 
   registry.push({
     name,
