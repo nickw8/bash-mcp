@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatList, projectRows } from "./format.js";
+import { formatList, projectRows, summarize } from "./format.js";
 
 const ROWS = [
   { name: "a", size: 1 },
@@ -154,6 +154,74 @@ describe("formatList — columnar", () => {
     expect(formatList([], "columnar")).toBe("{}");
     expect(formatList([], "columnar", { count: 0 })).toBe(
       JSON.stringify({ count: 0 }),
+    );
+  });
+});
+
+describe("summarize", () => {
+  it("inlines scalars", () => {
+    expect(summarize({ path: "src/a.ts", count: 3, ok: true })).toBe(
+      "path=src/a.ts count=3 ok=true",
+    );
+  });
+
+  it("reports arrays as counts and nested objects as key counts", () => {
+    expect(
+      summarize({ files: ["a", "b", "c"], byType: { ts: 2, js: 1 } }),
+    ).toBe("files[3] byType{2}");
+  });
+
+  it("reports a long string as a byte size, never its content", () => {
+    const content = "x".repeat(500);
+    const text = summarize({ path: "big.txt", content });
+    expect(text).toBe("path=big.txt content=500B");
+    expect(text).not.toContain("xxxx");
+  });
+
+  it("reports a short multi-line string as a size — newlines mean content", () => {
+    expect(summarize({ content: "a\nb\n" })).toBe("content=4B");
+  });
+
+  it("measures bytes, not characters", () => {
+    expect(summarize({ content: "é".repeat(100) })).toBe("content=200B");
+  });
+
+  it("drops low-signal values, matching the metadata prefix rules", () => {
+    expect(
+      summarize({
+        found: 2,
+        truncated: false,
+        error: null,
+        note: "",
+        missing: undefined,
+      }),
+    ).toBe("found=2");
+  });
+
+  it("returns an empty string for an empty payload", () => {
+    expect(summarize({})).toBe("");
+  });
+
+  it("caps a wide payload so one line cannot grow unbounded", () => {
+    const wide = Object.fromEntries(
+      Array.from({ length: 200 }, (_, i) => [`field${i}`, i]),
+    );
+    const text = summarize(wide);
+    expect(text.length).toBeLessThanOrEqual(300);
+    expect(text.endsWith("…")).toBe(true);
+  });
+
+  it("stays shorter than the serialized payload it describes", () => {
+    const payload = {
+      path: "src/response.ts",
+      totalLines: 141,
+      size: 4533,
+      content: "y".repeat(4533),
+      range: [1, 141],
+      truncated: false,
+    };
+    expect(summarize(payload).length).toBeLessThan(
+      JSON.stringify(payload).length,
     );
   });
 });

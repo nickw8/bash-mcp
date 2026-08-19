@@ -48,6 +48,68 @@ export function formatList(
 }
 
 /**
+ * Strings this long (in bytes) are reported as a size instead of inlined.
+ *
+ * Set above path length on purpose: a path, ref, or one-line message is a
+ * locator the reader wants, while file content, a diff, or a log body is the
+ * thing we refuse to ship twice. Any string containing a newline is content by
+ * that same test, whatever its length.
+ */
+const INLINE_STRING_LIMIT = 120;
+
+/** Hard ceiling on a summary line, so a wide payload can't grow one unbounded. */
+const SUMMARY_LIMIT = 300;
+
+/**
+ * Render a payload as a one-line summary for the MCP text block.
+ *
+ * `ok()` used to put `JSON.stringify(structuredContent)` here, so every response
+ * shipped its payload twice — the second copy re-escaped inside a JSON string.
+ * Claude Code reads `structuredContent` (ADR-0009), so that copy bought nothing
+ * and correlated with the client rejecting the model's *next* call as malformed.
+ * The summary keeps the block useful for a human reading a transcript without
+ * repeating a byte of content.
+ *
+ * Scalars inline, arrays as `key[n]`, nested objects as `key{n}`, long or
+ * multi-line strings as `key=<bytes>B`. Low-signal values (`false`, `null`,
+ * `undefined`, `""`) are dropped, matching `metaLines` above — an empty result
+ * returns `""`, which `defineTool` renders as the tool name.
+ */
+export function summarize(payload: Record<string, unknown>): string {
+  const parts: string[] = [];
+  for (const [key, value] of Object.entries(payload)) {
+    const part = summarizeField(key, value);
+    if (part !== undefined) parts.push(part);
+  }
+  const line = parts.join(" ");
+  return line.length > SUMMARY_LIMIT
+    ? `${line.slice(0, SUMMARY_LIMIT - 1)}…`
+    : line;
+}
+
+function summarizeField(key: string, value: unknown): string | undefined {
+  if (
+    value === undefined ||
+    value === null ||
+    value === false ||
+    value === ""
+  ) {
+    return undefined;
+  }
+  if (Array.isArray(value)) return `${key}[${value.length}]`;
+  if (typeof value === "string") {
+    const bytes = Buffer.byteLength(value);
+    return bytes >= INLINE_STRING_LIMIT || value.includes("\n")
+      ? `${key}=${bytes}B`
+      : `${key}=${value}`;
+  }
+  if (typeof value === "object") {
+    return `${key}{${Object.keys(value).length}}`;
+  }
+  return `${key}=${String(value)}`;
+}
+
+/**
  * Restrict each row to the named fields (in the given order), dropping the rest.
  * Used for the `fields` projection: callers keep full `structuredContent` but emit
  * only the requested columns in the text block. A field absent from a row is
