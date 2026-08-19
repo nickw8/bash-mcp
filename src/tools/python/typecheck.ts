@@ -5,6 +5,8 @@ import {
   diagnosticInputSchema,
   diagnosticOutputSchema,
   diagnosticsResponse,
+  stringOrArray,
+  toArray,
 } from "#parsers";
 import { defineTool } from "#tool";
 import { parseMypyOutput } from "./parsers/mypy.js";
@@ -21,10 +23,9 @@ export function registerPythonTypecheckTool(server: McpServer) {
       equivalentCommands: ["mypy ."],
       inputSchema: {
         cwd: z.string().describe("Project root directory"),
-        paths: z
-          .array(z.string())
-          .optional()
-          .describe("Specific paths to check (default: '.')"),
+        paths: stringOrArray(
+          "Specific path(s) to check; a string or array (default: '.')",
+        ),
         ...diagnosticInputSchema,
       },
       outputSchema: {
@@ -35,11 +36,12 @@ export function registerPythonTypecheckTool(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     async ({ cwd, paths, format, fields, detailLevel, maxItems }) => {
+      const pathList = toArray(paths);
       const args = [
         "--show-column-numbers",
         "--no-color-output",
         "--no-error-summary",
-        ...(paths ?? ["."]),
+        ...(pathList.length > 0 ? pathList : ["."]),
       ];
 
       const result = await exec("mypy", args, {

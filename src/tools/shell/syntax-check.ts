@@ -5,6 +5,8 @@ import {
   diagnosticInputSchema,
   diagnosticOutputSchema,
   diagnosticsResponse,
+  stringOrArray,
+  toArray,
 } from "#parsers";
 import { ok } from "#response";
 import { defineTool } from "#tool";
@@ -20,11 +22,11 @@ export function registerBashSyntaxCheckTool(server: McpServer) {
         "Check shell scripts for syntax errors with `bash -n` and return structured diagnostics (file, line, message). " +
         "Parses without executing, so it is safe on untrusted scripts. Reports valid:true when no errors are found.",
       equivalentCommands: ["bash -n script.sh"],
+      required: ["files"],
       inputSchema: {
-        files: z
-          .array(z.string())
-          .min(1)
-          .describe("Shell script paths to check"),
+        files: stringOrArray(
+          "Shell script path(s) to check; a string or array",
+        ),
         ...diagnosticInputSchema,
       },
       outputSchema: {
@@ -38,7 +40,7 @@ export function registerBashSyntaxCheckTool(server: McpServer) {
       // `bash -n` parses a single script file (extra args become positional
       // params), so check each file separately and merge the diagnostics.
       const results = await Promise.all(
-        files.map((file) =>
+        toArray(files).map((file) =>
           exec("bash", ["-n", file], { timeout: TIMEOUT.DEFAULT }),
         ),
       );

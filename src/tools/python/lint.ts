@@ -6,6 +6,8 @@ import {
   diagnosticInputSchema,
   diagnosticOutputSchema,
   diagnosticsResponse,
+  stringOrArray,
+  toArray,
 } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
@@ -27,10 +29,9 @@ export function registerPythonLintTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Auto-fix safe issues (default: false)"),
-        paths: z
-          .array(z.string())
-          .optional()
-          .describe("Specific paths to lint (default: '.')"),
+        paths: stringOrArray(
+          "Specific path(s) to lint; a string or array (default: '.')",
+        ),
         minSeverity: z
           .enum(["error", "warning", "info"])
           .optional()
@@ -58,7 +59,8 @@ export function registerPythonLintTool(server: McpServer) {
     }) => {
       const args = ["check", "--output-format", "json"];
       if (fix) args.push("--fix");
-      args.push(...(paths ?? ["."]));
+      const pathList = toArray(paths);
+      args.push(...(pathList.length > 0 ? pathList : ["."]));
 
       const result = await exec("ruff", args, { cwd, timeout: 30_000 });
 

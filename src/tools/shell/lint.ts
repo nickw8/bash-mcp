@@ -6,6 +6,8 @@ import {
   diagnosticInputSchema,
   diagnosticOutputSchema,
   diagnosticsResponse,
+  stringOrArray,
+  toArray,
 } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
@@ -23,11 +25,7 @@ export function registerBashLintTool(server: McpServer) {
       equivalentCommands: ["shellcheck -f json1 script.sh"],
       required: ["files"],
       inputSchema: {
-        files: z
-          .array(z.string())
-          .min(1)
-          .optional()
-          .describe("Shell script paths to lint"),
+        files: stringOrArray("Shell script path(s) to lint; a string or array"),
         minSeverity: z
           .enum(["error", "warning", "info"])
           .optional()
@@ -43,18 +41,12 @@ export function registerBashLintTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    // Empty fallback for a `required` argument — see the note in batch.ts.
-    async ({
-      files = [],
-      minSeverity,
-      format,
-      fields,
-      detailLevel,
-      maxItems,
-    }) => {
-      const result = await exec("shellcheck", ["-f", "json1", ...files], {
-        timeout: TIMEOUT.DEFAULT,
-      });
+    async ({ files, minSeverity, format, fields, detailLevel, maxItems }) => {
+      const result = await exec(
+        "shellcheck",
+        ["-f", "json1", ...toArray(files)],
+        { timeout: TIMEOUT.DEFAULT },
+      );
 
       // shellcheck not installed → structured notice rather than a crash.
       if (result.errorCode === "ENOENT") {

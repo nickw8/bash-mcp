@@ -10,6 +10,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
+import { stringOrArray, toArray } from "#parsers";
 import { statArgs } from "#platform";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
@@ -243,12 +244,9 @@ export function registerFileTools(server: McpServer) {
       equivalentCommands: ["cat <file>"],
       inputSchema: {
         path: z.string().optional().describe("Path to a single file"),
-        paths: z
-          .array(z.string())
-          .optional()
-          .describe(
-            "Read multiple files in one call. Returns { files, count }; a per-file failure is reported in that file's `error` and does not abort the others.",
-          ),
+        paths: stringOrArray(
+          "Read multiple files in one call; a string or array. Returns { files, count }; a per-file failure is reported in that file's `error` and does not abort the others.",
+        ),
         ref: z
           .string()
           .optional()
@@ -321,9 +319,10 @@ export function registerFileTools(server: McpServer) {
       };
       // Multi-file mode: read all in parallel; per-file failures surface in each
       // file's `error` field and never abort the batch.
-      if (paths && paths.length > 0) {
+      const pathList = toArray(paths);
+      if (pathList.length > 0) {
         const files = await Promise.all(
-          paths.map((p) => readFileContent(p, params)),
+          pathList.map((p) => readFileContent(p, params)),
         );
         return ok({ files, count: files.length });
       }

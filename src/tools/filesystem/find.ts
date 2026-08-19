@@ -37,7 +37,11 @@ export function registerFindTool(server: McpServer) {
         "Use names for multiple glob patterns (OR logic), modifiedWithin for recent files (e.g. '7d', '1h').",
       equivalentCommands: ["find <path> -name <pattern>"],
       inputSchema: {
-        path: z.string().describe("Root directory to search"),
+        path: z
+          .string()
+          .optional()
+          .default(".")
+          .describe("Root directory to search (default: '.')"),
         name: z
           .string()
           .optional()

@@ -5,6 +5,8 @@ import {
   compactDiagnostics,
   countBySeverity,
   diagnosticOutputSchema,
+  stringOrArray,
+  toArray,
 } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
@@ -28,10 +30,9 @@ export function registerNpmLintTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Auto-fix safe issues (default: false)"),
-        paths: z
-          .array(z.string())
-          .optional()
-          .describe("Specific paths to lint (default: '.')"),
+        paths: stringOrArray(
+          "Specific path(s) to lint; a string or array (default: '.')",
+        ),
         minSeverity: z
           .enum(["error", "warning", "info"])
           .optional()
@@ -49,7 +50,8 @@ export function registerNpmLintTool(server: McpServer) {
     async ({ cwd, fix, paths, minSeverity }) => {
       const args = ["biome", "check", "--reporter=json"];
       if (fix) args.push("--fix");
-      args.push(...(paths ?? ["."]));
+      const pathList = toArray(paths);
+      args.push(...(pathList.length > 0 ? pathList : ["."]));
 
       const result = await exec("npx", args, { cwd, timeout: 30_000 });
 

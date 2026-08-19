@@ -109,7 +109,7 @@ Run shellcheck and return structured diagnostics with file, line, column, messag
 
 **Inputs:**
 
-- `files`: string[] — Shell script paths to lint
+- `files`: string | string[] — Shell script path(s) to lint; a string or array
 - `minSeverity`: "error" | "warning" | "info" _(optional)_ — Minimum severity to include (e.g. 'error' drops warnings and info)
 - `format`: "grouped" | "tsv" | "json" _(optional)_ — Text format: grouped (default, file header once then line:col rule message), tsv, or json
 - `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
@@ -138,7 +138,7 @@ Check shell scripts for syntax errors with `bash -n` and return structured diagn
 
 **Inputs:**
 
-- `files`: string[] — Shell script paths to check
+- `files`: string | string[] — Shell script path(s) to check; a string or array
 - `format`: "grouped" | "tsv" | "json" _(optional)_ — Text format: grouped (default, file header once then line:col rule message), tsv, or json
 - `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
 - `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
@@ -205,7 +205,7 @@ Read one or more files with line numbers and smart truncation. Returns structure
 **Inputs:**
 
 - `path`: string _(optional)_ — Path to a single file
-- `paths`: string[] _(optional)_ — Read multiple files in one call. Returns { files, count }; a per-file failure is reported in that file's `error` and does not abort the others.
+- `paths`: string | string[] _(optional)_ — Read multiple files in one call; a string or array. Returns { files, count }; a per-file failure is reported in that file's `error` and does not abort the others.
 - `ref`: string _(optional)_ — Git ref to read from (e.g. 'main', 'HEAD~1', a commit hash). When set, reads file content from git (git show ref:path) instead of disk.
 - `startLine`: number _(optional)_ — Start reading from this line (1-based)
 - `endLine`: number _(optional)_ — Stop reading at this line (inclusive)
@@ -342,7 +342,7 @@ Find files by name pattern, type, or modification time. Returns structured list 
 
 **Inputs:**
 
-- `path`: string — Root directory to search
+- `path`: string _(optional)_ — Root directory to search (default: '.')
 - `name`: string _(optional)_ — Filename glob pattern (e.g. '*.ts')
 - `names`: string[] _(optional)_ — Multiple filename glob patterns (e.g. ['*.ts', '*.py', '*.sh']). Combined with OR logic.
 - `type`: "file" | "dir" | "link" _(optional)_ — Filter by type
@@ -1019,7 +1019,7 @@ Run biome check and return structured diagnostics with file, line, column, messa
 
 - `cwd`: string — Project root directory
 - `fix`: boolean _(optional)_ — Auto-fix safe issues (default: false)
-- `paths`: string[] _(optional)_ — Specific paths to lint (default: '.')
+- `paths`: string | string[] _(optional)_ — Specific path(s) to lint; a string or array (default: '.')
 - `minSeverity`: "error" | "warning" | "info" _(optional)_ — Minimum severity to include (e.g. 'error' drops warnings and info)
 
 **Outputs:**
@@ -1119,7 +1119,7 @@ Run ruff check and return structured diagnostics with file, line, column, messag
 
 - `cwd`: string — Project root directory
 - `fix`: boolean _(optional)_ — Auto-fix safe issues (default: false)
-- `paths`: string[] _(optional)_ — Specific paths to lint (default: '.')
+- `paths`: string | string[] _(optional)_ — Specific path(s) to lint; a string or array (default: '.')
 - `minSeverity`: "error" | "warning" | "info" _(optional)_ — Minimum severity to include (e.g. 'error' drops warnings and info)
 - `format`: "grouped" | "tsv" | "json" _(optional)_ — Text format: grouped (default, file header once then line:col rule message), tsv, or json
 - `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
@@ -1172,7 +1172,7 @@ Run mypy and return structured type errors with file, line, column, message, and
 **Inputs:**
 
 - `cwd`: string — Project root directory
-- `paths`: string[] _(optional)_ — Specific paths to check (default: '.')
+- `paths`: string | string[] _(optional)_ — Specific path(s) to check; a string or array (default: '.')
 - `format`: "grouped" | "tsv" | "json" _(optional)_ — Text format: grouped (default, file header once then line:col rule message), tsv, or json
 - `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
 - `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
