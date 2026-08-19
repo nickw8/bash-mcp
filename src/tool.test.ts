@@ -323,4 +323,23 @@ describe("the registered tools' arg contract", () => {
     expect(one.structuredContent).toEqual(many.structuredContent);
     expect(one.structuredContent).toMatchObject({ valid: true, errorCount: 0 });
   });
+
+  // An empty list is not an answer. bash_syntax_check checked nothing and
+  // reported valid:true for `files: []` until missingArgs learned to count it
+  // as absent — a clean verdict on zero input is worse than an error, because
+  // the caller acts on it.
+  it.each([
+    ["bash_syntax_check", "files"],
+    ["bash_lint", "files"],
+    ["batch", "commands"],
+    ["run_seq", "steps"],
+  ])("%s with an empty %s answers invalid_input", async (tool, arg) => {
+    const res = await handlers.get(tool)?.({ [arg]: [] }, {});
+    expect(res.isError).toBe(true);
+    expect(res.structuredContent.error).toMatchObject({
+      kind: "invalid_input",
+      command: tool,
+    });
+    expect(res.content[0].text).toContain(`missing required argument ${arg}`);
+  });
 });

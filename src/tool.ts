@@ -100,15 +100,25 @@ interface ResultShape {
 /**
  * Which of a tool's `required` arguments the caller left out.
  *
- * `undefined` and `null` count as absent; `""`, `0`, and `false` do not — an
- * empty string is a caller's answer, not a missing one.
+ * `undefined`, `null`, and an empty array count as absent; `""`, `0`, and
+ * `false` do not — an empty string is a caller's answer, not a missing one.
+ *
+ * The empty array is here rather than as a `.min(1)` on each schema because a
+ * tool that needs a list needs a non-empty one, and one guard covers every
+ * array argument at once. Without it `bash_syntax_check({ files: [] })` checked
+ * nothing and answered `valid: true`, which is worse than an error.
  */
 function missingArgs(required: string[] | undefined, args: unknown): string[] {
   if (!required || required.length === 0) return [];
   const record = (args ?? {}) as Record<string, unknown>;
-  return required.filter(
-    (key) => record[key] === undefined || record[key] === null,
-  );
+  return required.filter((key) => {
+    const value = record[key];
+    return (
+      value === undefined ||
+      value === null ||
+      (Array.isArray(value) && value.length === 0)
+    );
+  });
 }
 
 /**
