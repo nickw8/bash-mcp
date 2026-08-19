@@ -14,7 +14,8 @@
  */
 
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -133,7 +134,80 @@ const callTool = (name: string, args: Record<string, unknown>) => ({
   params: { name, arguments: args },
 });
 
+/**
+ * The pathological corpus, written as raw bytes at test time rather than
+ * committed.
+ *
+ * Two of these cannot survive a round trip through git: `crlf` would be
+ * rewritten by `core.autocrlf` or a `.gitattributes` rule on someone's machine,
+ * and `invalid-utf8`/`lone-surrogate` are not text at all. Generating them here
+ * pins the exact bytes on every checkout, which is the whole point of the case.
+ */
+const CORPUS: Record<string, Buffer> = {
+  // \r\n endings — the classic "extra byte the framer didn't expect".
+  crlf: Buffer.from("alpha\r\nbeta\r\ngamma\r\n".repeat(40), "utf8"),
+  // Embedded NUL. Valid in a file, not in a C string; JSON escapes it.
+  nul: Buffer.concat([
+    Buffer.from("before", "utf8"),
+    Buffer.from([0x00]),
+    Buffer.from("after\n", "utf8"),
+  ]),
+  // 0xC3 0x28 is a truncated two-byte sequence: decoding yields U+FFFD.
+  "invalid-utf8": Buffer.from([0x68, 0x69, 0xc3, 0x28, 0xff, 0xfe, 0x0a]),
+  // CESU-8 encoding of U+D800 — a lone high surrogate with no pair.
+  "lone-surrogate": Buffer.concat([
+    Buffer.from("lead", "utf8"),
+    Buffer.from([0xed, 0xa0, 0x80]),
+    Buffer.from("tail\n", "utf8"),
+  ]),
+  // Astral-plane codepoints, which JSON.stringify emits as surrogate pairs.
+  emoji: Buffer.from("👩‍💻 🇬🇧 🧑🏽‍🚀 ✅\n".repeat(30), "utf8"),
+  // ~4 KB of quote-dense nested JSON-in-jsonnet: the shape of the reported
+  // failure, where every quote becomes \" once the payload is re-serialized.
+  "escaped-quotes": Buffer.from(
+    `{\n  "apps": {\n${Array.from(
+      { length: 24 },
+      (_, i) =>
+        `    "service-${i}": {\n      "kind": "service",\n      "enabled": true,\n` +
+        `      "change_paths": ["service-${i}/", "shared/"],\n` +
+        `      "build": { "app_dir": "service-${i}", "image_name": "img.service.${i}" }\n    }`,
+    ).join(",\n")}\n  }\n}\n`,
+    "utf8",
+  ),
+};
+
+/**
+ * The exact file and range from the reported failure
+ * (`.claude/handoff/bash-mcp-parse-error-2026-08-19.md`). It lives in a private
+ * sibling repo and is deliberately not vendored here — bash-mcp publishes to
+ * npm, and that file is internal CI config. The `escaped-quotes` fixture above
+ * reproduces its shape; this case replays the real bytes when they are present.
+ */
+const REPORTED_FILE = resolve(
+  repoRoot,
+  "..",
+  "pfp",
+  "cicd-pipeline",
+  "src",
+  "ci_tools",
+  "data",
+  "apps.jsonnet",
+);
+
 describe.skipIf(!existsSync(distPath))("stdio transport round-trip", () => {
+  let corpusDir: string;
+
+  beforeAll(() => {
+    corpusDir = mkdtempSync(join(tmpdir(), "bash-mcp-transport-"));
+    for (const [name, bytes] of Object.entries(CORPUS)) {
+      writeFileSync(join(corpusDir, name), bytes);
+    }
+  });
+
+  afterAll(() => {
+    rmSync(corpusDir, { recursive: true, force: true });
+  });
+
   it("returns parseable frames for a cat of a source file", async () => {
     const { frames, malformed } = await rpcSession([
       callTool("cat", { path: resolve(repoRoot, "src/response.ts") }),
@@ -143,6 +217,43 @@ describe.skipIf(!existsSync(distPath))("stdio transport round-trip", () => {
     expect(frames).toHaveLength(2);
     expect(frames[1]?.result?.structuredContent).toBeDefined();
   });
+
+  it.each(
+    Object.keys(CORPUS),
+  )("returns parseable frames for the %s fixture", async (name) => {
+    const { frames, malformed } = await rpcSession([
+      callTool("cat", { path: join(corpusDir, name) }),
+    ]);
+
+    expect(malformed).toEqual([]);
+    expect(frames[1]?.result?.structuredContent).toBeDefined();
+  });
+
+  it("reads the whole corpus in one session without desyncing the framer", async () => {
+    const names = Object.keys(CORPUS);
+    const { frames, malformed } = await rpcSession(
+      names.map((name) => callTool("cat", { path: join(corpusDir, name) })),
+    );
+
+    expect(malformed).toEqual([]);
+    expect(frames).toHaveLength(names.length + 1);
+  });
+
+  it.skipIf(!existsSync(REPORTED_FILE))(
+    "returns parseable frames for the reported apps.jsonnet range",
+    async () => {
+      const { frames, malformed } = await rpcSession([
+        callTool("cat", {
+          path: REPORTED_FILE,
+          startLine: 70,
+          endLine: 195,
+        }),
+      ]);
+
+      expect(malformed).toEqual([]);
+      expect(frames[1]?.result?.structuredContent).toBeDefined();
+    },
+  );
 });
 
 if (!existsSync(distPath)) {
