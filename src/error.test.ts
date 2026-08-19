@@ -23,6 +23,15 @@ describe("classifyError", () => {
     expect(e.suggestion).toBeTruthy();
   });
 
+  it("E2BIG → invalid_input, suggesting stdin or a file", () => {
+    const e = classifyError(res({ errorCode: "E2BIG" }), "rg");
+    expect(e.kind).toBe("invalid_input");
+    expect(e.suggestion).toMatch(/stdin/);
+    expect(e.suggestion).toMatch(/file/);
+    // Not the generic invalid_input advice — retrying the same argv is futile.
+    expect(e.suggestion).not.toMatch(/Check the command arguments/);
+  });
+
   it("timedOut → timeout", () => {
     expect(classifyError(res({ timedOut: true }), "sleep").kind).toBe(
       "timeout",

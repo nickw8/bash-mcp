@@ -49,11 +49,21 @@ type Classifiable = Pick<
   "stderr" | "exitCode" | "errorCode" | "timedOut"
 >;
 
-/** A short, actionable suggestion per error kind. Exhaustive over ToolErrorKind. */
+/**
+ * A short, actionable suggestion per error kind. Exhaustive over ToolErrorKind.
+ *
+ * `errorCode` refines the generic advice where the OS already said something
+ * more specific than the kind can carry — the argument list being too long is
+ * `invalid_input`, but "check the arguments" is the wrong fix for it.
+ */
 function suggestionFor(
   kind: ToolErrorKind,
   command: string,
+  errorCode?: string,
 ): string | undefined {
+  if (errorCode === "E2BIG") {
+    return "The argument list exceeded the OS limit. Pass the payload on stdin, or write it to a file and pass the path.";
+  }
   switch (kind) {
     case "missing_binary":
       return `Install '${command}' or ensure it is on PATH.`;
@@ -120,6 +130,11 @@ export function classifyError(
   let kind: ToolErrorKind;
   if (result.errorCode === "ENOENT") {
     kind = "missing_binary";
+  } else if (result.errorCode === "E2BIG") {
+    // The command never ran: the caller built an argv the OS refused. That is
+    // the caller's input, not a command failure, and the retry is a different
+    // shape of call rather than the same one again.
+    kind = "invalid_input";
   } else if (result.timedOut) {
     kind = "timeout";
   } else {
@@ -130,7 +145,7 @@ export function classifyError(
     kind,
     message: result.stderr.trim() || `Command '${command}' failed`,
     command,
-    suggestion: suggestionFor(kind, command),
+    suggestion: suggestionFor(kind, command, result.errorCode),
     exitCode: result.exitCode,
   };
 }
