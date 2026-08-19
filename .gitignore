@@ -24,7 +24,6 @@ Thumbs.db
 npm-debug.log*
 
 # Personal / internal files
-**/scratch
 
 **/entities.json
 
@@ -34,7 +33,6 @@ npm-debug.log*
 # serena
 
 # claude
-**/.claude
 
 # codex
 **/.codex
@@ -52,11 +50,15 @@ npm-debug.log*
 # Private per-engineer task docs (spec/plan/review)
 .claude/tasks/
 
+# Claude worktrees (nested checkouts, not content)
+.claude/worktrees/
+
+# Scratch output (never shared)
+**/.scratch*
+**/scratch*
+
 # Serena cache (regenerated locally)
 .serena/cache/
-
-# Mempalace local config (not shared context)
-**/mempalace.yaml
 
 # Logs
 *.log
