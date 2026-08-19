@@ -229,6 +229,30 @@ describe.skipIf(!existsSync(distPath))("stdio transport round-trip", () => {
     expect(frames[1]?.result?.structuredContent).toBeDefined();
   });
 
+  /**
+   * The other half of the reported failures: not a malformed frame, but a
+   * well-formed call carrying arguments the tool never declared. Zod's default
+   * strip mode dropped them and the tool answered a question nobody asked —
+   * `find_files({ pattern, nameContains })` searched with no name filter at all.
+   */
+  it("refuses an argument the tool does not declare", async () => {
+    const { frames, malformed } = await rpcSession([
+      callTool("find_files", { path: corpusDir, nameContains: "plan" }),
+    ]);
+
+    expect(malformed).toEqual([]);
+    expect(JSON.stringify(frames[1])).toContain("nameContains");
+    expect(frames[1]?.result?.structuredContent).toBeUndefined();
+  });
+
+  it("accepts pattern as an alias for find_files name", async () => {
+    const { frames } = await rpcSession([
+      callTool("find_files", { path: corpusDir, pattern: "emoji" }),
+    ]);
+
+    expect(frames[1]?.result?.structuredContent).toMatchObject({ count: 1 });
+  });
+
   it("reads the whole corpus in one session without desyncing the framer", async () => {
     const names = Object.keys(CORPUS);
     const { frames, malformed } = await rpcSession(
