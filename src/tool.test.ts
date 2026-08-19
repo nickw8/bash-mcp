@@ -108,6 +108,23 @@ describe("defineTool", () => {
     resetRegistry();
   });
 
+  it("names the tool when the payload summarizes to nothing", async () => {
+    const { server, captured } = fakeServer();
+    const { logger } = capturingLogger();
+    // Every field low-signal → summarize() returns "", which would ship a blank
+    // text block.
+    defineTool(
+      server,
+      "t",
+      { inputSchema: {} },
+      async () => ok({ found: false, note: "" }),
+      logger,
+    );
+    const res = await captured[0]!.handler({}, {});
+    expect(res.content[0].text).toBe("t");
+    expect(res.structuredContent).toEqual({ found: false, note: "" });
+  });
+
   it("preserves a successful result and logs a success event once", async () => {
     const { server, captured } = fakeServer();
     const { logger, events } = capturingLogger();

@@ -122,6 +122,12 @@ export function defineTool<
           structuredContent: { ...zero, ...result.structuredContent },
         };
       }
+      // A payload with nothing worth summarizing (every field empty or false)
+      // summarizes to "". `ok()` cannot know the tool name; here we do, and a
+      // blank text block reads as a dropped response.
+      if (result?.content?.[0]?.text === "") {
+        return { ...result, content: [{ type: "text", text: name }] };
+      }
       return result;
     } catch (e) {
       outcome = "error";

@@ -8,7 +8,7 @@
 
 import type { ZodRawShape, ZodTypeAny } from "zod";
 import type { ToolError } from "#error";
-import { formatList, type ListFormat, projectRows } from "#format";
+import { formatList, type ListFormat, projectRows, summarize } from "#format";
 
 /**
  * The zero value of one declared field.
@@ -75,11 +75,22 @@ export function zeroOf(shape: ZodRawShape): Record<string, unknown> {
   return zero;
 }
 
-/** Build a successful MCP tool response with structured content. */
-export function ok<T extends Record<string, unknown>>(structuredContent: T) {
+/**
+ * Build a successful MCP tool response with structured content.
+ *
+ * The text block is a one-line `summarize()` of the payload, not the payload
+ * itself: a client reads `structuredContent` (ADR-0009), so serializing the
+ * same data twice only doubled the response and re-escaped every quote in it.
+ * Pass `summary` when a tool can say something better than the generic line —
+ * a verdict, a count, the one number the caller asked for.
+ */
+export function ok<T extends Record<string, unknown>>(
+  structuredContent: T,
+  summary?: string,
+) {
   return {
     content: [
-      { type: "text" as const, text: JSON.stringify(structuredContent) },
+      { type: "text" as const, text: summary ?? summarize(structuredContent) },
     ],
     structuredContent,
   };
