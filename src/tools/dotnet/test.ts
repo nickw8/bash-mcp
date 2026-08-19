@@ -33,8 +33,9 @@ export function registerDotnetTestTool(server: McpServer) {
         "Run dotnet test and return structured results: pass/fail/skip counts, failure messages. " +
         "Much more compact than raw test output. Only failures are listed.",
       equivalentCommands: ["dotnet test"],
+      required: ["cwd"],
       inputSchema: {
-        cwd: z.string().describe("Project root directory"),
+        cwd: z.string().optional().describe("Project root directory"),
         filter: z
           .string()
           .optional()
@@ -58,7 +59,8 @@ export function registerDotnetTestTool(server: McpServer) {
         summary: z.string(),
       },
     },
-    async ({ cwd, filter, project }) => {
+    // Empty fallback for a `required` argument — see the note in batch.ts.
+    async ({ cwd = "", filter, project }) => {
       // Create a temp directory for TRX output
       const resultsDir = join(tmpdir(), `bash-mcp-trx-${Date.now()}`);
 

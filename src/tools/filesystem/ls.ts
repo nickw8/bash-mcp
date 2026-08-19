@@ -33,8 +33,9 @@ export function registerLsTool(server: McpServer) {
         "List files in a directory. Returns structured entries with name, size, permissions, and modified date — directories end with '/' and links with '@'. " +
         "Use nameOnly for names alone, recursive for one level of subdirectories, all to include hidden files.",
       equivalentCommands: ["ls -la <path>"],
+      required: ["path"],
       inputSchema: {
-        path: z.string().describe("Directory path to list"),
+        path: z.string().optional().describe("Directory path to list"),
         all: z.boolean().optional().describe("Include hidden files"),
         recursive: z
           .boolean()
@@ -74,7 +75,8 @@ export function registerLsTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ path, all, recursive, nameOnly, format, fields }) => {
+    // Empty fallback for a `required` argument — see the note in batch.ts.
+    async ({ path = "", all, recursive, nameOnly, format, fields }) => {
       const fmt = (format ?? "tsv") as ListFormat;
       // One column layout on both platforms (see #platform): `perms links
       // owner group size YYYY-MM-DD HH:MM name`.

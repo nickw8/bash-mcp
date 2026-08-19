@@ -76,17 +76,32 @@ interface FieldDoc {
   description?: string;
 }
 
-/** Flatten a ZodRawShape into per-field docs (insertion order is deterministic). */
-function fields(shape?: ZodRawShape): FieldDoc[] {
+/**
+ * Flatten a ZodRawShape into per-field docs (insertion order is deterministic).
+ *
+ * `required` names arguments the schema declares `.optional()` so `defineTool`
+ * can reject them with an `invalid_input` result instead of the SDK rejecting
+ * the whole call — to a reader they are still mandatory, so the docs say so.
+ */
+function fields(shape?: ZodRawShape, required?: string[]): FieldDoc[] {
   if (!shape) return [];
   return Object.entries(shape).map(([name, schema]) => {
     const { inner, optional, description } = unwrap(schema);
-    return { name, type: typeName(inner), optional, description };
+    return {
+      name,
+      type: typeName(inner),
+      optional: optional && !required?.includes(name),
+      description,
+    };
   });
 }
 
-function renderFields(shape: ZodRawShape | undefined, empty: string): string {
-  const fs = fields(shape);
+function renderFields(
+  shape: ZodRawShape | undefined,
+  empty: string,
+  required?: string[],
+): string {
+  const fs = fields(shape, required);
   if (fs.length === 0) return `_${empty}_`;
   return fs
     .map((f) => {
@@ -101,7 +116,9 @@ function renderTool(t: ToolRecord): string {
   const parts: string[] = [`## \`${t.name}\``];
   if (t.readOnlyHint) parts.push("`read-only`");
   if (t.description) parts.push(t.description.trim());
-  parts.push(`**Inputs:**\n\n${renderFields(t.inputSchema, "no inputs")}`);
+  parts.push(
+    `**Inputs:**\n\n${renderFields(t.inputSchema, "no inputs", t.required)}`,
+  );
   parts.push(
     `**Outputs:**\n\n${renderFields(t.outputSchema, "no structured output")}`,
   );

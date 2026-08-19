@@ -34,9 +34,11 @@ export function registerKubernetesTools(server: McpServer) {
       description:
         "Get Kubernetes resources as structured data. Wraps kubectl get -o json and returns a compact summary by default. " +
         "Use the jq param to extract specific fields from the raw JSON (e.g. '.spec.template.spec.containers[].env') instead of the summary.",
+      required: ["resource"],
       inputSchema: {
         resource: z
           .string()
+          .optional()
           .describe("Resource type (e.g. pods, deployments, services, nodes)"),
         namespace: z
           .string()
@@ -76,8 +78,9 @@ export function registerKubernetesTools(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
+    // Empty fallback for a `required` argument — see the note in batch.ts.
     async ({
-      resource,
+      resource = "",
       namespace,
       allNamespaces,
       selector,
@@ -200,8 +203,9 @@ export function registerKubernetesTools(server: McpServer) {
         "Get pod logs. Returns structured log lines with timestamps when available. " +
         "Use grep to filter lines by regex pattern (e.g. 'ERROR|WARN') instead of piping through shell commands.",
       equivalentCommands: ["kubectl logs <pod> -n <ns>"],
+      required: ["pod"],
       inputSchema: {
-        pod: z.string().describe("Pod name (or deployment/xxx)"),
+        pod: z.string().optional().describe("Pod name (or deployment/xxx)"),
         namespace: namespaceSchema,
         container: z.string().optional().describe("Container name"),
         tail: z
@@ -237,8 +241,9 @@ export function registerKubernetesTools(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
+    // Empty fallback for a `required` argument — see the note in batch.ts.
     async ({
-      pod,
+      pod = "",
       namespace,
       container,
       tail,

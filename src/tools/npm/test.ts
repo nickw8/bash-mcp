@@ -17,8 +17,9 @@ export function registerNpmTestTool(server: McpServer) {
         "Run vitest and return structured test results: suites, pass/fail counts, failure messages. " +
         "Much more compact than raw test output. Only failures are listed by default; use verbose=true for all tests.",
       equivalentCommands: ["npm test"],
+      required: ["cwd"],
       inputSchema: {
-        cwd: z.string().describe("Project root directory"),
+        cwd: z.string().optional().describe("Project root directory"),
         pattern: z
           .string()
           .optional()

@@ -26,25 +26,28 @@ export function registerBatchTools(server: McpServer) {
         "use command='sh', args=['-c', '...']). Use when you need to gather " +
         "independent pieces of information in a single tool call instead of " +
         "multiple sequential calls.",
+      required: ["commands"],
       inputSchema: {
-        commands: z.array(
-          z.object({
-            command: z
-              .string()
-              .describe(
-                "The binary to execute — NOT a shell string (e.g. 'git', 'sh'). For pipes/redirects, use command='sh' with args=['-c', '<script>'].",
-              ),
-            args: z.array(z.string()).optional().default([]),
-            cwd: z.string().optional(),
-            label: z
-              .string()
-              .optional()
-              .describe(
-                "Label for this command in the results (defaults to the command name)",
-              ),
-            timeout: z.number().optional().default(30000),
-          }),
-        ),
+        commands: z
+          .array(
+            z.object({
+              command: z
+                .string()
+                .describe(
+                  "The binary to execute — NOT a shell string (e.g. 'git', 'sh'). For pipes/redirects, use command='sh' with args=['-c', '<script>'].",
+                ),
+              args: z.array(z.string()).optional().default([]),
+              cwd: z.string().optional(),
+              label: z
+                .string()
+                .optional()
+                .describe(
+                  "Label for this command in the results (defaults to the command name)",
+                ),
+              timeout: z.number().optional().default(30000),
+            }),
+          )
+          .optional(),
       },
       outputSchema: {
         results: z.array(
@@ -58,7 +61,10 @@ export function registerBatchTools(server: McpServer) {
         elapsed: z.number(),
       },
     },
-    async ({ commands }) => {
+    // `required: ["commands"]` guarantees the argument; the fallback exists so
+    // the type matches, and is empty rather than plausible so a dropped
+    // `required` fails visibly instead of running something unintended.
+    async ({ commands = [] }) => {
       const start = Date.now();
 
       // runStep is the shared gate -> exec -> shape pipeline; BASH_MCP_MODE

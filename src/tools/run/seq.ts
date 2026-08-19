@@ -28,6 +28,7 @@ export function registerRunSeqTools(server: McpServer) {
         "an earlier one fails. Unlike batch (parallel), run_seq is sequential and " +
         "short-circuits; set stopOnError=false to run every step regardless.",
       equivalentCommands: ["cmd1 && cmd2 && cmd3"],
+      required: ["steps"],
       inputSchema: {
         steps: z
           .array(
@@ -58,6 +59,7 @@ export function registerRunSeqTools(server: McpServer) {
                 .describe("Timeout in ms"),
             }),
           )
+          .optional()
           .describe("Ordered steps to run sequentially"),
         stopOnError: z
           .boolean()
@@ -94,7 +96,8 @@ export function registerRunSeqTools(server: McpServer) {
         elapsed: z.number().describe("Total wall-clock time in milliseconds"),
       },
     },
-    async ({ steps, stopOnError, maxLines }) => {
+    // Empty fallback for a `required` argument — see the note in batch.ts.
+    async ({ steps = [], stopOnError, maxLines }) => {
       const start = Date.now();
 
       // runStep is the shared gate -> exec -> shape pipeline (see #exec); the

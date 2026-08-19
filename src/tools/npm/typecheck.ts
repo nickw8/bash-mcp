@@ -20,8 +20,9 @@ export function registerNpmTypecheckTool(server: McpServer) {
         "Run tsc/tsgo --noEmit and return structured type errors with file, line, column, message, and TS error code. " +
         "Much more compact than raw tsc output. Auto-detects tsgo for faster checking. Use project to specify a tsconfig.",
       equivalentCommands: ["npm run typecheck"],
+      required: ["cwd"],
       inputSchema: {
-        cwd: z.string().describe("Project root directory"),
+        cwd: z.string().optional().describe("Project root directory"),
         project: z
           .string()
           .optional()
@@ -35,7 +36,8 @@ export function registerNpmTypecheckTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ cwd, project, format, fields, detailLevel, maxItems }) => {
+    // Empty fallback for a `required` argument — see the note in batch.ts.
+    async ({ cwd = "", project, format, fields, detailLevel, maxItems }) => {
       // Try tsgo first (faster), fall back to tsc
       const compiler = await detectCompiler(cwd);
       const args = [compiler, "--noEmit", "--pretty", "false"];

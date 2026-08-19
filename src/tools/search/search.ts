@@ -33,8 +33,9 @@ export function registerSearchTools(server: McpServer) {
         "filesOnly for just filenames, countPerFile for match counts per file, maxPerFile to cap hits per file. " +
         "For 'collect all X' tasks use only:true to return just the matched substrings (one row per hit) — add replace ($1 capture groups) to extract structured values.",
       equivalentCommands: ["rg <pattern>", "grep -rn <pattern>"],
+      required: ["pattern"],
       inputSchema: {
-        pattern: z.string().describe("Regex pattern to search for"),
+        pattern: z.string().optional().describe("Regex pattern to search for"),
         path: z
           .string()
           .optional()
@@ -127,8 +128,9 @@ export function registerSearchTools(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
+    // Empty fallback for a `required` argument — see the note in batch.ts.
     async ({
-      pattern,
+      pattern = "",
       path,
       glob,
       ignoreCase,

@@ -21,10 +21,12 @@ export function registerBashLintTool(server: McpServer) {
         "Run shellcheck and return structured diagnostics with file, line, column, message, and SC rule code. " +
         "Much more compact than raw shellcheck output. Use minSeverity to filter by severity level.",
       equivalentCommands: ["shellcheck -f json1 script.sh"],
+      required: ["files"],
       inputSchema: {
         files: z
           .array(z.string())
           .min(1)
+          .optional()
           .describe("Shell script paths to lint"),
         minSeverity: z
           .enum(["error", "warning", "info"])
@@ -41,7 +43,15 @@ export function registerBashLintTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ files, minSeverity, format, fields, detailLevel, maxItems }) => {
+    // Empty fallback for a `required` argument — see the note in batch.ts.
+    async ({
+      files = [],
+      minSeverity,
+      format,
+      fields,
+      detailLevel,
+      maxItems,
+    }) => {
       const result = await exec("shellcheck", ["-f", "json1", ...files], {
         timeout: TIMEOUT.DEFAULT,
       });

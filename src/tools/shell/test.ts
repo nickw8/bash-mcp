@@ -39,8 +39,9 @@ export function registerBashTestTool(server: McpServer) {
         "per-case pass/fail plus a summary parsed from TAP or `N tests, M failures` output, falling back to exit-code-only when the format is unrecognized. " +
         "Executes the script, so it is gated by BASH_MCP_MODE.",
       equivalentCommands: ["bats --tap test.bats", "bash test.sh"],
+      required: ["file"],
       inputSchema: {
-        file: z.string().describe("Test script path (.bats or .sh)"),
+        file: z.string().optional().describe("Test script path (.bats or .sh)"),
         cwd: z.string().optional().describe("Working directory"),
         timeout: z
           .number()
@@ -64,7 +65,8 @@ export function registerBashTestTool(server: McpServer) {
         exitCode: z.number(),
       },
     },
-    async ({ file, cwd, timeout }) => {
+    // Empty fallback for a `required` argument — see the note in batch.ts.
+    async ({ file = "", cwd, timeout }) => {
       // bats emits TAP with --tap; a plain .sh harness is run directly.
       const isBats = file.endsWith(".bats");
       const command = isBats ? "bats" : "bash";
