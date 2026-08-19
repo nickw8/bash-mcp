@@ -36,9 +36,16 @@ A tool that cannot run without an argument declares the field **`.optional()`** 
 - and a wide event with `outcome: "error"`, `errorKind: "invalid_input"` — so a missing
   argument is now observable, which it was not before.
 
-`undefined` and `null` count as absent. `""`, `0`, and `false` do not: an empty string is an
-answer the caller gave, and second-guessing it would break `rg` searching for the empty
-pattern as surely as the SDK broke the missing one.
+`undefined`, `null`, and an empty array count as absent. `""`, `0`, and `false` do not: an
+empty string is an answer the caller gave, and second-guessing it would break `rg` searching
+for the empty pattern as surely as the SDK broke the missing one.
+
+The empty array earns its place on the absent side because a tool that requires a list
+requires a non-empty one, and the failure is silent rather than loud:
+`bash_syntax_check({ files: [] })` checked nothing and answered `valid: true`. The guard
+lives in `missingArgs` rather than as a `.min(1)` on each schema — one rule covers every
+array argument in every `required` list, and a per-schema `.min(1)` would put the rejection
+back at the SDK boundary this ADR exists to move it off.
 
 `required` never reaches `registerTool` — `defineTool` strips it alongside
 `equivalentCommands` — but it *is* captured in the tool registry, so `docs/tools.md` marks

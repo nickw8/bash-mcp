@@ -36,5 +36,8 @@ breaking change did.
 - `server_start` is only logged when `BASH_MCP_LOG=info`; a clean boot writes nothing to
   stderr. Fatal lifecycle events ignore the level. Amends
   [ADR-0004](docs/adr/0004-wide-events-to-stderr.md).
-- Tools taking a path list (`npm_lint`, `python_lint`, `python_typecheck`, `bash_lint`,
-  `bash_syntax_check`) accept a bare string as well as an array.
+- Tools taking a path list (`cat`, `npm_lint`, `python_lint`, `python_typecheck`,
+  `bash_lint`, `bash_syntax_check`) accept a bare string as well as an array.
+- An empty array no longer satisfies a required argument. `bash_syntax_check({ files: [] })`
+  used to check nothing and answer `valid: true`; it now returns `invalid_input` like any
+  other missing argument. Applies to every array argument in a tool's `required` list.
