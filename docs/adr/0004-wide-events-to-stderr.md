@@ -1,6 +1,6 @@
 # ADR-0004: One wide event per call, on stderr, with no dependencies
 
-- **Status:** Accepted
+- **Status:** Accepted (amended 2026-08-19, payload-hardening)
 - **Date:** 2026-05-31 (agent-ops-roadmap)
 
 ## Context
@@ -16,14 +16,27 @@ Each tool call emits exactly one *wide event* — a single line carrying every f
 that call (tool, outcome, duration, error kind) rather than several narrow log lines.
 
 `resolveLevel(BASH_MCP_LOG)`: `error` (default, failed calls only), `info` (adds
-successes), `off`/`silent`. Lifecycle events (server start, fatal) are always emitted and
-share the static context. Level, sink, and context are injectable for tests.
+successes), `off`/`silent`. Lifecycle events share the static context. Level, sink, and
+context are injectable for tests.
+
+## Amendment (2026-08-19, payload-hardening)
+
+The original decision emitted every lifecycle event unconditionally. `server_start` is now
+gated behind `BASH_MCP_LOG=info`: a clean boot writes **nothing** to stderr. Clients that
+treat handshake-time stderr as a failed start were reading a healthy server as broken, and
+"the server started" is not news — the handshake proves it.
+
+Fatal lifecycle events (`server_error`, `uncaught_exception`, `unhandled_rejection`) still
+bypass the level. They are the case where silence is the bug: a stdio server that dies
+quietly leaves the client with a closed pipe and no reason for it.
 
 `run`/`batch` arguments are redacted — metadata only, never the argument values.
 
 ## Consequences
 
 - Debugging a call means finding one line, not correlating several.
+- A healthy session's stderr holds only failures, so anything on it is worth reading.
+  Confirming the server booted at all now needs `BASH_MCP_LOG=info`.
 - Nothing is ever written to stdout outside the MCP protocol. `--doctor` prints a report
   to stdout only because it exits before any session starts.
 - Argument redaction means a wide event cannot leak a secret passed to `run`, at the cost

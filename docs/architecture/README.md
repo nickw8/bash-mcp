@@ -23,7 +23,7 @@ TypeScript, Node.js >= 20 (ESM), MCP SDK, Zod schemas, Vitest, Biome (lint/forma
 - src/platform.ts — BSD vs GNU coreutils flags in one place: statArgs(fields, paths), lsTimeArgs, IS_MACOS
 - src/tool.ts — defineTool: wraps registerTool with wide-event logging + uniform error catching (all tools use it); folds equivalentCommands into _meta + records each tool in the registry (getRegisteredTools/resetRegistry)
 - src/error.ts — ToolError taxonomy + classifyError (missing_binary/timeout/permission_denied/...)
-- src/logger.ts — zero-dep structured stderr logger; resolveLevel(BASH_MCP_LOG); logEvent (per-call wide events, level-gated) + logLifecycle (server start/fatal, always emitted, shares static context)
+- src/logger.ts — zero-dep structured stderr logger; resolveLevel(BASH_MCP_LOG); logEvent (per-call wide events, level-gated) + logLifecycle (shares static context; fatal always emitted, server_start only at BASH_MCP_LOG=info — ADR-0004 amendment)
 - src/version.ts — single source of the package VERSION (read by index.ts + logger.ts); src/version.test.ts guards it + server.json against package.json (drift-guard pattern)
 - src/safety.ts — resolveMode(BASH_MCP_MODE) + classifyCommand + checkCommandAllowed (gates run/batch)
 - src/response.ts — MCP response helpers (ok, okList, err); err takes optional 3rd ToolError arg

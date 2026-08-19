@@ -93,9 +93,11 @@ export const logger = createLogger({ context: STATIC_CONTEXT });
  * Emit a structured lifecycle event (server start / fatal error) to stderr.
  *
  * Lifecycle events are not per-call wide events, so they bypass `BASH_MCP_LOG`
- * gating — server start and fatal errors are always worth recording — but they
- * share the wide-event JSON shape and static context for consistency
- * (`/logging-best-practices`: never log unstructured strings).
+ * gating — a fatal error is always worth recording — but they share the
+ * wide-event JSON shape and static context for consistency
+ * (`/logging-best-practices`: never log unstructured strings). `server_start`
+ * is the exception, gated by its caller in `src/index.ts` so a clean boot writes
+ * nothing (ADR-0004 amendment).
  */
 export function logLifecycle(
   event: { event: string } & Record<string, unknown>,

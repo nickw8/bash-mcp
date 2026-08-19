@@ -10,7 +10,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { formatReport, runDoctor } from "./doctor.js";
 import { formatInstallReport, installClaudeAssets } from "./install-claude.js";
-import { logLifecycle } from "./logger.js";
+import { logLifecycle, resolveLevel } from "./logger.js";
 import { registerAll } from "./registry.js";
 import { VERSION } from "./version.js";
 
@@ -91,7 +91,13 @@ async function main() {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  logLifecycle({ event: "server_start", transport: "stdio" });
+  // A clean boot says nothing. Some clients read anything on stderr during the
+  // handshake as a failed start, and "the server started" is not news — the
+  // handshake itself proves it. Gated behind BASH_MCP_LOG=info; fatal events
+  // still bypass the level (ADR-0004, amended).
+  if (resolveLevel(process.env.BASH_MCP_LOG) === "info") {
+    logLifecycle({ event: "server_start", transport: "stdio" });
+  }
 }
 
 main().catch((error) => fatal("server_error", error));
