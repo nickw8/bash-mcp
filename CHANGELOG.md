@@ -4,6 +4,27 @@ Notable changes per release. Releases before 2.0.0 are in the git log
 (`git log --oneline --grep '^chore(release)'`); this file starts where the first
 breaking change did.
 
+## 3.0.0 — 2026-08-19
+
+### Breaking
+
+- **An argument a tool does not declare is refused, not dropped.** `defineTool` registers
+  each tool's schema as `z.object(shape).strict()`. A raw Zod shape becomes a *strip*-mode
+  object, so an undeclared key used to be deleted and the handler ran as if it were never
+  sent: `git_diff_content({ repoPath, commit, nameOnly })` lost all three keys, diffed the
+  default repo at the default ref, and reported success. Such a call now fails with
+  `MCP error -32602: … Unrecognized key(s) in object: …` naming the keys. The published
+  JSON Schema is unchanged — it already said `additionalProperties: false`; the server now
+  enforces it. See [ADR-0014](docs/adr/0014-an-undeclared-argument-is-refused.md).
+
+### Added
+
+- `find_files` accepts `pattern` as an alias for `name`. `rg` and `glob` both call the
+  argument `pattern`, and under the change above that guess is a hard error rather than a
+  silently dropped key.
+- Transport coverage for both, over the shipped bundle: schema validation runs before the
+  handler, so an in-process handler test cannot see it.
+
 ## 2.0.0 — 2026-08-19
 
 ### Breaking
