@@ -27,6 +27,8 @@ Why the codebase is shaped this way: `defineTool` wrapping every registration, t
 generating all docs, `readOnly` as the default mode, wide events to stderr, a wrapped failure
 being a result, the compact text block, regex outline extractors, `cat` not satisfying the
 Edit read-guard, `structuredContent` as what the agent reads, the benchmark corpus as a
-contract, and the `outputSchema` defining the error payload.
+contract, the `outputSchema` defining the error payload, the text block being a summary,
+`defineTool` owning required-argument validation, and an undeclared argument being refused
+rather than dropped.
 
 Read before re-litigating any of those.

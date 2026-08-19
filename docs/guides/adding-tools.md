@@ -17,6 +17,11 @@ Read when writing a new tool, changing an existing one, or adding a tool group.
 - Read-only tools carry `annotations: { readOnlyHint: true }`. Excluded as mutating or arbitrary-exec: `run`, `batch`, `npm_lint` / `python_lint` (they have `--fix`), `npm_test` / `python_test` / `dotnet_test` / `dotnet_build`
 - Add `equivalentCommands: ["..."]` for the raw CLI the tool approximates — set this by default for any tool wrapping a real CLI; leave it unset only when the tool maps to no single CLI invocation (e.g. batch, list_guidance, outline, tf_modules_summary, tf_backend_info)
 - An argument the tool cannot run without goes in `required: ["pattern"]` on the config, and its Zod field stays **`.optional()`**. A Zod-required field is rejected by the SDK as `MCP error -32602` before the wrapper runs — no payload, no error kind, no wide event; naming it in `required` turns the same omission into a readable `invalid_input` result ([ADR-0013](../adr/0013-definetool-owns-required-arg-validation.md)). A field with a working `.default()` is not required (`find_files` without `path` searches `"."`). Absence means `undefined`, `null`, or an empty array — do **not** add `.min(1)` to a required list argument, `missingArgs` already covers it
+- Declare every argument the tool accepts. `defineTool` registers the shape as
+  `z.object(shape).strict()`, so an undeclared key is rejected by name instead of being
+  silently stripped and answered around ([ADR-0014](../adr/0014-an-undeclared-argument-is-refused.md)).
+  If callers keep reaching for a name a sibling tool uses, add it as an alias rather than
+  letting the call fail every time (`find_files` accepts `pattern` for `name`)
 - The README table blurbs are the first sentence of each tool's description — keep that sentence self-contained
 - All tools return: `{ content: [{ type: "text", text }], structuredContent: {...}, isError?: true }`. Tools always return a result, never throw — a command that ran and failed is `ok(...)`, only an unrunnable one is `err(...)` ([ADR-0005](../adr/0005-wrapped-failure-is-a-result.md))
 - Which response helper to use, and how to shape the text block: [output-conventions.md](output-conventions.md)
