@@ -123,10 +123,14 @@ describe("diagnosticsResponse", () => {
     expect(res.structuredContent).not.toHaveProperty("errors");
   });
 
-  it("json format emits the payload JSON verbatim", () => {
+  it("json format summarizes the payload instead of repeating it", () => {
     const res = diagnosticsResponse({ errorCount: 3 }, ERRORS, {
       format: "json",
     });
-    expect(res.content[0]?.text).toBe(JSON.stringify(res.structuredContent));
+    const text = res.content[0]?.text ?? "";
+    expect(text).toContain("errorCount=3");
+    expect(text.length).toBeLessThan(
+      JSON.stringify(res.structuredContent).length,
+    );
   });
 });

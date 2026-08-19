@@ -103,6 +103,10 @@ export function ok<T extends Record<string, unknown>>(
  * `opts.fields` restricts the text block to the named columns (in order);
  * structuredContent is unaffected, so the agent can ask for exactly the columns
  * it needs without losing the full typed payload.
+ *
+ * The default `json` format now summarizes rather than re-serializing, for the
+ * reason in `ok()`. The other formats are explicit caller requests for the rows
+ * in the text block, so they still render them.
  */
 export function okList<T extends Record<string, unknown>>(
   structuredContent: T,
@@ -113,7 +117,7 @@ export function okList<T extends Record<string, unknown>>(
 ) {
   const text =
     format === "json"
-      ? JSON.stringify(structuredContent)
+      ? summarize(structuredContent)
       : formatList(projectRows(rows, opts.fields), format, meta);
   return {
     content: [{ type: "text" as const, text }],
