@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { err } from "#response";
 import {
   compactDiagnostics,
   diagnosticRows,
+  diagnosticRun,
   diagnosticsResponse,
 } from "./diagnostics-response.js";
 import type { Diagnostic } from "./types.js";
@@ -132,5 +134,119 @@ describe("diagnosticsResponse", () => {
     expect(text.length).toBeLessThan(
       JSON.stringify(res.structuredContent).length,
     );
+  });
+});
+
+describe("diagnosticRun", () => {
+  const res = (stdout: string, stderr = "", exitCode = 0) => ({
+    stdout,
+    stderr,
+    exitCode,
+  });
+  const warn: Diagnostic = { ...e0, severity: "warning", rule: "W1" };
+  const info: Diagnostic = { ...e1, severity: "info", rule: "I1" };
+  // Parser: each line is a key into a fixed table.
+  const table: Record<string, Diagnostic> = { e0, e1, warn, info };
+  const parse = (t: string) =>
+    t
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => table[l] as Diagnostic);
+
+  it("reads stdout, falling back to stderr", () => {
+    const a = diagnosticRun({ results: res("e0", "e1"), parse });
+    expect(a.structuredContent).toMatchObject({ errorCount: 1 });
+    expect(a.structuredContent.errors[0]?.items).toHaveLength(1);
+    const b = diagnosticRun({ results: res("", "e0\ne1"), parse });
+    expect(b.structuredContent).toMatchObject({ errorCount: 2 });
+  });
+
+  it("reads stderr only when asked, merging a list of results", () => {
+    const r = diagnosticRun({
+      results: [res("e0", "e1"), res("e0", "e1")],
+      parse,
+      stream: "stderr",
+      count: "total",
+    });
+    expect(r.structuredContent).toMatchObject({ errorCount: 2 });
+  });
+
+  it("counts before the minSeverity filter", () => {
+    const r = diagnosticRun({
+      results: res("e0\nwarn\ninfo"),
+      parse,
+      minSeverity: "error",
+    });
+    expect(r.structuredContent).toMatchObject({
+      errorCount: 1,
+      warningCount: 1,
+    });
+    expect(r.structuredContent.errors).toEqual([
+      { file: "a.ts", items: ["12:9 TS2304 x"] },
+    ]);
+  });
+
+  it("reads a fixed count and maps extra fields", () => {
+    const r = diagnosticRun({
+      results: res("e0\nFixed 3 files"),
+      parse: (t) => parse(t.replace(/Fixed.*/, "")),
+      fixedPattern: /Fixed (\d+) file/,
+      fields: (c, [x]) => ({ ok: x?.exitCode === 0, seen: c.fixedCount }),
+      metaKeys: ["errorCount"],
+    });
+    expect(r.structuredContent).toMatchObject({
+      errorCount: 1,
+      warningCount: 0,
+      fixedCount: 3,
+      ok: true,
+      seen: 3,
+    });
+    expect(r.content[0]?.text).toContain("errorCount");
+    expect(r.content[0]?.text).not.toContain("fixedCount");
+  });
+
+  it("answers bare ok for blank output or no findings, as asked", () => {
+    const blank = diagnosticRun({
+      results: res("  "),
+      parse: () => {
+        throw new Error("never called");
+      },
+      bareWhen: "blank-output",
+      fixedPattern: /Fixed (\d+)/,
+    });
+    expect(blank.structuredContent).toEqual({
+      errors: [],
+      errorCount: 0,
+      warningCount: 0,
+      fixedCount: 0,
+    });
+    const none = diagnosticRun({
+      results: res("warn"),
+      parse,
+      minSeverity: "error",
+      bareWhen: "no-findings",
+    });
+    expect(none.structuredContent).toEqual({
+      errors: [],
+      errorCount: 0,
+      warningCount: 1,
+    });
+    const listed = diagnosticRun({ results: res("x"), parse: () => [] });
+    expect(listed.structuredContent).toEqual({
+      errorCount: 0,
+      warningCount: 0,
+      errors: [],
+    });
+  });
+
+  it("routes a throwing parser to onParseError", () => {
+    const r = diagnosticRun({
+      results: res("garbage"),
+      parse: () => {
+        throw new Error("bad");
+      },
+      onParseError: (t) => err(`bad: ${t}`),
+    });
+    expect(r.content[0]?.text).toBe("bad: garbage");
   });
 });

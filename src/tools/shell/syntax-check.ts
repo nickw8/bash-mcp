@@ -4,11 +4,10 @@ import { exec, TIMEOUT } from "#exec";
 import {
   diagnosticInputSchema,
   diagnosticOutputSchema,
-  diagnosticsResponse,
+  diagnosticRun,
   stringOrArray,
   toArray,
 } from "#parsers";
-import { ok } from "#response";
 import { defineTool } from "#tool";
 import { parseBashSyntax } from "./parsers/bash-syntax.js";
 
@@ -44,16 +43,17 @@ export function registerBashSyntaxCheckTool(server: McpServer) {
           exec("bash", ["-n", file], { timeout: TIMEOUT.DEFAULT }),
         ),
       );
-      const diagnostics = results.flatMap((r) => parseBashSyntax(r.stderr));
-      const errorCount = diagnostics.length;
-
-      if (errorCount === 0) return ok({ errors: [], errorCount, valid: true });
-
-      return diagnosticsResponse({ errorCount, valid: false }, diagnostics, {
+      return diagnosticRun({
+        results,
+        parse: parseBashSyntax,
+        stream: "stderr",
+        count: "total",
+        fields: ({ errorCount }) => ({ valid: errorCount === 0 }),
+        bareWhen: "no-findings",
         format,
-        fields,
-        budget: { detailLevel, maxItems },
-        meta: { errorCount, valid: false },
+        textFields: fields,
+        detailLevel,
+        maxItems,
       });
     },
   );

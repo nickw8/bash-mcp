@@ -2,14 +2,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
 import {
-  countBySeverity,
   diagnosticInputSchema,
   diagnosticOutputSchema,
-  diagnosticsResponse,
+  diagnosticRun,
   stringOrArray,
   toArray,
 } from "#parsers";
-import { err, ok } from "#response";
+import { err } from "#response";
 import { defineTool } from "#tool";
 import { parseRuffDiagnostics } from "./parsers/ruff.js";
 
@@ -64,47 +63,22 @@ export function registerPythonLintTool(server: McpServer) {
 
       const result = await exec("ruff", args, { cwd, timeout: 30_000 });
 
-      const output = result.stdout || result.stderr;
-      if (!output.trim()) {
-        return ok({
-          errors: [],
-          errorCount: 0,
-          warningCount: 0,
-          fixedCount: 0,
-        });
-      }
-
-      try {
-        let diagnostics = parseRuffDiagnostics(output);
-        const { errorCount, warningCount } = countBySeverity(diagnostics);
-
-        if (minSeverity) {
-          const severityRank = { error: 3, warning: 2, info: 1 } as const;
-          const minRank = severityRank[minSeverity];
-          diagnostics = diagnostics.filter(
-            (d) => severityRank[d.severity] >= minRank,
-          );
-        }
-
-        const fixedMatch = output.match(/Fixed (\d+) file/);
-        const fixedCount = fixedMatch ? parseInt(fixedMatch[1] ?? "0", 10) : 0;
-
-        return diagnosticsResponse(
-          { errorCount, warningCount, fixedCount },
-          diagnostics,
-          {
-            format,
-            fields,
-            budget: { detailLevel, maxItems },
-            meta: { errorCount, warningCount, fixedCount },
-          },
-        );
-      } catch {
-        return err("Failed to parse ruff JSON output", {
-          errors: [{ file: "", items: [`0:0 ${output.slice(0, 500)}`] }],
-          errorCount: 1,
-        });
-      }
+      return diagnosticRun({
+        results: result,
+        parse: parseRuffDiagnostics,
+        minSeverity,
+        fixedPattern: /Fixed (\d+) file/,
+        bareWhen: "blank-output",
+        onParseError: (output) =>
+          err("Failed to parse ruff JSON output", {
+            errors: [{ file: "", items: [`0:0 ${output.slice(0, 500)}`] }],
+            errorCount: 1,
+          }),
+        format,
+        textFields: fields,
+        detailLevel,
+        maxItems,
+      });
     },
   );
 }

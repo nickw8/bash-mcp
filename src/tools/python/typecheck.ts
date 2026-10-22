@@ -4,7 +4,7 @@ import { exec, TIMEOUT } from "#exec";
 import {
   diagnosticInputSchema,
   diagnosticOutputSchema,
-  diagnosticsResponse,
+  diagnosticRun,
   stringOrArray,
   toArray,
 } from "#parsers";
@@ -49,19 +49,17 @@ export function registerPythonTypecheckTool(server: McpServer) {
         timeout: TIMEOUT.TYPECHECK,
       });
 
-      const output = result.stdout || result.stderr;
-      const errors = parseMypyOutput(output);
-
-      return diagnosticsResponse(
-        { errorCount: errors.length, success: result.exitCode === 0 },
-        errors,
-        {
-          format,
-          fields,
-          budget: { detailLevel, maxItems },
-          meta: { errorCount: errors.length },
-        },
-      );
+      return diagnosticRun({
+        results: result,
+        parse: parseMypyOutput,
+        count: "total",
+        fields: (_, [r]) => ({ success: r?.exitCode === 0 }),
+        metaKeys: ["errorCount"],
+        format,
+        textFields: fields,
+        detailLevel,
+        maxItems,
+      });
     },
   );
 }

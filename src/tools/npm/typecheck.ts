@@ -4,7 +4,7 @@ import { exec, TIMEOUT } from "#exec";
 import {
   diagnosticInputSchema,
   diagnosticOutputSchema,
-  diagnosticsResponse,
+  diagnosticRun,
 } from "#parsers";
 import { defineTool } from "#tool";
 import { parseTscOutput } from "./parsers/tsc.js";
@@ -48,19 +48,17 @@ export function registerNpmTypecheckTool(server: McpServer) {
         timeout: TIMEOUT.TYPECHECK,
       });
 
-      const output = result.stdout || result.stderr;
-      const errors = parseTscOutput(output);
-
-      return diagnosticsResponse(
-        { errorCount: errors.length, success: result.exitCode === 0 },
-        errors,
-        {
-          format,
-          fields,
-          budget: { detailLevel, maxItems },
-          meta: { errorCount: errors.length },
-        },
-      );
+      return diagnosticRun({
+        results: result,
+        parse: parseTscOutput,
+        count: "total",
+        fields: (_, [r]) => ({ success: r?.exitCode === 0 }),
+        metaKeys: ["errorCount"],
+        format,
+        textFields: fields,
+        detailLevel,
+        maxItems,
+      });
     },
   );
 }

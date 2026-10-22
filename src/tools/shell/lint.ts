@@ -2,14 +2,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, TIMEOUT } from "#exec";
 import {
-  countBySeverity,
   diagnosticInputSchema,
   diagnosticOutputSchema,
-  diagnosticsResponse,
+  diagnosticRun,
   stringOrArray,
   toArray,
 } from "#parsers";
-import { err, ok } from "#response";
+import { err } from "#response";
 import { defineTool } from "#tool";
 import { parseShellcheckDiagnostics } from "./parsers/shellcheck.js";
 
@@ -62,28 +61,15 @@ export function registerBashLintTool(server: McpServer) {
         );
       }
 
-      let diagnostics = parseShellcheckDiagnostics(
-        result.stdout || result.stderr,
-      );
-      const { errorCount, warningCount } = countBySeverity(diagnostics);
-
-      if (minSeverity) {
-        const severityRank = { error: 3, warning: 2, info: 1 } as const;
-        const minRank = severityRank[minSeverity];
-        diagnostics = diagnostics.filter(
-          (d) => severityRank[d.severity] >= minRank,
-        );
-      }
-
-      if (diagnostics.length === 0) {
-        return ok({ errors: [], errorCount, warningCount });
-      }
-
-      return diagnosticsResponse({ errorCount, warningCount }, diagnostics, {
+      return diagnosticRun({
+        results: result,
+        parse: parseShellcheckDiagnostics,
+        minSeverity,
+        bareWhen: "no-findings",
         format,
-        fields,
-        budget: { detailLevel, maxItems },
-        meta: { errorCount, warningCount },
+        textFields: fields,
+        detailLevel,
+        maxItems,
       });
     },
   );

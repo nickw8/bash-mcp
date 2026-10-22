@@ -1,17 +1,21 @@
 /**
  * Shared response builder for diagnostic-emitting tools (typecheck, lint, build).
  *
- * These tools (npm_typecheck, python_typecheck, python_lint, dotnet_build) all
- * parse a Diagnostic[] and hand it here. The payload — the artifact the agent is
+ * These tools (npm_typecheck, python_typecheck, python_lint, bash_lint,
+ * bash_syntax_check, npm_lint, dotnet_build) all parse a Diagnostic[] and hand
+ * it here; all but the dotnet and npm lint tools go through `diagnosticRun`,
+ * which owns stream choice, merging, counting, severity filtering and the empty
+ * answer around it. The payload — the artifact the agent is
  * billed for (ADR-0009) — is grouped by file so a path is paid once, with each
  * diagnostic encoded as one `line:col [severity] [rule] message` string instead
  * of a six-key object. The text block is the same data rendered by okList for
  * clients that read it. The output budget caps large error cascades in both.
  */
 import { z } from "zod";
+import type { ExecResult } from "#exec";
 import type { ListFormat } from "#format";
-import { okList } from "#response";
-import { applyBudget, budgetSchema } from "./schemas.js";
+import { type err, ok, okList } from "#response";
+import { applyBudget, budgetSchema, countBySeverity } from "./schemas.js";
 import type { BudgetParams, Diagnostic } from "./types.js";
 
 // Reuse the shared budget controls (detailLevel/maxItems) but not includeRaw —
@@ -141,5 +145,110 @@ export function diagnosticsResponse<T extends Record<string, unknown>>(
   };
   return okList(payload, rows, meta, opts.format ?? "grouped", {
     fields: opts.fields,
+  });
+}
+
+const SEVERITY_RANK = { error: 3, warning: 2, info: 1 } as const;
+
+type Counts = { errorCount: number; warningCount?: number };
+
+export interface DiagnosticRunOpts<F extends Record<string, unknown>> {
+  /** The CLI's result — one invocation, or several to merge (`bash -n` per file). */
+  results: ExecResult | ExecResult[];
+  /** Read text into Diagnostics. May throw; see `onParseError`. */
+  parse: (text: string) => Diagnostic[];
+  /** Which stream each result is read from (default `stdout || stderr`). */
+  stream?: "stderr";
+  /** `severity` (default) counts errors and warnings; `total` counts every finding as `errorCount`. */
+  count?: "severity" | "total";
+  /** Drop findings below this severity — after counting. */
+  minSeverity?: keyof typeof SEVERITY_RANK;
+  /** Pattern whose first capture group is a fixed-file count in the output (0 if absent). */
+  fixedPattern?: RegExp;
+  /** Tool-specific output fields, merged after the counts (+ `fixedCount` when `fixedPattern` is set). */
+  fields?: (
+    counts: Counts & { fixedCount: number },
+    results: ExecResult[],
+  ) => F;
+  /** Keys of the output fields echoed in the text meta (default: all of them). */
+  metaKeys?: string[];
+  /**
+   * Answer a bare `ok({errors: [], ...fields})` instead of the list response:
+   * `blank-output` when every stream is blank (the parser is not called);
+   * `no-findings` when no finding is left after parsing and filtering.
+   */
+  bareWhen?: "blank-output" | "no-findings";
+  /** Answer for a parser that throws; receives the text it choked on. Without it the throw propagates. */
+  onParseError?: (text: string) => ReturnType<typeof err>;
+  format?: ListFormat;
+  detailLevel?: BudgetParams["detailLevel"];
+  maxItems?: BudgetParams["maxItems"];
+  textFields?: string[];
+}
+
+/**
+ * Diagnostic run: read one or more CLI results as Diagnostics and answer with
+ * counts plus findings. Pure — the caller owns the exec call and the schemas.
+ */
+export function diagnosticRun<F extends Record<string, unknown>>(
+  o: DiagnosticRunOpts<F>,
+) {
+  const results = Array.isArray(o.results) ? o.results : [o.results];
+  const texts = results.map((r) =>
+    o.stream === "stderr" ? r.stderr : r.stdout || r.stderr,
+  );
+
+  const blank = texts.every((t) => !t.trim());
+  let diagnostics: Diagnostic[];
+  try {
+    diagnostics =
+      blank && o.bareWhen === "blank-output"
+        ? []
+        : texts.flatMap((t) => o.parse(t));
+  } catch {
+    if (!o.onParseError) throw new Error("diagnostic parse failed");
+    return o.onParseError(texts[0] ?? "");
+  }
+
+  const counts: Counts =
+    o.count === "total"
+      ? { errorCount: diagnostics.length }
+      : countBySeverity(diagnostics);
+
+  if (o.minSeverity) {
+    const minRank = SEVERITY_RANK[o.minSeverity];
+    diagnostics = diagnostics.filter(
+      (d) => SEVERITY_RANK[d.severity] >= minRank,
+    );
+  }
+
+  let fixedCount = 0;
+  if (o.fixedPattern) {
+    const m = texts[0]?.match(o.fixedPattern);
+    fixedCount = m ? parseInt(m[1] ?? "0", 10) : 0;
+  }
+
+  const base = o.fixedPattern ? { ...counts, fixedCount } : counts;
+  const extra = o.fields?.({ ...counts, fixedCount }, results);
+  const fields = { ...base, ...extra };
+
+  const bare =
+    o.bareWhen === "no-findings"
+      ? diagnostics.length === 0
+      : o.bareWhen === "blank-output" && blank;
+  if (bare) {
+    return ok({ errors: [], ...fields });
+  }
+
+  const meta = o.metaKeys
+    ? Object.fromEntries(
+        o.metaKeys.map((k) => [k, (fields as Record<string, unknown>)[k]]),
+      )
+    : fields;
+  return diagnosticsResponse(fields, diagnostics, {
+    format: o.format,
+    fields: o.textFields,
+    budget: { detailLevel: o.detailLevel, maxItems: o.maxItems },
+    meta,
   });
 }

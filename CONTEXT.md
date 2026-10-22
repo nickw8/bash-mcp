@@ -22,6 +22,7 @@ from the model, not to add features the underlying CLI lacks.
 | **Diagnostic tool** | A tool that collapses multi-call triage into one answer: a Triage plus its tool-specific fields. |
 | **Triage** | The four-field envelope every Diagnostic tool answers with — `status`, `likelyCauses[]`, `suggestedNextCommands[]`, `evidence[]`. One declaration in `src/parsers/schemas.ts`, used as a schema (`triageSchema`) and as a type (`Triage`). |
 | **Diagnostic** | A single lint/typecheck/build finding (`file`, `line`, `column`, `severity`, `rule`, `message`). Different thing from a *diagnostic tool*. |
+| **Diagnostic run** | One or more CLI invocations' output read as Diagnostics and answered as counts plus findings — or, when the CLI never ran or printed nothing readable, an error. Owned by the runner in `src/parsers/diagnostics-response.ts`. |
 | **Wide event** | The one structured JSON line `defineTool` emits per call, to stderr. |
 | **Probe** | A capability check that a CLI is installed (`PROBES` / `runProbe` in `env.ts`), used by `check_environment` and `--doctor`. |
 | **Intent** | An entry in guidance `INTENTS` — a task phrased as the user's goal, mapped to a preferred tool and what to avoid. |
