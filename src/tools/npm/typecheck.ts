@@ -49,6 +49,7 @@ export function registerNpmTypecheckTool(server: McpServer) {
       });
 
       return diagnosticRun({
+        command: "tsc",
         results: result,
         parse: parseTscOutput,
         count: "total",

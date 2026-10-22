@@ -154,15 +154,20 @@ describe("diagnosticRun", () => {
       .map((l) => table[l] as Diagnostic);
 
   it("reads stdout, falling back to stderr", () => {
-    const a = diagnosticRun({ results: res("e0", "e1"), parse });
+    const a = diagnosticRun({ results: res("e0", "e1"), parse, command: "x" });
     expect(a.structuredContent).toMatchObject({ errorCount: 1 });
     expect(a.structuredContent.errors[0]?.items).toHaveLength(1);
-    const b = diagnosticRun({ results: res("", "e0\ne1"), parse });
+    const b = diagnosticRun({
+      results: res("", "e0\ne1"),
+      parse,
+      command: "x",
+    });
     expect(b.structuredContent).toMatchObject({ errorCount: 2 });
   });
 
   it("reads stderr only when asked, merging a list of results", () => {
     const r = diagnosticRun({
+      command: "x",
       results: [res("e0", "e1"), res("e0", "e1")],
       parse,
       stream: "stderr",
@@ -173,6 +178,7 @@ describe("diagnosticRun", () => {
 
   it("counts before the minSeverity filter", () => {
     const r = diagnosticRun({
+      command: "x",
       results: res("e0\nwarn\ninfo"),
       parse,
       minSeverity: "error",
@@ -188,6 +194,7 @@ describe("diagnosticRun", () => {
 
   it("reads a fixed count and maps extra fields", () => {
     const r = diagnosticRun({
+      command: "x",
       results: res("e0\nFixed 3 files"),
       parse: (t) => parse(t.replace(/Fixed.*/, "")),
       fixedPattern: /Fixed (\d+) file/,
@@ -207,6 +214,7 @@ describe("diagnosticRun", () => {
 
   it("answers bare ok for blank output or no findings, as asked", () => {
     const blank = diagnosticRun({
+      command: "x",
       results: res("  "),
       parse: () => {
         throw new Error("never called");
@@ -221,6 +229,7 @@ describe("diagnosticRun", () => {
       fixedCount: 0,
     });
     const none = diagnosticRun({
+      command: "x",
       results: res("warn"),
       parse,
       minSeverity: "error",
@@ -241,6 +250,7 @@ describe("diagnosticRun", () => {
 
   it("routes a throwing parser to onParseError", () => {
     const r = diagnosticRun({
+      command: "x",
       results: res("garbage"),
       parse: () => {
         throw new Error("bad");
@@ -248,5 +258,90 @@ describe("diagnosticRun", () => {
       onParseError: (t) => err(`bad: ${t}`),
     });
     expect(r.content[0]?.text).toBe("bad: garbage");
+  });
+});
+
+describe("diagnosticRun failure policy", () => {
+  const base = { stdout: "", stderr: "", exitCode: 0 };
+  const parseOne = (t: string): Diagnostic[] =>
+    t.includes("finding") ? [e0] : [];
+
+  it("a binary that never ran is a missing_binary error, not zero errors", () => {
+    const r = diagnosticRun({
+      results: { ...base, exitCode: 1, errorCode: "ENOENT" },
+      parse: parseOne,
+      command: "ruff",
+    });
+    expect(r.isError).toBe(true);
+    expect(r.structuredContent).toMatchObject({
+      ok: false,
+      error: { kind: "missing_binary", command: "ruff" },
+    });
+  });
+
+  it("flags ENOENT on any result of a merged list", () => {
+    const r = diagnosticRun({
+      results: [base, { ...base, exitCode: 1, errorCode: "ENOENT" }],
+      parse: parseOne,
+      command: "bash",
+    });
+    expect(r.structuredContent).toMatchObject({
+      error: { kind: "missing_binary" },
+    });
+  });
+
+  it("a timeout-killed run is a timeout error even with partial findings", () => {
+    const r = diagnosticRun({
+      results: { stdout: "finding", stderr: "", exitCode: 1, timedOut: true },
+      parse: parseOne,
+      command: "mypy",
+    });
+    expect(r.isError).toBe(true);
+    expect(r.structuredContent).toMatchObject({ error: { kind: "timeout" } });
+  });
+
+  it("non-zero exit with nothing parsed is an error carrying an output tail", () => {
+    const r = diagnosticRun({
+      results: { stdout: "", stderr: "x".repeat(800), exitCode: 2 },
+      parse: parseOne,
+      command: "tsc",
+    });
+    expect(r.isError).toBe(true);
+    expect(r.structuredContent).toMatchObject({
+      ok: false,
+      error: { kind: "command_failed", exitCode: 2 },
+    });
+    expect(r.content[0]?.text.length).toBeLessThanOrEqual(500);
+    expect(r.content[0]?.text).toContain("xxx");
+  });
+
+  it("non-zero exit WITH findings stays a normal result", () => {
+    const r = diagnosticRun({
+      results: { stdout: "finding", stderr: "", exitCode: 1 },
+      parse: parseOne,
+      command: "ruff",
+    });
+    expect(r.isError).toBeUndefined();
+    expect(r.structuredContent).toMatchObject({ errorCount: 1 });
+  });
+
+  it("judges nothing-parsed before minSeverity filtering", () => {
+    const warnOnly = (): Diagnostic[] => [{ ...e0, severity: "warning" }];
+    const r = diagnosticRun({
+      results: { stdout: "w", stderr: "", exitCode: 1 },
+      parse: warnOnly,
+      minSeverity: "error",
+      command: "ruff",
+    });
+    expect(r.isError).toBeUndefined();
+  });
+
+  it("zero exit and nothing parsed is still a clean result", () => {
+    const r = diagnosticRun({
+      results: base,
+      parse: parseOne,
+      command: "ruff",
+    });
+    expect(r.isError).toBeUndefined();
   });
 });

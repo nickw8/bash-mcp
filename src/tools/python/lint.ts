@@ -64,6 +64,7 @@ export function registerPythonLintTool(server: McpServer) {
       const result = await exec("ruff", args, { cwd, timeout: 30_000 });
 
       return diagnosticRun({
+        command: "ruff",
         results: result,
         parse: parseRuffDiagnostics,
         minSeverity,

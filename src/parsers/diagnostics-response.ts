@@ -12,9 +12,10 @@
  * clients that read it. The output budget caps large error cascades in both.
  */
 import { z } from "zod";
+import { classifyError } from "#error";
 import type { ExecResult } from "#exec";
 import type { ListFormat } from "#format";
-import { type err, ok, okList } from "#response";
+import { err, ok, okList } from "#response";
 import { applyBudget, budgetSchema, countBySeverity } from "./schemas.js";
 import type { BudgetParams, Diagnostic } from "./types.js";
 
@@ -153,6 +154,8 @@ const SEVERITY_RANK = { error: 3, warning: 2, info: 1 } as const;
 type Counts = { errorCount: number; warningCount?: number };
 
 export interface DiagnosticRunOpts<F extends Record<string, unknown>> {
+  /** The CLI's name, for the error answered when it never ran, timed out, or failed unreadably. */
+  command: string;
   /** The CLI's result — one invocation, or several to merge (`bash -n` per file). */
   results: ExecResult | ExecResult[];
   /** Read text into Diagnostics. May throw; see `onParseError`. */
@@ -198,6 +201,13 @@ export function diagnosticRun<F extends Record<string, unknown>>(
     o.stream === "stderr" ? r.stderr : r.stdout || r.stderr,
   );
 
+  // A run that never started or was killed has no findings to trust.
+  const broken = results.find((r) => r.errorCode || r.timedOut);
+  if (broken) {
+    const error = classifyError(broken, o.command);
+    return err(error.message, undefined, error);
+  }
+
   const blank = texts.every((t) => !t.trim());
   let diagnostics: Diagnostic[];
   try {
@@ -208,6 +218,15 @@ export function diagnosticRun<F extends Record<string, unknown>>(
   } catch {
     if (!o.onParseError) throw new Error("diagnostic parse failed");
     return o.onParseError(texts[0] ?? "");
+  }
+
+  // Linters exit non-zero WITH findings (a normal result, ADR-0005); non-zero
+  // and nothing parsed means the CLI failed in a way we could not read.
+  const failed = results.find((r) => r.exitCode !== 0);
+  if (failed && diagnostics.length === 0) {
+    const error = classifyError(failed, o.command);
+    const tail = (texts.join("\n").trim() || error.message).slice(-500);
+    return err(tail, undefined, { ...error, message: tail });
   }
 
   const counts: Counts =

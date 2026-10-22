@@ -50,6 +50,7 @@ export function registerPythonTypecheckTool(server: McpServer) {
       });
 
       return diagnosticRun({
+        command: "mypy",
         results: result,
         parse: parseMypyOutput,
         count: "total",

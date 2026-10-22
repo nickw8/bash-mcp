@@ -8,7 +8,6 @@ import {
   stringOrArray,
   toArray,
 } from "#parsers";
-import { err } from "#response";
 import { defineTool } from "#tool";
 import { parseShellcheckDiagnostics } from "./parsers/shellcheck.js";
 
@@ -47,21 +46,8 @@ export function registerBashLintTool(server: McpServer) {
         { timeout: TIMEOUT.DEFAULT },
       );
 
-      // shellcheck not installed → structured notice rather than a crash.
-      if (result.errorCode === "ENOENT") {
-        return err(
-          "shellcheck is not installed. Install it to enable bash_lint (https://www.shellcheck.net).",
-          undefined,
-          {
-            kind: "missing_binary",
-            message: "shellcheck not found on PATH",
-            command: "shellcheck",
-            suggestion: "Install 'shellcheck' or ensure it is on PATH.",
-          },
-        );
-      }
-
       return diagnosticRun({
+        command: "shellcheck",
         results: result,
         parse: parseShellcheckDiagnostics,
         minSeverity,

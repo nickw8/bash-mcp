@@ -44,6 +44,7 @@ export function registerBashSyntaxCheckTool(server: McpServer) {
         ),
       );
       return diagnosticRun({
+        command: "bash",
         results,
         parse: parseBashSyntax,
         stream: "stderr",
