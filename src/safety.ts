@@ -13,6 +13,8 @@
  * as writes to avoid false positives.
  */
 
+import { basename } from "node:path";
+
 export type SafetyMode = "off" | "readOnly" | "confirmWrites" | "dangerous";
 
 /** Resolve BASH_MCP_MODE; anything unrecognized (incl. unset) → "readOnly". */
@@ -83,16 +85,36 @@ const WRITE_RULES: Record<string, { sub?: string[]; always?: boolean }> = {
   truncate: { always: true },
 };
 
+/**
+ * The mutating subcommand in `args`, if any. Global flags may precede it
+ * (`kubectl -n prod delete`, `git -C repo push`): a bare token right after a
+ * flag without `=` might be that flag's value, so it is skipped unless it is
+ * itself a mutating subcommand. The first token that can only be the
+ * subcommand ends the scan.
+ */
+function mutatingSubcommand(sub: string[], args: string[]): string | undefined {
+  let maybeFlagValue = false;
+  for (const arg of args) {
+    if (arg.startsWith("-")) {
+      maybeFlagValue = !arg.includes("=");
+      continue;
+    }
+    if (sub.includes(arg)) return arg;
+    if (!maybeFlagValue) return undefined;
+    maybeFlagValue = false;
+  }
+  return undefined;
+}
+
 /** Classify a command as read/write/unknown for safety gating. */
 export function classifyCommand(
   command: string,
   args: string[],
 ): "read" | "write" | "unknown" {
-  const rule = WRITE_RULES[command];
+  const rule = WRITE_RULES[basename(command)];
   if (!rule) return "unknown";
   if (rule.always) return "write";
-  const sub = args[0];
-  if (sub && rule.sub?.includes(sub)) return "write";
+  if (rule.sub && mutatingSubcommand(rule.sub, args)) return "write";
   return "read";
 }
 
@@ -104,7 +126,9 @@ export function checkCommandAllowed(
 ): { allowed: boolean; reason?: string } {
   if (mode === "off" || mode === "dangerous") return { allowed: true };
   if (classifyCommand(command, args) === "write") {
-    const label = `${command} ${args[0] ?? ""}`.trim();
+    const binary = basename(command);
+    const sub = mutatingSubcommand(WRITE_RULES[binary]?.sub ?? [], args);
+    const label = `${binary} ${sub ?? ""}`.trim();
     return {
       allowed: false,
       reason: `Blocked mutating command '${label}': BASH_MCP_MODE=${mode}. Set BASH_MCP_MODE=off to allow writes.`,

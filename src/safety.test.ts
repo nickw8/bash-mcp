@@ -48,6 +48,36 @@ describe("classifyCommand", () => {
     expect(classifyCommand("terraform", ["state", "list"])).toBe("read");
   });
 
+  it("finds the subcommand behind global flags and their values", () => {
+    expect(
+      classifyCommand("kubectl", ["-n", "prod", "delete", "pod", "x"]),
+    ).toBe("write");
+    expect(
+      classifyCommand("kubectl", ["--context=qa", "apply", "-f", "x"]),
+    ).toBe("write");
+    expect(classifyCommand("git", ["-C", "repo", "push"])).toBe("write");
+    expect(classifyCommand("git", ["--no-pager", "push"])).toBe("write");
+    expect(classifyCommand("terraform", ["-chdir=infra", "destroy"])).toBe(
+      "write",
+    );
+    expect(
+      classifyCommand("helm", ["--kube-context", "qa", "upgrade", "r", "c"]),
+    ).toBe("write");
+    expect(classifyCommand("kubectl", ["-n", "prod", "get", "pods"])).toBe(
+      "read",
+    );
+    // an argument after the subcommand is not mistaken for one
+    expect(classifyCommand("kubectl", ["get", "pod", "delete"])).toBe("read");
+    expect(classifyCommand("git", ["--no-pager", "log", "-p"])).toBe("read");
+  });
+
+  it("classifies a binary given by path by its basename", () => {
+    expect(
+      classifyCommand("/usr/local/bin/kubectl", ["delete", "pod", "x"]),
+    ).toBe("write");
+    expect(classifyCommand("/bin/rm", ["x"])).toBe("write");
+  });
+
   it("classifies unknown binaries as unknown", () => {
     expect(classifyCommand("node", ["script.js"])).toBe("unknown");
     expect(classifyCommand("echo", ["hi"])).toBe("unknown");
@@ -85,6 +115,16 @@ describe("checkCommandAllowed", () => {
     expect(
       checkCommandAllowed("helm", ["uninstall", "r"], "confirmWrites").allowed,
     ).toBe(false);
+  });
+
+  it("names the mutating subcommand behind global flags", () => {
+    const r = checkCommandAllowed(
+      "/usr/local/bin/kubectl",
+      ["-n", "prod", "delete", "pod", "x"],
+      "readOnly",
+    );
+    expect(r.allowed).toBe(false);
+    expect(r.reason).toContain("'kubectl delete'");
   });
 
   it("allows read and unknown commands under readOnly", () => {
