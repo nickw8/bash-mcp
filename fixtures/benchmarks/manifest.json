@@ -156,6 +156,12 @@
     "budget": 100
   },
   {
+    "id": "npm_lint",
+    "command": "biome check --reporter=json (→ npm_lint)",
+    "weight": 2,
+    "budget": 129
+  },
+  {
     "id": "python_lint",
     "command": "ruff check (→ python_lint)",
     "weight": 2,

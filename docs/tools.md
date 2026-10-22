@@ -1022,6 +1022,10 @@ Run biome check and return structured diagnostics with file, line, column, messa
 - `fix`: boolean _(optional)_ — Auto-fix safe issues (default: false)
 - `paths`: string | string[] _(optional)_ — Specific path(s) to lint; a string or array (default: '.')
 - `minSeverity`: "error" | "warning" | "info" _(optional)_ — Minimum severity to include (e.g. 'error' drops warnings and info)
+- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text format: grouped (default, file header once then line:col rule message), tsv, or json
+- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
+- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
 
 **Outputs:**
 

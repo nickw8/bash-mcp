@@ -2,13 +2,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
 import {
-  compactDiagnostics,
-  countBySeverity,
+  diagnosticInputSchema,
   diagnosticOutputSchema,
+  diagnosticRun,
   stringOrArray,
   toArray,
 } from "#parsers";
-import { err, ok } from "#response";
+import { err } from "#response";
 import { defineTool } from "#tool";
 import { parseBiomeDiagnostics } from "./parsers/biome.js";
 
@@ -39,6 +39,7 @@ export function registerNpmLintTool(server: McpServer) {
           .describe(
             "Minimum severity to include (e.g. 'error' drops warnings and info)",
           ),
+        ...diagnosticInputSchema,
       },
       outputSchema: {
         ...diagnosticOutputSchema,
@@ -47,7 +48,16 @@ export function registerNpmLintTool(server: McpServer) {
         fixedCount: z.number(),
       },
     },
-    async ({ cwd, fix, paths, minSeverity }) => {
+    async ({
+      cwd,
+      fix,
+      paths,
+      minSeverity,
+      format,
+      fields,
+      detailLevel,
+      maxItems,
+    }) => {
       const args = ["biome", "check", "--reporter=json"];
       if (fix) args.push("--fix");
       const pathList = toArray(paths);
@@ -56,45 +66,24 @@ export function registerNpmLintTool(server: McpServer) {
       const result = await exec("npx", args, { cwd, timeout: 30_000 });
 
       // biome exits non-zero when there are errors, but still outputs JSON
-      const output = result.stdout || result.stderr;
-      if (!output.trim()) {
-        return ok({
-          errors: [],
-          errorCount: 0,
-          warningCount: 0,
-          fixedCount: 0,
-        });
-      }
-
-      try {
-        let diagnostics = parseBiomeDiagnostics(output);
-        const { errorCount, warningCount } = countBySeverity(diagnostics);
-
-        if (minSeverity) {
-          const severityRank = { error: 3, warning: 2, info: 1 } as const;
-          const minRank = severityRank[minSeverity];
-          diagnostics = diagnostics.filter(
-            (d) => severityRank[d.severity] >= minRank,
-          );
-        }
-
-        // Parse fixed count from biome's output if available
-        const fixedMatch = output.match(/Fixed (\d+) file/);
-        const fixedCount = fixedMatch ? parseInt(fixedMatch[1] ?? "0", 10) : 0;
-
-        return ok({
-          errors: compactDiagnostics(diagnostics),
-          errorCount,
-          warningCount,
-          fixedCount,
-        });
-      } catch {
+      return diagnosticRun({
+        command: "biome",
+        results: result,
+        parse: parseBiomeDiagnostics,
+        minSeverity,
+        fixedPattern: /Fixed (\d+) file/,
+        bareWhen: "blank-output",
         // JSON parse failed — return raw output as a single diagnostic
-        return err("Failed to parse biome JSON output", {
-          errors: [{ file: "", items: [`0:0 ${output.slice(0, 500)}`] }],
-          errorCount: 1,
-        });
-      }
+        onParseError: (output) =>
+          err("Failed to parse biome JSON output", {
+            errors: [{ file: "", items: [`0:0 ${output.slice(0, 500)}`] }],
+            errorCount: 1,
+          }),
+        format,
+        textFields: fields,
+        detailLevel,
+        maxItems,
+      });
     },
   );
 }
