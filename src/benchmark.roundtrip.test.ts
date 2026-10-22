@@ -20,6 +20,9 @@ const { registerGitTools } = await import("./tools/git/git.js");
 const { registerTerraformTools } = await import(
   "./tools/terraform/terraform.js"
 );
+const { registerNpmTools } = await import("./tools/npm/npm.js");
+const { registerPythonTools } = await import("./tools/python/python.js");
+const { registerShellTools } = await import("./tools/shell/shell.js");
 
 /**
  * The benchmark corpus doubles as a behavioral contract corpus (ADR-0010).
@@ -43,7 +46,11 @@ const { registerTerraformTools } = await import(
  *   - the tool parses a file it reads itself rather than stdout (tf_outputs,
  *     tf_plan_summary via `-json` streaming, liquibase_*)
  *   - the raw fixture is a transcript of a tool that isn't wrapped 1:1 (rg
- *     variants, outline, the npm/python/dotnet/bash runners, kube/helm/argo)
+ *     variants, outline, the test runners, dotnet, kube/helm/argo)
+ *
+ * The diagnostic runners (lint, typecheck, syntax check) are in the table: the
+ * CLI exits non-zero WITH findings, so those cases set `exitCode`, and
+ * bash_syntax_check reads stderr, so its case sets `stream`.
  * Those keep their per-group tests; the corpus only claims the single-call ones.
  */
 const CASES: Array<{
@@ -51,6 +58,10 @@ const CASES: Array<{
   register: (server: McpServer) => void;
   tool: string;
   args: Record<string, unknown>;
+  /** The CLI's exit code (default 0). Linters exit non-zero with findings. */
+  exitCode?: number;
+  /** Where the fixture is fed: stdout (default) or stderr (`bash -n`). */
+  stream?: "stderr";
 }> = [
   {
     id: "ls",
@@ -83,6 +94,49 @@ const CASES: Array<{
     tool: "tf_state_list",
     args: { cwd: "." },
   },
+  {
+    id: "npm_lint",
+    register: registerNpmTools,
+    tool: "npm_lint",
+    args: { cwd: "." },
+    exitCode: 1,
+  },
+  {
+    id: "python_lint",
+    register: registerPythonTools,
+    tool: "python_lint",
+    args: { cwd: "." },
+    exitCode: 1,
+  },
+  {
+    id: "bash_lint",
+    register: registerShellTools,
+    tool: "bash_lint",
+    args: { files: "sample.sh" },
+    exitCode: 1,
+  },
+  {
+    id: "npm_typecheck",
+    register: registerNpmTools,
+    tool: "npm_typecheck",
+    args: { cwd: "." },
+    exitCode: 2,
+  },
+  {
+    id: "python_typecheck",
+    register: registerPythonTools,
+    tool: "python_typecheck",
+    args: { cwd: "." },
+    exitCode: 1,
+  },
+  {
+    id: "bash_syntax_check",
+    register: registerShellTools,
+    tool: "bash_syntax_check",
+    args: { files: "e1.sh" },
+    exitCode: 2,
+    stream: "stderr",
+  },
 ];
 
 /** The machine form when the tool asks for one, the human form otherwise. */
@@ -100,7 +154,11 @@ describe("benchmark corpus round-trip", () => {
   });
 
   it.each(CASES)("$id emits its expected.txt payload", async (c) => {
-    execMock.mockResolvedValue(execOk(handlerStdout(c.id)));
+    const text = handlerStdout(c.id);
+    execMock.mockResolvedValue({
+      ...execOk(c.stream === "stderr" ? "" : text, c.stream ? text : ""),
+      exitCode: c.exitCode ?? 0,
+    });
 
     const handler = captureHandler(c.register, c.tool);
     const result = await handler(c.args);
