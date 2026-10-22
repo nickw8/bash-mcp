@@ -28,4 +28,54 @@ describe("parseBiomeDiagnostics", () => {
     expect(result[0]?.rule).toBe("lint/style/noNonNullAssertion");
     expect(result[0]?.file).toBe("src/app.ts");
   });
+
+  it("parses real biome 2.x JSON output", () => {
+    const input = JSON.stringify({
+      summary: { changed: 0, unchanged: 1, errors: 1, warnings: 1 },
+      diagnostics: [
+        {
+          severity: "warning",
+          message: "This variable x is unused.",
+          category: "lint/correctness/noUnusedVariables",
+          location: {
+            path: "a.js",
+            start: { line: 1, column: 5 },
+            end: { line: 1, column: 6 },
+          },
+          advices: [],
+        },
+        {
+          severity: "error",
+          message: "This is an unexpected use of the debugger statement.",
+          category: "lint/suspicious/noDebugger",
+          location: {
+            path: "a.js",
+            start: { line: 2, column: 1 },
+            end: { line: 2, column: 10 },
+          },
+          advices: [],
+        },
+      ],
+      command: "lint",
+    });
+
+    expect(parseBiomeDiagnostics(input)).toEqual([
+      {
+        file: "a.js",
+        line: 1,
+        column: 5,
+        severity: "warning",
+        rule: "lint/correctness/noUnusedVariables",
+        message: "This variable x is unused.",
+      },
+      {
+        file: "a.js",
+        line: 2,
+        column: 1,
+        severity: "error",
+        rule: "lint/suspicious/noDebugger",
+        message: "This is an unexpected use of the debugger statement.",
+      },
+    ]);
+  });
 });

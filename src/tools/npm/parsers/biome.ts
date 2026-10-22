@@ -19,12 +19,25 @@ export function parseBiomeDiagnostics(raw: string): Diagnostic[] {
     )
     .map((d) => {
       const location = d.location as Record<string, unknown> | undefined;
-      const path = location?.path as Record<string, unknown> | undefined;
+      // Biome 2.x: `path` is a string, `start` is {line, column}. The older
+      // shape (`path.file`, byte-offset `span`, `sourceCode`) is still read.
+      const rawPath = location?.path;
+      const file =
+        typeof rawPath === "string"
+          ? rawPath
+          : (((rawPath as Record<string, unknown> | undefined)
+              ?.file as string) ?? "");
+      const start = location?.start as
+        | { line?: number; column?: number }
+        | undefined;
       const span = location?.span as Record<string, number> | undefined;
-      const sourceCode = (location?.sourceCode as string) ?? "";
-
-      // Convert byte offset to line/column
-      const { line, column } = offsetToLineCol(sourceCode, span?.start ?? 0);
+      const { line, column } =
+        start?.line != null
+          ? { line: start.line, column: start.column ?? 1 }
+          : offsetToLineCol(
+              (location?.sourceCode as string) ?? "",
+              span?.start ?? 0,
+            );
 
       const severity = mapSeverity(d.severity as string);
       const category = (d.category as string) ?? "";
@@ -32,7 +45,7 @@ export function parseBiomeDiagnostics(raw: string): Diagnostic[] {
       const message = extractMessage(d);
 
       return {
-        file: (path?.file as string) ?? "",
+        file,
         line,
         column,
         message,
