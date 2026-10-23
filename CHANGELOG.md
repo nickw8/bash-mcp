@@ -4,6 +4,62 @@ Notable changes per release. Releases before 2.0.0 are in the git log
 (`git log --oneline --grep '^chore(release)'`); this file starts where the first
 breaking change did.
 
+## 5.0.0 — Unreleased
+
+### Breaking
+
+- **Large results are cut to a budget by default.** `defineTool` fits every result to the
+  `BASH_MCP_RESPONSE_MODE` budget (`auto` by default; `summary`, `compact`, `full`). A cut
+  result keeps its schema, adds a `retained` record (`omitted: [{ path, total, shown }]`
+  and an opaque `id`), and notes the cut in the text block. The full payload is stored for
+  the session and paged with `result_get`. Clients that need the v4 shape set
+  `BASH_MCP_RESPONSE_MODE=full`. See
+  [ADR-0015](docs/adr/0015-definetool-fits-every-result-to-a-budget.md).
+- **`rg` omits `truncated` unless it is `true`.** Read a missing key as `false`.
+- **Diagnostic lists drop exact repeats.** Identical file/line/column/severity/rule/message
+  findings appear once. When a budget cuts the list, errors are kept ahead of warnings;
+  the kept findings stay in CLI order.
+- **An unknown `BASH_MCP_PROFILE` or `BASH_MCP_RESPONSE_MODE` fails at startup** with
+  the reason on stderr, instead of being ignored.
+
+### Added
+
+- `result_get`: page a stored result by `id`, `path`, `offset` and `limit`. Ids are
+  bound to the session that made them; an expired, unknown or foreign id returns a typed
+  error. Results live in memory only (`BASH_MCP_RESULT_TTL`, default 900 s;
+  `BASH_MCP_RESULT_MAX_BYTES`, default 32 MB) and are never written to disk.
+- `BASH_MCP_PROFILE` (`core`, `development`, `infrastructure`, `all`) registers a subset
+  of tool groups. The default stays `all`. See
+  [docs/guides/tool-discovery.md](docs/guides/tool-discovery.md) and
+  [ADR-0016](docs/adr/0016-profiles-filter-registration.md).
+- Cancellation: an MCP request abort stops the child process, and the exec result
+  reports `cancelled: true`.
+- Claude Code plugin (`.claude-plugin/`), installed with
+  `/plugin install bash-mcp --marketplace nickw8/bash-mcp`. Its hook defaults to `warn`.
+- `BASH_MCP_HOOK=block|warn|off` for the redirect hook, and `--uninstall-claude`.
+- Installation guide for Claude Code, Claude Desktop, Cursor, VS Code/Copilot, Codex and
+  generic stdio clients: [docs/guides/installation.md](docs/guides/installation.md).
+- MCP Registry metadata (`server.json` as `io.github.nickw8/bash-mcp`, `mcpName` in
+  `package.json`) and a tag-triggered release workflow: npm trusted publishing, then the
+  registry through GitHub OIDC. Both steps skip a version that is already published.
+- Benchmarks: a wire-size measurement, a six-scenario task eval
+  (`scripts/task-eval.mjs`), an opt-in live-agent harness (`scripts/live-eval.mjs`, not
+  in CI), and regression gates against the frozen v4.0.0 baseline.
+
+### Fixed
+
+- A timeout or abort kills the whole process group (POSIX), with SIGTERM followed by
+  SIGKILL after 2 s. Before, only the direct child was killed, so its grandchildren kept
+  running. Live children are also killed when the server exits.
+- The text block is capped to the same budget as the payload.
+
+### Migration
+
+- Treat `retained` as "there is more"; call `result_get` with its `id` to read the rest,
+  or set `BASH_MCP_RESPONSE_MODE=full`.
+- Read `rg`'s `truncated` as optional.
+- If a client lists too many tools, set `BASH_MCP_PROFILE`.
+
 ## 4.0.0 — 2026-10-22
 
 ### Breaking

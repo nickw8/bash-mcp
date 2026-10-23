@@ -87,6 +87,40 @@ Variable-size lists spread `...budgetSchema` (`detailLevel`, `maxItems`, `includ
 `inputSchema` and call `applyBudget(items, params)`. Emit `total` / `truncated` **only**
 when a budget parameter was passed, so the no-parameter response shape is unchanged.
 
+## Response budget
+
+`defineTool` runs every result through `fitToBudget` (`src/budget.ts`) after the
+handler, so tools never call it. `BASH_MCP_RESPONSE_MODE` picks the limit, in
+serialized JSON characters: `summary` 4,000, `compact` 12,000, `auto` 16,000 (32,000
+for an error or a non-Healthy diagnosis), `full` none. A call with
+`detailLevel: "full"` skips it.
+
+Over the limit, the biggest array is cut to a prefix, repeatedly, until it fits;
+`likelyCauses` and `suggestedNextCommands` are never cut. The text block is capped to
+the same limit at a line boundary. A cut is never silent: the payload gains
+
+```json
+"retained": {
+  "mode": "auto",
+  "omitted": [{ "path": "resources", "total": 2000, "shown": 210 }],
+  "id": "r_…",
+  "expiresInSec": 900
+}
+```
+
+and the text block ends `[truncated to auto budget: resources 210/2000; rest:
+result_get {"id":"r_…"} (900s)]`. Counts (`count`, `total`, `matchCount`) are computed
+before the cut, so they stay true.
+
+`id` points into the result store (`src/result-store.ts`): memory only, per session
+(a stdio process is one session), TTL `BASH_MCP_RESULT_TTL`, capped by entries and
+bytes, oldest evicted first. `result_get { id, path?, offset?, limit? }` pages it. An
+expired id answers `not_found` with "expired"; another session's id answers
+`not_found` exactly like an unknown one. A stored result is a snapshot of the original
+call, under the same `BASH_MCP_MODE`, so it never shows more than that call could.
+`id` is absent when the store is off or the payload is too big for it — the note then
+says to narrow the call.
+
 ## Diagnostics
 
 Spread `...diagnosticInputSchema` (`format`, `fields`, `detailLevel`, `maxItems`) into

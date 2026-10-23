@@ -103,7 +103,17 @@ npx -y @nickw8/bash-mcp --install-claude --check # report drift, write nothing
 It prints the `settings.json` hook block to paste in (the rules file needs no
 settings — Claude Code auto-loads `~/.claude/rules/*.md`). See
 [hooks/README.md](hooks/README.md) for details and the clone-time
-`npm run claude:install` equivalent.
+`npm run claude:install` equivalent. `--uninstall-claude` removes both files again.
+
+Or install the Claude Code plugin, which bundles the server and the hook (in `warn`
+mode — it never blocks unless `BASH_MCP_HOOK=block`):
+
+```
+/plugin install bash-mcp --marketplace nickw8/bash-mcp
+```
+
+Every other client (VS Code/Copilot, Codex, generic stdio) and pinned versions:
+[docs/guides/installation.md](docs/guides/installation.md).
 
 ## Claude Desktop Setup
 
@@ -149,7 +159,7 @@ client works the same way — point it at the `bash-mcp` binary or `npx -y @nick
 
 ## Recommended Hooks
 
-Optional Claude Code hooks in [`hooks/`](hooks) steer agents toward the structured tools by blocking raw shell commands (`git status`, `kubectl get`, `cat`, …) that have a bash-mcp equivalent, while letting write commands (`git commit`, `kubectl apply`) pass through.
+Optional Claude Code hooks in [`hooks/`](hooks) steer agents toward the structured tools by blocking raw shell commands (`git status`, `kubectl get`, `cat`, …) that have a bash-mcp equivalent, while letting write commands (`git commit`, `kubectl apply`) pass through. `BASH_MCP_HOOK=warn` makes every block advisory; `off` disables the hook.
 
 See [docs/runbooks/hooks-setup.md](docs/runbooks/hooks-setup.md) for setup.
 
@@ -382,6 +392,12 @@ so agents can self-select without the README.
 | `run_seq` | Run an ordered list of labeled commands one after another, stopping at the first failure by default. |
 | `batch` | Run multiple commands in parallel and return all results. |
 
+### Results
+
+| Tool | Description |
+|------|-------------|
+| `result_get` | Page through a result the response budget trimmed. |
+
 <!-- END GENERATED: tools -->
 
 All `tf_*` tools accept `binary: "terraform" | "tofu"` (or set `$TF_BINARY`) to run OpenTofu.
@@ -431,6 +447,10 @@ check_environment()
 |----------|--------|---------|--------|
 | `BASH_MCP_LOG` | `error` \| `info` \| `off` | `error` | Wide-event JSON logging to **stderr** (one line per tool call). `error` logs only failed calls; `info` adds successes; `off`/`silent` disables. stdout always stays pure MCP. `run`/`batch` commands are redacted (metadata only). |
 | `BASH_MCP_MODE` | `readOnly` \| `confirmWrites` \| `off` | `readOnly` | Gates `run`/`batch`. Default `readOnly` blocks commands classified as mutating (`confirmWrites` likewise). Set `off` (or `dangerous`) to disable enforcement — recommended only for trusted local use. |
+| `BASH_MCP_PROFILE` | `core` \| `development` \| `infrastructure` \| `all` | `all` | Which tool groups register. Fewer tools, less schema in context — see [tool discovery](docs/guides/tool-discovery.md). An unknown value fails at startup. |
+| `BASH_MCP_RESPONSE_MODE` | `auto` \| `summary` \| `compact` \| `full` | `auto` | Response budget. A cut result carries `retained` and its full payload is pageable with `result_get`. `full` is the v4 behaviour. See [output conventions](docs/guides/output-conventions.md#response-budget). |
+| `BASH_MCP_RESULT_TTL` | seconds | `900` | How long a stored result stays retrievable; `0` disables the store. |
+| `BASH_MCP_HOOK` | `block` \| `warn` \| `off` | `block` (`warn` in the plugin) | Redirect hook behaviour. |
 | `TF_BINARY` | `terraform` \| `tofu` | `terraform` | Default binary for all `tf_*` tools (overridable per-call via `binary`). |
 
 ### Timeouts

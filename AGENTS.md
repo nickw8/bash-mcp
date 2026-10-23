@@ -22,7 +22,7 @@ consumers use `npx @nickw8/bash-mcp --install-claude [--check]` instead of `clau
 1. **Register tools with `defineTool(server, name, config, handler)` from `#tool`** — never `server.registerTool` directly. It adds wide-event logging, uniform error catching, and registry recording.
 2. **Generated content is never hand-edited.** `docs/tools.md`, the README `<!-- BEGIN/END GENERATED: tools|which-tool -->` regions, and `claude/rules/bash-mcp-tools.md` come from `npm run docs:tools`. Edit the source, run the command; a guard test fails otherwise.
 3. **New tool groups go in the `GROUPS` table in `src/registry.ts`**, not `src/index.ts`.
-4. **Use subpath imports**: `#exec`, `#shape`, `#step`, `#platform`, `#response`, `#format`, `#parsers`, `#kube-args`, `#tool`, `#error`, `#logger`, `#safety` (package.json `"imports"`).
+4. **Use subpath imports**: `#exec`, `#shape`, `#step`, `#platform`, `#response`, `#format`, `#parsers`, `#kube-args`, `#tool`, `#error`, `#logger`, `#safety`, `#budget`, `#result-store` (package.json `"imports"`).
 5. **All schemas are Zod** (`inputSchema`, `outputSchema`); every tool returns `{ content: [...], structuredContent: {...}, isError?: true }` and never throws.
 
 Diagnostic tools (`diagnostic: true` in their `defineTool` config — the kube, helm and
@@ -41,6 +41,7 @@ their own fields) — they collapse multi-call triage into one answer. New diagn
 | Looking up a tool's name, args, or output shape | [docs/tools.md](docs/tools.md) (generated) |
 | Wiring the redirect hook into a Claude install | [docs/runbooks/hooks-setup.md](docs/runbooks/hooks-setup.md) |
 | Justifying a tool's token savings | [docs/guides/token-benchmarks.md](docs/guides/token-benchmarks.md) |
+| Configuring a client, or releasing to npm and the MCP Registry | [docs/guides/installation.md](docs/guides/installation.md), [.github/workflows/release.yml](.github/workflows/release.yml) |
 | Looking for any other guide | [docs/README.md](docs/README.md) |
 | Branching, PRs, code style | [CONTRIBUTING.md](CONTRIBUTING.md) |
 

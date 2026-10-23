@@ -92,6 +92,19 @@ picked up.
   `terraform/tofu providers` → `tf_providers`; `terraform/tofu validate` →
   `tf_validate_summary`; `helm history` → `helm_release_triage` (all block).
 - **Loosen/tighten:** flip any `block` to `warn` to make it advisory only.
+- **Mode, without editing the script:** `BASH_MCP_HOOK=block` (default for the
+  script), `warn` (every block becomes advisory) or `off` (the hook allows everything).
+
+## Plugin and uninstall
+
+The Claude Code plugin (`/plugin install bash-mcp --marketplace nickw8/bash-mcp`)
+registers the same hook through `hooks/hooks.json`, defaulting to `warn`; set
+`BASH_MCP_HOOK=block` in the environment to make it block. `/plugin uninstall bash-mcp`
+removes it.
+
+For a manual install, `npx -y @nickw8/bash-mcp --uninstall-claude` deletes the rules
+file and the hook script from `~/.claude`. Remove the `PreToolUse` entry from
+`settings.json` yourself — the uninstaller does not edit settings.
 
 ## Requirements & safety
 

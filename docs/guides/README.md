@@ -7,6 +7,8 @@ How to build and change things in this repo.
 | Writing a new tool, changing one, or adding a tool group | [adding-tools.md](adding-tools.md) |
 | Deciding what a tool returns, or shaping its text block | [output-conventions.md](output-conventions.md) |
 | Justifying a tool's token savings, or adding a benchmark | [token-benchmarks.md](token-benchmarks.md) |
+| Configuring an MCP client to run bash-mcp | [installation.md](installation.md) |
+| The tool list costs too much context, or a client caps tool count | [tool-discovery.md](tool-discovery.md) |
 
 Related: [`../architecture/README.md`](../architecture/README.md) for which module owns a
 concern, [`../architecture/configuration.md`](../architecture/configuration.md) for timeouts

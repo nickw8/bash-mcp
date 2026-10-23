@@ -9,6 +9,7 @@ Each folder has its own `README.md` listing what is inside it.
 | [`guides/`](guides/README.md) | How to add a tool, shape its output, and justify its token savings |
 | [`runbooks/`](runbooks/README.md) | Setup procedures you run once per machine — wiring the redirect hook into a Claude install |
 | [`adr/`](adr/) | Architecture decision records — the decisions with a rejected alternative |
+| [`plans/`](plans/v5-checklist.md) | In-flight implementation plans — the v5 checklist and audit baseline |
 | `agents/` | Agent-facing process docs — [`issue-tracker.md`](agents/issue-tracker.md), [`triage-labels.md`](agents/triage-labels.md), [`domain.md`](agents/domain.md) |
 
 ## Flat files
