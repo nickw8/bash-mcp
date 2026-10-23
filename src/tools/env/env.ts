@@ -49,6 +49,15 @@ export const PROBES: Probe[] = [
   { name: "pytest", binary: "pytest", versionArgs: ["--version"] },
   { name: "shellcheck", binary: "shellcheck", versionArgs: ["--version"] },
   { name: "bats", binary: "bats", versionArgs: ["--version"] },
+  // Not wrapped (gh aside), but they decide whether a `run` fallback works.
+  { name: "gh", binary: "gh", versionArgs: ["--version"] },
+  // `--version`, not `docker version`: the latter contacts the daemon.
+  { name: "docker", binary: "docker", versionArgs: ["--version"] },
+  { name: "python", binary: "python3", versionArgs: ["--version"] },
+  { name: "pnpm", binary: "pnpm", versionArgs: ["--version"] },
+  { name: "yarn", binary: "yarn", versionArgs: ["--version"] },
+  { name: "go", binary: "go", versionArgs: ["version"] },
+  { name: "cargo", binary: "cargo", versionArgs: ["--version"] },
 ];
 
 /** Extract the first semver-like token from CLI version output. */
