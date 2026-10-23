@@ -72,6 +72,7 @@ add(
   "summarizeEvents",
   summarizeEvents(
     fixture<{ items: KubeEvent[] }>("kubectl", "events.json").items,
+    "qa",
   ).suggestedNextCommands,
 );
 add(
@@ -168,6 +169,32 @@ describe("suggestedNextCommands", () => {
           const key = token.split("=")[0] ?? "";
           expect(token.includes("="), `${source}: "${cmd}"`).toBe(true);
           expect(declared, `${source}: "${cmd}" key ${key}`).toContain(key);
+        }
+      }
+    }
+  });
+
+  // A suggestion is an executable call: an agent that follows it should not
+  // have to guess a pod, or silently fall back to the `default` namespace.
+  it("binds every required argument, and the namespace scope", () => {
+    for (const { source, commands } of collected) {
+      for (const cmd of commands) {
+        const [tool = "", ...rest] = cmd.split(/\s+/);
+        const t = byName.get(tool);
+        const given = new Set(rest.map((token) => token.split("=")[0]));
+        const shape = t?.inputSchema ?? {};
+        const required = Object.entries(shape)
+          .filter(([, s]) => !(s as { isOptional(): boolean }).isOptional())
+          .map(([k]) => k)
+          .concat(t?.required ?? []);
+        for (const key of required) {
+          expect(given.has(key), `${source}: "${cmd}" needs ${key}`).toBe(true);
+        }
+        if ("namespace" in shape) {
+          expect(
+            given.has("namespace") || given.has("allNamespaces"),
+            `${source}: "${cmd}" drops the namespace`,
+          ).toBe(true);
         }
       }
     }

@@ -89,6 +89,18 @@ describe("summarizeEvents (fixtures/kubectl/events.json)", () => {
     expect(d.evidence.join(" ")).not.toContain("Pulled"); // Normal dropped
   });
 
+  it("suggests calls bound to the warned pods and the queried scope", () => {
+    expect(summarizeEvents(list.items, "qa").suggestedNextCommands).toEqual([
+      "kube_pod_failure_summary namespace=qa",
+      "kube_diagnose_pod pod=crash-1 namespace=qa",
+      "kube_diagnose_pod pod=pend-1 namespace=qa",
+    ]);
+    // All namespaces, and the events name none: no pod can be bound.
+    expect(summarizeEvents(list.items).suggestedNextCommands).toEqual([
+      "kube_pod_failure_summary allNamespaces=true",
+    ]);
+  });
+
   it("reports OK with no warnings", () => {
     const d = summarizeEvents([{ type: "Normal", reason: "Pulled" }]);
     expect(d.status).toBe("OK");

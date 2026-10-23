@@ -260,7 +260,10 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         empty: {},
         failure: "kubectl get events failed",
         classify: (list) => {
-          const diag = summarizeEvents(list.items ?? []);
+          const diag = summarizeEvents(
+            list.items ?? [],
+            allNamespaces ? undefined : namespace,
+          );
           const { items: evidence, extra } = budgeted(diag.evidence, {
             detailLevel,
             maxItems,

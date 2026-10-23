@@ -23,8 +23,11 @@ export interface KubeEvent {
   message?: string;
   count?: number;
   lastTimestamp?: string;
-  involvedObject?: { kind?: string; name?: string };
+  involvedObject?: { kind?: string; name?: string; namespace?: string };
 }
+
+/** Pods named by warning events that get a `kube_diagnose_pod` suggestion. */
+const MAX_POD_SUGGESTIONS = 3;
 
 interface FailureRule {
   /** Short machine reason (also used as the overall status when primary). */
@@ -146,8 +149,14 @@ export function diagnosePod(pod: KubeResource): Diagnosis {
   return { status, likelyCauses, suggestedNextCommands, evidence };
 }
 
-/** Summarize `kubectl get events` into the warning-focused diagnostic shape. */
-export function summarizeEvents(events: KubeEvent[]): Diagnosis {
+/**
+ * Summarize `kubectl get events` into the warning-focused diagnostic shape.
+ * `namespace` is the one queried; omit it for an all-namespaces query.
+ */
+export function summarizeEvents(
+  events: KubeEvent[],
+  namespace?: string,
+): Diagnosis {
   const warnings = events
     .filter((e) => e.type === "Warning")
     .sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
@@ -168,10 +177,24 @@ export function summarizeEvents(events: KubeEvent[]): Diagnosis {
         ]
       : [],
     suggestedNextCommands: warnings.length
-      ? ["kube_pod_failure_summary", "kube_diagnose_pod"]
+      ? [
+          `kube_pod_failure_summary ${namespace ? `namespace=${namespace}` : "allNamespaces=true"}`,
+          ...warnedPods(warnings, namespace),
+        ]
       : [],
     evidence,
   };
+}
+
+/** `kube_diagnose_pod` for the Pods the warnings name, most-warned first. */
+function warnedPods(warnings: KubeEvent[], namespace?: string): string[] {
+  const pods = new Set<string>();
+  for (const { involvedObject: o } of warnings) {
+    const ns = o?.namespace ?? namespace;
+    if (o?.kind !== "Pod" || !o.name || !ns) continue;
+    pods.add(`kube_diagnose_pod pod=${o.name} namespace=${ns}`);
+  }
+  return [...pods].slice(0, MAX_POD_SUGGESTIONS);
 }
 
 /** Diagnose a Deployment's rollout health from its replica counts/conditions. */
