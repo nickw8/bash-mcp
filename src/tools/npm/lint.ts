@@ -8,7 +8,6 @@ import {
   stringOrArray,
   toArray,
 } from "#parsers";
-import { err } from "#response";
 import { defineTool } from "#tool";
 import { biomeChangedCount, parseBiomeDiagnostics } from "./parsers/biome.js";
 
@@ -71,16 +70,11 @@ export function registerNpmLintTool(server: McpServer) {
         results: result,
         parse: parseBiomeDiagnostics,
         minSeverity,
-        fields: (_counts, [r]) => ({
+        fields: ({ errorCount, warningCount }, [r]) => ({
+          errorCount,
+          warningCount,
           fixedCount: fix ? biomeChangedCount(r?.stdout || r?.stderr || "") : 0,
         }),
-        bareWhen: "blank-output",
-        // JSON parse failed — return raw output as a single diagnostic
-        onParseError: (output) =>
-          err("Failed to parse biome JSON output", {
-            errors: [{ file: "", items: [`0:0 ${output.slice(0, 500)}`] }],
-            errorCount: 1,
-          }),
         format,
         textFields: fields,
         detailLevel,

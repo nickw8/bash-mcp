@@ -15,7 +15,7 @@ import { z } from "zod";
 import { classifyError } from "#error";
 import type { ExecResult } from "#exec";
 import type { ListFormat } from "#format";
-import { err, ok, okList } from "#response";
+import { err, okList } from "#response";
 import { applyBudget, budgetSchema, countBySeverity } from "./schemas.js";
 import type { BudgetParams, Diagnostic } from "./types.js";
 
@@ -151,50 +151,42 @@ export function diagnosticsResponse<T extends Record<string, unknown>>(
 
 const SEVERITY_RANK = { error: 3, warning: 2, info: 1 } as const;
 
-type Counts = { errorCount: number; warningCount?: number };
+/** What a run found, counted before any minSeverity filtering. */
+export interface DiagnosticCounts {
+  errorCount: number;
+  warningCount: number;
+  /** Every finding, whatever its severity. */
+  found: number;
+}
 
 export interface DiagnosticRunOpts<F extends Record<string, unknown>> {
   /** The CLI's name, for the error answered when it never ran, timed out, or failed unreadably. */
   command: string;
   /** The CLI's result — one invocation, or several to merge (`bash -n` per file). */
   results: ExecResult | ExecResult[];
-  /** Read text into Diagnostics. May throw; see `onParseError`. */
+  /** Read non-blank output text into Diagnostics. A throw becomes an error answer. */
   parse: (text: string) => Diagnostic[];
-  /** Which stream each result is read from (default `stdout || stderr`). */
-  stream?: "stderr";
-  /** `severity` (default) counts errors and warnings; `total` counts every finding as `errorCount`. */
-  count?: "severity" | "total";
   /** Drop findings below this severity — after counting. */
   minSeverity?: keyof typeof SEVERITY_RANK;
-  /** Tool-specific output fields, merged after the counts. */
-  fields?: (counts: Counts, results: ExecResult[]) => F;
-  /** Keys of the output fields echoed in the text meta (default: all of them). */
-  metaKeys?: string[];
-  /**
-   * Answer a bare `ok({errors: [], ...fields})` instead of the list response:
-   * `blank-output` when every stream is blank (the parser is not called);
-   * `no-findings` when no finding is left after parsing and filtering.
-   */
-  bareWhen?: "blank-output" | "no-findings";
-  /** Answer for a parser that throws; receives the text it choked on. Without it the throw propagates. */
-  onParseError?: (text: string) => ReturnType<typeof err>;
+  /** The tool's structured output fields (counts and extras), also shown as the text meta. */
+  fields: (counts: DiagnosticCounts, results: ExecResult[]) => F;
   format?: ListFormat;
   detailLevel?: BudgetParams["detailLevel"];
   maxItems?: BudgetParams["maxItems"];
+  /** Limit the text view to these columns. */
   textFields?: string[];
 }
 
 /**
  * Diagnostic run: read one or more CLI results as Diagnostics and answer with
  * counts plus findings. Pure — the caller owns the exec call and the schemas.
+ * Output is `stdout || stderr` per result; blank output has no findings.
  */
 export function diagnosticRun<F extends Record<string, unknown>>(
   o: DiagnosticRunOpts<F>,
 ) {
   const results = Array.isArray(o.results) ? o.results : [o.results];
-  const texts = results.map((r) =>
-    o.stream === "stderr" ? r.stderr : r.stdout || r.stderr,
-  );
+  const texts = results.map((r) => r.stdout || r.stderr);
 
   // A run that never started or was killed has no findings to trust.
   const broken = results.find((r) => r.errorCode || r.timedOut);
@@ -203,16 +195,18 @@ export function diagnosticRun<F extends Record<string, unknown>>(
     return err(error.message, undefined, error);
   }
 
-  const blank = texts.every((t) => !t.trim());
   let diagnostics: Diagnostic[];
   try {
-    diagnostics =
-      blank && o.bareWhen === "blank-output"
-        ? []
-        : texts.flatMap((t) => o.parse(t));
+    diagnostics = texts.flatMap((t) => (t.trim() ? o.parse(t) : []));
   } catch {
-    if (!o.onParseError) throw new Error("diagnostic parse failed");
-    return o.onParseError(texts[0] ?? "");
+    // The CLI ran and answered; what came back was unreadable — the same
+    // parse_failed kind execJson reports.
+    const message = `Failed to parse ${o.command} output: ${(texts[0] ?? "").slice(0, 500)}`;
+    return err(
+      message,
+      {},
+      { kind: "parse_failed", message, command: o.command },
+    );
   }
 
   // Linters exit non-zero WITH findings (a normal result, ADR-0005); non-zero
@@ -224,10 +218,7 @@ export function diagnosticRun<F extends Record<string, unknown>>(
     return err(tail, undefined, { ...error, message: tail });
   }
 
-  const counts: Counts =
-    o.count === "total"
-      ? { errorCount: diagnostics.length }
-      : countBySeverity(diagnostics);
+  const counts = { ...countBySeverity(diagnostics), found: diagnostics.length };
 
   if (o.minSeverity) {
     const minRank = SEVERITY_RANK[o.minSeverity];
@@ -236,26 +227,11 @@ export function diagnosticRun<F extends Record<string, unknown>>(
     );
   }
 
-  const extra = o.fields?.(counts, results);
-  const fields = { ...counts, ...extra };
-
-  const bare =
-    o.bareWhen === "no-findings"
-      ? diagnostics.length === 0
-      : o.bareWhen === "blank-output" && blank;
-  if (bare) {
-    return ok({ errors: [], ...fields });
-  }
-
-  const meta = o.metaKeys
-    ? Object.fromEntries(
-        o.metaKeys.map((k) => [k, (fields as Record<string, unknown>)[k]]),
-      )
-    : fields;
+  const fields = o.fields(counts, results);
   return diagnosticsResponse(fields, diagnostics, {
     format: o.format,
     fields: o.textFields,
     budget: { detailLevel: o.detailLevel, maxItems: o.maxItems },
-    meta,
+    meta: fields,
   });
 }

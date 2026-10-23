@@ -53,9 +53,10 @@ export function registerPythonTypecheckTool(server: McpServer) {
         command: "mypy",
         results: result,
         parse: parseMypyOutput,
-        count: "total",
-        fields: (_, [r]) => ({ success: r?.exitCode === 0 }),
-        metaKeys: ["errorCount"],
+        fields: ({ found }, [r]) => ({
+          errorCount: found,
+          success: r?.exitCode === 0,
+        }),
         format,
         textFields: fields,
         detailLevel,

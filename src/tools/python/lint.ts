@@ -8,7 +8,6 @@ import {
   stringOrArray,
   toArray,
 } from "#parsers";
-import { err } from "#response";
 import { defineTool } from "#tool";
 import { parseRuffDiagnostics } from "./parsers/ruff.js";
 
@@ -68,15 +67,13 @@ export function registerPythonLintTool(server: McpServer) {
         results: result,
         parse: parseRuffDiagnostics,
         minSeverity,
-        // ruff's JSON mode prints only the findings left after --fix (or `[]`);
-        // it reports no fixed count, so this stays 0.
-        fields: () => ({ fixedCount: 0 }),
-        bareWhen: "blank-output",
-        onParseError: (output) =>
-          err("Failed to parse ruff JSON output", {
-            errors: [{ file: "", items: [`0:0 ${output.slice(0, 500)}`] }],
-            errorCount: 1,
-          }),
+        fields: ({ errorCount, warningCount }) => ({
+          errorCount,
+          warningCount,
+          // ruff's JSON mode prints only the findings left after --fix (or
+          // `[]`); it reports no fixed count, so this stays 0.
+          fixedCount: 0,
+        }),
         format,
         textFields: fields,
         detailLevel,

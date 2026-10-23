@@ -51,7 +51,10 @@ export function registerBashLintTool(server: McpServer) {
         results: result,
         parse: parseShellcheckDiagnostics,
         minSeverity,
-        bareWhen: "no-findings",
+        fields: ({ errorCount, warningCount }) => ({
+          errorCount,
+          warningCount,
+        }),
         format,
         textFields: fields,
         detailLevel,

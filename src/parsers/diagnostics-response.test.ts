@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { err } from "#response";
 import {
   compactDiagnostics,
+  type DiagnosticCounts,
   diagnosticRows,
   diagnosticRun,
   diagnosticsResponse,
@@ -153,25 +153,35 @@ describe("diagnosticRun", () => {
       .filter(Boolean)
       .map((l) => table[l] as Diagnostic);
 
+  const counts = ({ errorCount, warningCount }: DiagnosticCounts) => ({
+    errorCount,
+    warningCount,
+  });
+
   it("reads stdout, falling back to stderr", () => {
-    const a = diagnosticRun({ results: res("e0", "e1"), parse, command: "x" });
+    const a = diagnosticRun({
+      results: res("e0", "e1"),
+      parse,
+      command: "x",
+      fields: counts,
+    });
     expect(a.structuredContent).toMatchObject({ errorCount: 1 });
     expect(a.structuredContent.errors[0]?.items).toHaveLength(1);
     const b = diagnosticRun({
       results: res("", "e0\ne1"),
       parse,
       command: "x",
+      fields: counts,
     });
     expect(b.structuredContent).toMatchObject({ errorCount: 2 });
   });
 
-  it("reads stderr only when asked, merging a list of results", () => {
+  it("merges a list of results", () => {
     const r = diagnosticRun({
       command: "x",
-      results: [res("e0", "e1"), res("e0", "e1")],
+      results: [res("e0"), res("", "e1")],
       parse,
-      stream: "stderr",
-      count: "total",
+      fields: ({ found }) => ({ errorCount: found }),
     });
     expect(r.structuredContent).toMatchObject({ errorCount: 2 });
   });
@@ -182,84 +192,75 @@ describe("diagnosticRun", () => {
       results: res("e0\nwarn\ninfo"),
       parse,
       minSeverity: "error",
+      fields: (c) => ({ ...counts(c), found: c.found }),
     });
     expect(r.structuredContent).toMatchObject({
       errorCount: 1,
       warningCount: 1,
+      found: 3,
     });
     expect(r.structuredContent.errors).toEqual([
       { file: "a.ts", items: ["12:9 TS2304 x"] },
     ]);
   });
 
-  it("maps extra fields from the counts and the results", () => {
+  it("answers the tool's fields, also as the text meta", () => {
     const r = diagnosticRun({
       command: "x",
       results: res("e0", "", 1),
       parse,
-      fields: (c, [x]) => ({ ok: x?.exitCode === 0, seen: c.errorCount }),
-      metaKeys: ["errorCount"],
+      fields: (c, [x]) => ({
+        errorCount: c.found,
+        success: x?.exitCode === 0,
+        tag: "t",
+      }),
     });
-    expect(r.structuredContent).toMatchObject({
+    expect(r.structuredContent).toEqual({
       errorCount: 1,
-      warningCount: 0,
-      ok: false,
-      seen: 1,
+      success: false,
+      tag: "t",
+      errors: [{ file: "a.ts", items: ["12:9 TS2304 x"] }],
     });
-    expect(r.content[0]?.text).toContain("errorCount");
-    expect(r.content[0]?.text).not.toContain("seen");
+    expect(r.content[0]?.text).toContain("tag");
   });
 
-  it("answers bare ok for blank output or no findings, as asked", () => {
-    const blank = diagnosticRun({
+  it("never calls the parser on blank output, and answers an empty list", () => {
+    const r = diagnosticRun({
       command: "x",
       results: res("  "),
       parse: () => {
         throw new Error("never called");
       },
-      bareWhen: "blank-output",
-      fields: () => ({ fixedCount: 0 }),
+      fields: (c) => ({ ...counts(c), fixedCount: 0 }),
     });
-    expect(blank.structuredContent).toEqual({
-      errors: [],
+    expect(r.isError).toBeUndefined();
+    expect(r.structuredContent).toEqual({
       errorCount: 0,
       warningCount: 0,
       fixedCount: 0,
-    });
-    const none = diagnosticRun({
-      command: "x",
-      results: res("warn"),
-      parse,
-      minSeverity: "error",
-      bareWhen: "no-findings",
-    });
-    expect(none.structuredContent).toEqual({
-      errors: [],
-      errorCount: 0,
-      warningCount: 1,
-    });
-    const listed = diagnosticRun({ results: res("x"), parse: () => [] });
-    expect(listed.structuredContent).toEqual({
-      errorCount: 0,
-      warningCount: 0,
       errors: [],
     });
   });
 
-  it("routes a throwing parser to onParseError", () => {
+  it("answers an error for a throwing parser, with the output it choked on", () => {
     const r = diagnosticRun({
-      command: "x",
+      command: "ruff",
       results: res("garbage"),
       parse: () => {
         throw new Error("bad");
       },
-      onParseError: (t) => err(`bad: ${t}`),
+      fields: counts,
     });
-    expect(r.content[0]?.text).toBe("bad: garbage");
+    expect(r.isError).toBe(true);
+    expect(r.content[0]?.text).toBe("Failed to parse ruff output: garbage");
+    expect(r.structuredContent).toMatchObject({
+      error: { kind: "parse_failed", command: "ruff" },
+    });
   });
 });
 
 describe("diagnosticRun failure policy", () => {
+  const counts0 = ({ errorCount }: DiagnosticCounts) => ({ errorCount });
   const base = { stdout: "", stderr: "", exitCode: 0 };
   const parseOne = (t: string): Diagnostic[] =>
     t.includes("finding") ? [e0] : [];
@@ -268,6 +269,7 @@ describe("diagnosticRun failure policy", () => {
     const r = diagnosticRun({
       results: { ...base, exitCode: 1, errorCode: "ENOENT" },
       parse: parseOne,
+      fields: counts0,
       command: "ruff",
     });
     expect(r.isError).toBe(true);
@@ -281,6 +283,7 @@ describe("diagnosticRun failure policy", () => {
     const r = diagnosticRun({
       results: [base, { ...base, exitCode: 1, errorCode: "ENOENT" }],
       parse: parseOne,
+      fields: counts0,
       command: "bash",
     });
     expect(r.structuredContent).toMatchObject({
@@ -292,6 +295,7 @@ describe("diagnosticRun failure policy", () => {
     const r = diagnosticRun({
       results: { stdout: "finding", stderr: "", exitCode: 1, timedOut: true },
       parse: parseOne,
+      fields: counts0,
       command: "mypy",
     });
     expect(r.isError).toBe(true);
@@ -302,6 +306,7 @@ describe("diagnosticRun failure policy", () => {
     const r = diagnosticRun({
       results: { stdout: "", stderr: "x".repeat(800), exitCode: 2 },
       parse: parseOne,
+      fields: counts0,
       command: "tsc",
     });
     expect(r.isError).toBe(true);
@@ -317,6 +322,7 @@ describe("diagnosticRun failure policy", () => {
     const r = diagnosticRun({
       results: { stdout: "finding", stderr: "", exitCode: 1 },
       parse: parseOne,
+      fields: counts0,
       command: "ruff",
     });
     expect(r.isError).toBeUndefined();
@@ -329,6 +335,7 @@ describe("diagnosticRun failure policy", () => {
       results: { stdout: "w", stderr: "", exitCode: 1 },
       parse: warnOnly,
       minSeverity: "error",
+      fields: counts0,
       command: "ruff",
     });
     expect(r.isError).toBeUndefined();
@@ -338,6 +345,7 @@ describe("diagnosticRun failure policy", () => {
     const r = diagnosticRun({
       results: base,
       parse: parseOne,
+      fields: counts0,
       command: "ruff",
     });
     expect(r.isError).toBeUndefined();

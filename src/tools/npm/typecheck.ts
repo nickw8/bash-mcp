@@ -52,9 +52,10 @@ export function registerNpmTypecheckTool(server: McpServer) {
         command: "tsc",
         results: result,
         parse: parseTscOutput,
-        count: "total",
-        fields: (_, [r]) => ({ success: r?.exitCode === 0 }),
-        metaKeys: ["errorCount"],
+        fields: ({ found }, [r]) => ({
+          errorCount: found,
+          success: r?.exitCode === 0,
+        }),
         format,
         textFields: fields,
         detailLevel,
