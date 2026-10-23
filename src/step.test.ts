@@ -23,6 +23,12 @@ describe("runStep", () => {
     expect(r.elapsed).toBeGreaterThanOrEqual(0);
   });
 
+  it("names a missing binary in stderr with exit 127", async () => {
+    const r = await runStep({ command: "bash-mcp-no-such-binary" });
+    expect(r.exitCode).toBe(127);
+    expect(r.stderr).toContain("not installed");
+  });
+
   it("shapes step output through shapeOutput", async () => {
     process.env.BASH_MCP_MODE = "off";
     const r = await runStep(

@@ -10,6 +10,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { classifyError } from "#error";
 import { exec } from "#exec";
 import { err, ok } from "#response";
 import { checkCommandAllowed } from "#safety";
@@ -85,6 +86,22 @@ export function registerRunTools(server: McpServer) {
       }
 
       const result = await exec(command, args, { cwd, timeout });
+
+      // A binary that never spawned, or one killed at the timeout, has no exit
+      // code worth reading: exitCode 1 with empty stderr looks like an ordinary
+      // failure. Name what happened instead (ADR-0005: unrunnable is an error).
+      if (result.errorCode || result.timedOut) {
+        const detail = classifyError(result, command);
+        return err(
+          detail.message,
+          {
+            exitCode: result.exitCode,
+            stderr: detail.message,
+            elapsed: Date.now() - start,
+          },
+          detail,
+        );
+      }
 
       // shapeOutput is the shared tail/head/byte trimmer (see #shape); stderr is
       // trimmed with the same policy so a noisy failure can't blow the budget.

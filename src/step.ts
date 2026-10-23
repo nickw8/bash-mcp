@@ -7,6 +7,7 @@
  * of either (ADR-0003).
  */
 
+import { classifyError } from "#error";
 import { exec } from "#exec";
 import { checkCommandAllowed } from "#safety";
 import { type ShapeOptions, shapeOutput } from "#shape";
@@ -65,11 +66,25 @@ export async function runStep(
     timeout: step.timeout,
   });
 
+  // A step that never spawned or hit its timeout says so in stderr, with the
+  // shell's exit codes (127 not found, 124 timed out), rather than exit 1 and
+  // nothing — the step result has no error field to carry it otherwise.
+  const unrunnable = result.errorCode !== undefined || result.timedOut;
+  const stderr = unrunnable
+    ? classifyError(result, step.command).message
+    : result.stderr;
+  const exitCode =
+    result.errorCode === "ENOENT"
+      ? 127
+      : result.timedOut
+        ? 124
+        : result.exitCode;
+
   return {
     label,
-    exitCode: result.exitCode,
+    exitCode,
     stdout: shapeOutput(result.stdout, shape).text,
-    stderr: shapeOutput(result.stderr, shape).text,
+    stderr: shapeOutput(stderr, shape).text,
     elapsed: Date.now() - start,
     blocked: false,
   };
