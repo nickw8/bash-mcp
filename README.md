@@ -275,7 +275,7 @@ so agents can self-select without the README.
 | `git_status` | Structured git status: branch, staged/unstaged/untracked files. |
 | `git_log` | Structured git log: commit hash, author, date, message. |
 | `git_diff` | Structured git diff: files changed with insertions/deletions counts. |
-| `git_branches` | List git branches with current branch marker and last commit info. |
+| `git_branches` | List git branches. |
 | `repo_health_summary` | One-call snapshot of a git working tree: branch, ahead/behind vs upstream, staged/unstaged/untracked counts, recent commits, and the uncommitted diffstat. |
 | `git_pr_context` | Collect the commits and file changes of a branch vs a base ref (for writing a PR description): commit list, changed files with status, and a diffstat over base...head. |
 | `git_diff_content` | Show git diff with structured patch content. |
@@ -314,7 +314,7 @@ so agents can self-select without the README.
 | `tf_show` | Show current Terraform state as structured JSON. |
 | `tf_plan_summary` | Run terraform plan and return a structured summary of changes (add/change/destroy counts and affected resources). |
 | `tf_workspaces` | List Terraform workspaces with current workspace marked. |
-| `tf_outputs` | List Terraform/OpenTofu outputs (name, value) with sensitive values redacted — a redacted output carries sensitive:true and no value. |
+| `tf_outputs` | List Terraform/OpenTofu outputs as [name, value] pairs; a sensitive output is redacted to [name] alone. |
 | `tf_providers` | List the Terraform/OpenTofu version and selected provider versions for the project. |
 | `tf_validate_summary` | Validate the Terraform/OpenTofu config and return a compact pass/fail summary with diagnostics. |
 | `tf_modules_summary` | List the modules used by an initialized Terraform/OpenTofu project (key, source, version). |

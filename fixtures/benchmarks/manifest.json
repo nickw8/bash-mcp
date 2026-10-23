@@ -226,5 +226,11 @@
     "command": "glab ci get --output json + glab ci trace (→ glab_pipeline_failure_summary)",
     "weight": 2,
     "budget": 275
+  },
+  {
+    "id": "kube_logs_repeats",
+    "command": "kubectl logs (retry loop)",
+    "weight": 1,
+    "budget": 230
   }
 ]

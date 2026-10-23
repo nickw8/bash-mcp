@@ -315,7 +315,7 @@ dotnet test
 
 `read-only`
 
-Show disk usage for paths. Returns one { path, sizeBytes } entry per path, largest-first ordering as du emits it. Use maxDepth to control how deep the summary goes.
+Show disk usage for paths. Returns entries as [path, sizeBytes] pairs, in the order du emits them. Use maxDepth to control how deep the summary goes.
 
 **Inputs:**
 
@@ -326,7 +326,7 @@ Show disk usage for paths. Returns one { path, sizeBytes } entry per path, large
 
 **Outputs:**
 
-- `entries`: object[]
+- `entries`: unknown[]
 
 **Equivalent commands:**
 
@@ -423,7 +423,7 @@ gh run view <run> --log-failed
 
 `read-only`
 
-List git branches with current branch marker and last commit info.
+List git branches. Returns the current branch and [name, lastCommit] pairs; a remote branch's name starts with remotes/.
 
 **Inputs:**
 
@@ -435,7 +435,7 @@ List git branches with current branch marker and last commit info.
 **Outputs:**
 
 - `current`: string
-- `branches`: object[]
+- `branches`: unknown[]
 
 **Equivalent commands:**
 
@@ -937,7 +937,7 @@ kubectl get <resource> -o json
 
 `read-only`
 
-Get pod logs. Returns structured log lines with timestamps when available. Use grep to filter lines by regex pattern (e.g. 'ERROR|WARN') instead of piping through shell commands.
+Get pod logs. Returns structured log lines with timestamps when available; consecutive repeats of a message merge into the first, marked ' [×N]'. Use grep to filter lines by regex pattern (e.g. 'ERROR|WARN') instead of piping through shell commands.
 
 **Inputs:**
 
@@ -1106,22 +1106,20 @@ Return an intent → preferred-tool index so you can pick the right bash-mcp too
 
 `read-only`
 
-List files in a directory. Returns structured entries with name, size, permissions, and modified date — directories end with '/' and links with '@'. Use nameOnly for names alone, recursive for one level of subdirectories, all to include hidden files.
+List files in a directory. Returns entries as [name, size, permissions, modified] — directories end with '/' and links with '@'. Use nameOnly for names alone, recursive for one level of subdirectories, all to include hidden files.
 
 **Inputs:**
 
 - `path`: string — Directory path to list
 - `all`: boolean _(optional)_ — Include hidden files
 - `recursive`: boolean _(optional)_ — Recurse into subdirectories (1 level)
-- `nameOnly`: boolean _(optional)_ — Only return names and types (omit size, permissions, modified)
+- `nameOnly`: boolean _(optional)_ — Entries are [name] alone
 - `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text block only (default tsv)
 - `fields`: string[] _(optional)_ — Text-block columns only
 
 **Outputs:**
 
-- `entries`: object[]
-- `total`: number
-- `path`: string
+- `entries`: unknown | unknown[]
 
 **Equivalent commands:**
 
@@ -1350,7 +1348,7 @@ git diff --stat
 
 `read-only`
 
-Page through a result the response budget trimmed. Pass the retained.id from that response; path selects a field (dotted, e.g. files.0.lines), offset/limit slice an array. Snapshot of the original call, kept for retained.expiresInSec.
+Page through a result the response budget trimmed. Pass the retained.id from that response; path selects a field (dotted, e.g. files.0), offset/limit slice an array. Snapshot of the original call, kept for retained.expiresInSec.
 
 **Inputs:**
 
@@ -1373,7 +1371,7 @@ Page through a result the response budget trimmed. Pass the retained.id from tha
 
 `read-only`
 
-Search file contents with ripgrep. Returns structured matches with file, line number, and matched text. Far more compact than raw rg output. Use glob (string or array, '!' to exclude) to filter files, ignoreCase for case-insensitive search, filesOnly for just filenames, countPerFile for match counts per file, maxPerFile to cap hits per file. For 'collect all X' tasks use only:true to return just the matched substrings (one row per hit) — add replace ($1 capture groups) to extract structured values.
+Search file contents with ripgrep. Returns files as [file, "line:text", ...] rows (a context line is "line-text"), [file, count] under countPerFile, [file] under filesOnly. Use glob (string or array, '!' to exclude) to filter files, ignoreCase for case-insensitive search, filesOnly for just filenames, countPerFile for match counts per file, maxPerFile to cap hits per file. For 'collect all X' tasks use only:true to return just the matched substrings (one row per hit) — add replace ($1 capture groups) to extract structured values.
 
 **Inputs:**
 
@@ -1395,9 +1393,8 @@ Search file contents with ripgrep. Returns structured matches with file, line nu
 
 **Outputs:**
 
-- `files`: object[]
-- `fileCount`: number
-- `matchCount`: number
+- `files`: unknown | unknown[]
+- `matchCount`: number _(optional)_ — Matches returned; with countPerFile, the sum of counts
 - `truncated`: true _(optional)_ — Present only when maxResults cut the matches
 - `totalMatches`: number _(optional)_
 
@@ -1421,6 +1418,7 @@ Run a single command — a binary plus an args array, executed directly without 
 - `maxLines`: number _(optional)_ — Max stdout/stderr lines to keep. 0 = unlimited.
 - `mode`: "tail" | "head" _(optional)_ — Keep the last N lines (tail, default) or the first N (head).
 - `maxBytes`: number _(optional)_ — Optional cap on stdout/stderr byte length (UTF-8).
+- `collapse`: boolean _(optional)_ — Merge consecutive repeated lines (timestamps ignored) into the first, marked ' [×N]' (default true). false = output verbatim.
 
 **Outputs:**
 
@@ -1495,7 +1493,7 @@ List the modules used by an initialized Terraform/OpenTofu project (key, source,
 
 `read-only`
 
-List Terraform/OpenTofu outputs (name, value) with sensitive values redacted — a redacted output carries sensitive:true and no value.
+List Terraform/OpenTofu outputs as [name, value] pairs; a sensitive output is redacted to [name] alone.
 
 **Inputs:**
 
@@ -1506,8 +1504,7 @@ List Terraform/OpenTofu outputs (name, value) with sensitive values redacted —
 
 **Outputs:**
 
-- `outputs`: object[]
-- `count`: number
+- `outputs`: unknown | unknown[]
 
 **Equivalent commands:**
 
@@ -1592,7 +1589,7 @@ terraform show
 
 `read-only`
 
-List resources in Terraform state. Returns the resource addresses plus a byType rollup (type, name, and module are all readable from each address, so they are not repeated per resource).
+List resources in Terraform state. Returns the resource addresses, plus a byType rollup once there are more than 20 (type, name, and module are readable from each address).
 
 **Inputs:**
 
@@ -1603,8 +1600,7 @@ List resources in Terraform state. Returns the resource addresses plus a byType 
 **Outputs:**
 
 - `resources`: string[]
-- `count`: number
-- `byType`: object
+- `byType`: object _(optional)_
 
 **Equivalent commands:**
 

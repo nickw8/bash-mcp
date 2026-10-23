@@ -25,7 +25,7 @@ export function registerDuTool(server: McpServer) {
     {
       title: "Disk usage",
       description:
-        "Show disk usage for paths. Returns one { path, sizeBytes } entry per path, largest-first ordering as du emits it. " +
+        "Show disk usage for paths. Returns entries as [path, sizeBytes] pairs, in the order du emits them. " +
         "Use maxDepth to control how deep the summary goes.",
       equivalentCommands: ["du -sh <path>"],
       inputSchema: {
@@ -45,14 +45,9 @@ export function registerDuTool(server: McpServer) {
           .describe("Text-block columns only"),
       },
       outputSchema: {
-        // sizeHuman is derived from sizeBytes, so it is rendered in the text
-        // view only — the payload pays for one of the two (ADR-0009).
-        entries: z.array(
-          z.object({
-            path: z.string(),
-            sizeBytes: z.number(),
-          }),
-        ),
+        // [path, sizeBytes] pairs: an object per row paid both key names on
+        // every entry (ADR-0009). sizeHuman is derived, so text view only.
+        entries: z.array(z.tuple([z.string(), z.number()])),
       },
       annotations: { readOnlyHint: true },
     },
@@ -83,7 +78,13 @@ export function registerDuTool(server: McpServer) {
         path: p,
         size: humanSize(sizeBytes),
       }));
-      return okList({ entries }, rows, {}, fmt, { fields });
+      return okList(
+        { entries: entries.map((e) => [e.path, e.sizeBytes]) },
+        rows,
+        {},
+        fmt,
+        { fields },
+      );
     },
   );
 }

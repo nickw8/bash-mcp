@@ -78,7 +78,7 @@ export function limitFor(mode: ResponseMode, unhealthy: boolean): number {
 }
 
 export interface Omission {
-  /** Dotted path to the array, indices included: `files.0.lines`. */
+  /** Dotted path to the array, indices included: `files.0`. */
   path: string;
   total: number;
   shown: number;

@@ -99,12 +99,7 @@ describe("filesystem handlers", () => {
       const result = await ls({ path: "." });
 
       expect(result.structuredContent.entries).toEqual([
-        {
-          name: "my notes.md",
-          size: 1024,
-          permissions: "-rw-r--r--",
-          modified: "2026-05-31",
-        },
+        ["my notes.md", 1024, "-rw-r--r--", "2026-05-31"],
       ]);
     });
 
@@ -117,7 +112,6 @@ describe("filesystem handlers", () => {
       expect(result.isError).toBe(true);
       expect(result.structuredContent).toMatchObject({
         entries: [],
-        total: 0,
         path: "/nope",
       });
     });

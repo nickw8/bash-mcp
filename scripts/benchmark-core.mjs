@@ -126,14 +126,14 @@ const tfStateListRaw = (n) =>
 
 // The payload the client receives: addresses only, plus the derived byType
 // count. Not the text block — see ADR-0009.
+// Mirrors the handler: the byType rollup appears above 20 resources.
 const tfStateListStructured = (n) =>
   JSON.stringify({
     resources: Array.from(
       { length: n },
       (_, i) => `module.network.aws_subnet.public[${i}]`,
     ),
-    count: n,
-    byType: { aws_subnet: n },
+    ...(n > 20 ? { byType: { aws_subnet: n } } : {}),
   });
 
 export async function scalingRows(count) {

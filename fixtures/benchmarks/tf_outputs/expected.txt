@@ -1,1 +1,1 @@
-{"outputs":[{"name":"vpc_id","value":"vpc-0abc123"},{"name":"public_subnets","value":"[\"subnet-01\",\"subnet-02\"]"},{"name":"db_endpoint","value":"app-db.xyz.rds.amazonaws.com:5432"},{"name":"api_key","sensitive":true}],"count":4}
+{"outputs":[["vpc_id","vpc-0abc123"],["public_subnets","[\"subnet-01\",\"subnet-02\"]"],["db_endpoint","app-db.xyz.rds.amazonaws.com:5432"],["api_key"]]}

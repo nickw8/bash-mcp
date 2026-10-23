@@ -19,6 +19,7 @@ import {
 } from "#kube-args";
 import { applyBudget, budgetSchema, parseJsonishOutput } from "#parsers";
 import { err, ok, okList } from "#response";
+import { collapseRepeats, markRepeat } from "#shape";
 import { defineTool } from "#tool";
 import { registerKubeDiagnosticTools } from "./diagnostics.js";
 import {
@@ -207,7 +208,7 @@ export function registerKubernetesTools(server: McpServer) {
     {
       title: "Kubectl logs",
       description:
-        "Get pod logs. Returns structured log lines with timestamps when available. " +
+        "Get pod logs. Returns structured log lines with timestamps when available; consecutive repeats of a message merge into the first, marked ' [×N]'. " +
         "Use grep to filter lines by regex pattern (e.g. 'ERROR|WARN') instead of piping through shell commands.",
       equivalentCommands: ["kubectl logs <pod> -n <ns>"],
       required: ["pod"],
@@ -285,6 +286,12 @@ export function registerKubernetesTools(server: McpServer) {
         const re = new RegExp(grep, ignoreCase ? "i" : undefined);
         lines = lines.filter((l) => re.test(l.message));
       }
+      // A crash loop repeats one message: keep the first timestamp, count the rest.
+      lines = collapseRepeats(
+        lines,
+        (l) => l.message,
+        (l, n) => ({ ...l, message: markRepeat(l.message, n) }),
+      );
 
       const hasBudget = detailLevel !== undefined || maxItems !== undefined;
       const {

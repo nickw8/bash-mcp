@@ -58,6 +58,12 @@ export function registerRunTools(server: McpServer) {
           .number()
           .optional()
           .describe("Optional cap on stdout/stderr byte length (UTF-8)."),
+        collapse: z
+          .boolean()
+          .optional()
+          .describe(
+            "Merge consecutive repeated lines (timestamps ignored) into the first, marked ' [×N]' (default true). false = output verbatim.",
+          ),
       },
       outputSchema: {
         exitCode: z.number(),
@@ -70,7 +76,16 @@ export function registerRunTools(server: McpServer) {
           .describe("Wall-clock execution time in milliseconds"),
       },
     },
-    async ({ command, args, cwd, timeout, maxLines, mode, maxBytes }) => {
+    async ({
+      command,
+      args,
+      cwd,
+      timeout,
+      maxLines,
+      mode,
+      maxBytes,
+      collapse,
+    }) => {
       const start = Date.now();
 
       // Safety profile (default readOnly): block mutating commands unless
@@ -105,7 +120,7 @@ export function registerRunTools(server: McpServer) {
 
       // shapeOutput is the shared tail/head/byte trimmer (see #shape); stderr is
       // trimmed with the same policy so a noisy failure can't blow the budget.
-      const shape = { mode, maxLines, maxBytes };
+      const shape = { mode, maxLines, maxBytes, collapse };
       const stdout = shapeOutput(result.stdout, shape);
       const stderr = shapeOutput(result.stderr, shape);
 

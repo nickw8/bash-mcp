@@ -5,6 +5,7 @@
  */
 
 import type { Triage } from "#parsers";
+import { collapseRepeats, markRepeat } from "#shape";
 
 /** One row of `gh pr checks --json name,workflow,bucket,link`. */
 export interface GhCheck {
@@ -91,7 +92,10 @@ export function errorLines(log: string): string[] {
     (l) => !/Process completed with exit code/.test(l),
   );
   const kept = specific.length > 0 ? specific : lines;
-  return [...new Set(kept)].slice(0, MAX_EVIDENCE);
+  return [...new Set(collapseRepeats(kept, (l) => l, markRepeat))].slice(
+    0,
+    MAX_EVIDENCE,
+  );
 }
 
 /** Triage a workflow run from its job list and the error lines of its failed log. */

@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { shapeOutput } from "./shape.js";
+import { collapseRepeats, lineKey, markRepeat, shapeOutput } from "./shape.js";
 
 describe("shapeOutput", () => {
   const text = "l1\nl2\nl3\nl4\nl5\n";
@@ -46,5 +46,48 @@ describe("shapeOutput", () => {
     expect(r.text).toBe("");
     expect(r.totalLines).toBe(0);
     expect(r.truncated).toBe(false);
+  });
+});
+
+describe("collapseRepeats", () => {
+  const collapse = (lines: string[]) =>
+    collapseRepeats(lines, lineKey, markRepeat);
+
+  it("merges a consecutive run into its first line, counted", () => {
+    expect(collapse(["a", "b", "b", "b", "c"])).toEqual(["a", "b [×3]", "c"]);
+  });
+
+  it("merges only adjacent repeats, so order survives", () => {
+    expect(collapse(["x", "y", "x"])).toEqual(["x", "y", "x"]);
+  });
+
+  it("ignores a leading timestamp and keeps the first one", () => {
+    expect(
+      collapse([
+        "2026-10-23T12:00:01.5Z boom",
+        "2026-10-23T12:00:02.1Z boom",
+        "[2026-10-23 12:00:03,000] boom",
+      ]),
+    ).toEqual(["2026-10-23T12:00:01.5Z boom [×3]"]);
+  });
+
+  it("never merges blank lines", () => {
+    expect(collapse(["a", "", "", "b"])).toEqual(["a", "", "", "b"]);
+  });
+});
+
+describe("shapeOutput collapse", () => {
+  const spam = `${Array(40).fill("retry").join("\n")}\ndone\n`;
+
+  it("merges repeats before the line cap and counts the original lines", () => {
+    const r = shapeOutput(spam, { maxLines: 5 });
+    expect(r.text).toBe("retry [×40]\ndone");
+    expect(r.totalLines).toBe(41);
+    expect(r.truncated).toBe(false);
+  });
+
+  it("collapse: false returns the output verbatim", () => {
+    const r = shapeOutput(spam, { maxLines: 0, collapse: false });
+    expect(r.text.split("\n")).toHaveLength(41);
   });
 });

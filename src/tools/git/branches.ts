@@ -13,7 +13,7 @@ export function registerGitBranchesTool(server: McpServer) {
     {
       title: "Git branches",
       description:
-        "List git branches with current branch marker and last commit info.",
+        "List git branches. Returns the current branch and [name, lastCommit] pairs; a remote branch's name starts with remotes/.",
       equivalentCommands: ["git branch -a"],
       inputSchema: {
         cwd: z.string().optional().describe("Repository path"),
@@ -29,15 +29,11 @@ export function registerGitBranchesTool(server: McpServer) {
       },
       outputSchema: {
         current: z.string(),
-        // Neither `current` nor `remote` gets a per-branch key: the current
-        // branch is named once at the top level and a remote branch is one
-        // whose name starts with "remotes/" (ADR-0009).
-        branches: z.array(
-          z.object({
-            name: z.string(),
-            lastCommit: z.string(),
-          }),
-        ),
+        // [name, lastCommit] pairs. Neither `current` nor `remote` gets a
+        // per-branch key: the current branch is named once at the top level
+        // and a remote branch is one whose name starts with "remotes/"
+        // (ADR-0009).
+        branches: z.array(z.tuple([z.string(), z.string()])),
       },
       annotations: { readOnlyHint: true },
     },
@@ -74,10 +70,7 @@ export function registerGitBranchesTool(server: McpServer) {
       return okList(
         {
           current: currentBranch,
-          branches: branches.map(({ name, lastCommit }) => ({
-            name,
-            lastCommit,
-          })),
+          branches: branches.map(({ name, lastCommit }) => [name, lastCommit]),
         },
         rows,
         { current: currentBranch },

@@ -28,7 +28,7 @@ export function registerSearchTools(server: McpServer) {
     {
       title: "Ripgrep search",
       description:
-        "Search file contents with ripgrep. Returns structured matches with file, line number, and matched text. Far more compact than raw rg output. " +
+        'Search file contents with ripgrep. Returns files as [file, "line:text", ...] rows (a context line is "line-text"), [file, count] under countPerFile, [file] under filesOnly. ' +
         "Use glob (string or array, '!' to exclude) to filter files, ignoreCase for case-insensitive search, " +
         "filesOnly for just filenames, countPerFile for match counts per file, maxPerFile to cap hits per file. " +
         "For 'collect all X' tasks use only:true to return just the matched substrings (one row per hit) — add replace ($1 capture groups) to extract structured values.",
@@ -111,18 +111,20 @@ export function registerSearchTools(server: McpServer) {
           ),
       },
       outputSchema: {
-        // Grouped by file: the path is paid for once, and each hit is one
-        // "<line>:<text>" string ("<line>-<text>" for a context line) rather
-        // than an object repeating the same two keys (ADR-0009).
+        // One row per file, path first: the path is paid for once and each
+        // hit is one "<line>:<text>" string ("<line>-<text>" for a context
+        // line), with no per-row keys (ADR-0009). The file count is the row
+        // count, so it is not repeated.
         files: z.array(
-          z.object({
-            file: z.string(),
-            lines: z.array(z.string()).optional(),
-            count: z.number().optional(),
-          }),
+          z.union([
+            z.tuple([z.string(), z.number()]),
+            z.tuple([z.string()]).rest(z.string()),
+          ]),
         ),
-        fileCount: z.number(),
-        matchCount: z.number(),
+        matchCount: z
+          .number()
+          .optional()
+          .describe("Matches returned; with countPerFile, the sum of counts"),
         truncated: z
           .literal(true)
           .optional()
@@ -184,8 +186,7 @@ export function registerSearchTools(server: McpServer) {
         }
 
         const structured = {
-          files,
-          fileCount: files.length,
+          files: files.map((f) => [f.file, f.count]),
           matchCount: totalMatches,
         };
         return okList(
@@ -220,11 +221,7 @@ export function registerSearchTools(server: McpServer) {
           .split("\n")
           .filter(Boolean)
           .map((f) => ({ file: relPath(f) }));
-        const structured = {
-          files,
-          fileCount: files.length,
-          matchCount: files.length,
-        };
+        const structured = { files: files.map((f) => [f.file]) };
         return okList(
           structured,
           files,
@@ -301,7 +298,6 @@ export function registerSearchTools(server: McpServer) {
 
       const structured = {
         files: groupMatchesByFile(entries, relPath),
-        fileCount,
         matchCount,
         ...(truncated ? { truncated: true as const } : {}),
         ...(totalMatches !== undefined ? { totalMatches } : {}),

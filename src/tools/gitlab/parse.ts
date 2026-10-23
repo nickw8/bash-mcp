@@ -5,6 +5,7 @@
  */
 
 import type { Triage } from "#parsers";
+import { collapseRepeats, lineKey, markRepeat } from "#shape";
 
 /** The subset of `glab ci get --output json` the tools read. */
 export interface GlabPipeline {
@@ -97,9 +98,11 @@ export function traceTail(trace: string): string[] {
   const end = lines.findIndex((l) => /^section_end:\d+:step_script/.test(l));
   const script =
     start >= 0 ? lines.slice(start + 1, end > start ? end : undefined) : lines;
-  const tail = script
-    .filter((l) => l && !l.startsWith("$ ") && !l.startsWith("section_"))
-    .slice(-MAX_TAIL);
+  const tail = collapseRepeats(
+    script.filter((l) => l && !l.startsWith("$ ") && !l.startsWith("section_")),
+    lineKey,
+    markRepeat,
+  ).slice(-MAX_TAIL);
   const failed = lines.find((l) => l.startsWith("ERROR: Job failed"));
   return failed ? [...tail, failed] : tail;
 }

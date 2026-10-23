@@ -30,7 +30,7 @@ export function registerLsTool(server: McpServer) {
     {
       title: "List directory",
       description:
-        "List files in a directory. Returns structured entries with name, size, permissions, and modified date — directories end with '/' and links with '@'. " +
+        "List files in a directory. Returns entries as [name, size, permissions, modified] — directories end with '/' and links with '@'. " +
         "Use nameOnly for names alone, recursive for one level of subdirectories, all to include hidden files.",
       equivalentCommands: ["ls -la <path>"],
       required: ["path"],
@@ -41,12 +41,7 @@ export function registerLsTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Recurse into subdirectories (1 level)"),
-        nameOnly: z
-          .boolean()
-          .optional()
-          .describe(
-            "Only return names and types (omit size, permissions, modified)",
-          ),
+        nameOnly: z.boolean().optional().describe("Entries are [name] alone"),
         format: z
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
@@ -57,19 +52,16 @@ export function registerLsTool(server: McpServer) {
           .describe("Text-block columns only"),
       },
       outputSchema: {
-        // Directories carry a trailing "/" and links a trailing "@", so the
-        // type needs no key of its own; nameOnly returns just the names
-        // (ADR-0009 — every key here is paid for on every entry).
+        // [name, size, permissions, modified] rows, [name] under nameOnly:
+        // an object paid all four keys on every entry (ADR-0009). Directories
+        // carry a trailing "/" and links a trailing "@", so the type needs no
+        // column of its own.
         entries: z.array(
-          z.object({
-            name: z.string(),
-            size: z.number().optional(),
-            permissions: z.string().optional(),
-            modified: z.string().optional(),
-          }),
+          z.union([
+            z.tuple([z.string(), z.number(), z.string(), z.string()]),
+            z.tuple([z.string()]),
+          ]),
         ),
-        total: z.number(),
-        path: z.string(),
       },
       annotations: { readOnlyHint: true },
     },
@@ -113,7 +105,11 @@ export function registerLsTool(server: McpServer) {
         })
         .filter((e) => e.name.length > 0);
 
-      const structured = { entries, total: entries.length, path };
+      const structured = {
+        entries: entries.map((e) =>
+          "size" in e ? [e.name, e.size, e.permissions, e.modified] : [e.name],
+        ),
+      };
       return okList(structured, entries, { total: entries.length, path }, fmt, {
         fields,
       });

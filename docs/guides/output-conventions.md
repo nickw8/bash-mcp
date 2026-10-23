@@ -56,7 +56,7 @@ JSON-encoded (e.g. the `tf_state_list` `byType` rollup).
 
 ## Shaping the payload
 
-This is the only lever that saves the agent tokens. Four moves, in the order they pay:
+This is the only lever that saves the agent tokens. Five moves, in the order they pay:
 
 1. **Drop derived fields.** Anything computable from a sibling field goes: `du`'s
    `sizeHuman` (from `sizeBytes`), `git_log`'s full `hash` (a prefix-duplicate of
@@ -69,7 +69,12 @@ This is the only lever that saves the agent tokens. Four moves, in the order the
    `{line,column,severity,rule,message}` → `"12:9 TS2304 …"` (diagnostics), `{name,type}` →
    `"src/"` / `"link@"` (`ls`). Group by the repeated key so the path is paid once (`rg`,
    diagnostics).
-4. **Make verbose data opt-in.** `kube_get`'s `labels` sit behind `includeLabels`.
+4. **Return uniform rows as positional arrays.** `du`'s `[path, sizeBytes]`, `ls`'s
+   `[name, size, permissions, modified]`, `rg`'s `[file, "line:text", …]`. Use arrays, not
+   a `{key: value}` map: `fitToBudget` and `result_get` cut arrays only. Name the order in
+   the tool description — clients don't show the model `outputSchema`. Drop counts the
+   agent can take from the array length (`ls`'s `total`, `rg`'s `fileCount`).
+5. **Make verbose data opt-in.** `kube_get`'s `labels` sit behind `includeLabels`.
 
 Emit `total`/`truncated` when a cap bit, so a truncated payload says so.
 
@@ -140,10 +145,10 @@ Text rows follow the same curation: `line`/`column` collapse into one `loc` cell
 
 ## rg specifics
 
-- The payload is grouped by file (`groupMatchesByFile` in `src/tools/search/parse.ts`): `files: [{ file, lines: ["26:const x = 1"] }]`, path once and relative to `cwd`. Context lines use `-` instead of `:` as the separator, so the `kind` flag costs nothing.
+- The payload is grouped by file (`groupMatchesByFile` in `src/tools/search/parse.ts`): `files: [["src/a.ts", "26:const x = 1"]]`, path once and relative to `cwd`. Context lines use `-` instead of `:` as the separator, so the `kind` flag costs nothing.
 - Matched line text is trimmed of leading indentation and windowed around the match by `windowMatchText` (`src/tools/search/window.ts`) using rg submatch offsets. `maxLineLength` defaults to 120 (0 = unlimited) so a minified line doesn't dump in full.
 - `maxResults` defaults to 30. When the cap bites, a second `rg --count-matches` pass fills in the true `totalMatches` so the caller can narrow the pattern instead of guessing.
-- `filesOnly` and `countPerFile` return the same `files` array, with `count` in place of `lines`; `filesOnly` defaults to `bare`, `countPerFile` to `tsv`.
+- `filesOnly` and `countPerFile` return the same `files` array, as `[file]` and `[file, count]` rows; `filesOnly` defaults to `bare`, `countPerFile` to `tsv`.
 
 ## Benchmarks and budget guards
 

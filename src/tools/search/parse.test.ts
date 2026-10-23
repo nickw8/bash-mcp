@@ -162,11 +162,8 @@ describe("groupMatchesByFile", () => {
     const files = groupMatchesByFile(entries, (f) => f.replace("/repo/", ""));
 
     expect(files).toEqual([
-      {
-        file: "a.ts",
-        lines: ["12:const token = get();", "45:useToken(token)"],
-      },
-      { file: "b.ts", lines: ["8:token()"] },
+      ["a.ts", "12:const token = get();", "45:useToken(token)"],
+      ["b.ts", "8:token()"],
     ]);
   });
 
@@ -179,7 +176,7 @@ describe("groupMatchesByFile", () => {
     const { entries } = parseRgJson(stdout, { ...base, context: 1 });
 
     expect(groupMatchesByFile(entries)).toEqual([
-      { file: "a.ts", lines: ["11-before", "12:hit"] },
+      ["a.ts", "11-before", "12:hit"],
     ]);
   });
 });

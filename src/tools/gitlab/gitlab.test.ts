@@ -45,6 +45,14 @@ describe("traceTail", () => {
     ]);
   });
 
+  it("merges a repeated script line before taking the tail", () => {
+    const trace =
+      "section_start:1:step_script\n" +
+      "2026-10-19T12:33:42.1Z 01O wait for db\n".repeat(30) +
+      "2026-10-19T12:33:43.1Z 01O timed out\nsection_end:2:step_script\n";
+    expect(traceTail(trace)).toEqual(["wait for db [×30]", "timed out"]);
+  });
+
   it("reads an old runner's trace: no timestamps, \\r-joined section markers", () => {
     const old =
       "\u001b[0Ksection_start:1:step_script\r\u001b[0K\u001b[0;m$ make\nboom\n" +

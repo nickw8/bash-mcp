@@ -46,6 +46,9 @@ const binarySchema = z
   .describe("terraform or tofu (default $TF_BINARY, else terraform)");
 
 /** Register all Terraform tools on the MCP server. */
+/** tf_state_list adds its byType rollup above this many resources. */
+const BY_TYPE_MIN = 20;
+
 export function registerTerraformTools(server: McpServer) {
   // ── terraform state list ────────────────────────────────────────────
   defineTool(
@@ -54,8 +57,8 @@ export function registerTerraformTools(server: McpServer) {
     {
       title: "Terraform state list",
       description:
-        "List resources in Terraform state. Returns the resource addresses plus a byType rollup " +
-        "(type, name, and module are all readable from each address, so they are not repeated per resource).",
+        "List resources in Terraform state. Returns the resource addresses, plus a byType rollup " +
+        `once there are more than ${BY_TYPE_MIN} (type, name, and module are readable from each address).`,
       equivalentCommands: ["terraform state list"],
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
@@ -72,8 +75,7 @@ export function registerTerraformTools(server: McpServer) {
         // module, type, and name — repeating them per row tripled the payload
         // and never amortized (ADR-0009).
         resources: z.array(z.string()),
-        count: z.number(),
-        byType: z.record(z.number()),
+        byType: z.record(z.number()).optional(),
       },
       annotations: { readOnlyHint: true },
     },
@@ -100,8 +102,10 @@ export function registerTerraformTools(server: McpServer) {
         if (type) byType[type] = (byType[type] ?? 0) + 1;
       }
 
+      // A short list is its own rollup; past that, byType survives a budget
+      // cut that drops most of the addresses.
       return okList(
-        { resources, count: resources.length, byType },
+        resources.length > BY_TYPE_MIN ? { resources, byType } : { resources },
         resources.map((address) => ({ address })),
         { count: resources.length, byType },
         fmt,
@@ -325,7 +329,7 @@ export function registerTerraformTools(server: McpServer) {
     {
       title: "Terraform outputs",
       description:
-        "List Terraform/OpenTofu outputs (name, value) with sensitive values redacted — a redacted output carries sensitive:true and no value.",
+        "List Terraform/OpenTofu outputs as [name, value] pairs; a sensitive output is redacted to [name] alone.",
       equivalentCommands: ["terraform output -json"],
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
@@ -340,17 +344,12 @@ export function registerTerraformTools(server: McpServer) {
           .describe("Text-block columns only"),
       },
       outputSchema: {
-        // `type` is readable off the value and `sensitive:false` was on every
-        // non-secret row — both dropped from the payload (ADR-0009). The text
-        // view still shows the sensitive column.
+        // [name, value] pairs, [name] for a redacted one: no per-row keys,
+        // and `type` is readable off the value (ADR-0009). The text view
+        // still shows the sensitive column.
         outputs: z.array(
-          z.object({
-            name: z.string(),
-            value: z.string().optional(),
-            sensitive: z.boolean().optional(),
-          }),
+          z.union([z.tuple([z.string(), z.string()]), z.tuple([z.string()])]),
         ),
-        count: z.number(),
       },
       annotations: { readOnlyHint: true },
     },
@@ -371,12 +370,10 @@ export function registerTerraformTools(server: McpServer) {
         sensitive: o.sensitive,
       }));
       const slim = outputs.map((o) =>
-        o.sensitive
-          ? { name: o.name, sensitive: true }
-          : { name: o.name, value: o.value ?? "" },
+        o.sensitive ? [o.name] : [o.name, o.value ?? ""],
       );
       return okList(
-        { outputs: slim, count: outputs.length },
+        { outputs: slim },
         rows,
         {
           count: outputs.length,

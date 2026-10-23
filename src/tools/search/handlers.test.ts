@@ -34,7 +34,6 @@ describe("search handlers", () => {
       expect(result.isError).toBe(true);
       expect(result.structuredContent).toMatchObject({
         files: [],
-        fileCount: 0,
       });
     });
 
@@ -45,7 +44,7 @@ describe("search handlers", () => {
       const result = await rg({ pattern: "nothing", filesOnly: true });
 
       expect(result.isError).toBeFalsy();
-      expect(result.structuredContent.fileCount).toBe(0);
+      expect(result.structuredContent.files).toEqual([]);
     });
   });
 

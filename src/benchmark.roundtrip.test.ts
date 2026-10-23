@@ -24,6 +24,9 @@ const { registerTerraformTools } = await import(
 const { registerNpmTools } = await import("./tools/npm/npm.js");
 const { registerPythonTools } = await import("./tools/python/python.js");
 const { registerShellTools } = await import("./tools/shell/shell.js");
+const { registerKubernetesTools } = await import(
+  "./tools/kubernetes/kubernetes.js"
+);
 
 /**
  * The benchmark corpus doubles as a behavioral contract corpus (ADR-0010).
@@ -47,7 +50,8 @@ const { registerShellTools } = await import("./tools/shell/shell.js");
  *   - the tool parses a file it reads itself rather than stdout (tf_outputs,
  *     tf_plan_summary via `-json` streaming, liquibase_*)
  *   - the raw fixture is a transcript of a tool that isn't wrapped 1:1 (rg
- *     variants, outline, the test runners, dotnet, kube/helm/argo)
+ *     variants, outline, the test runners, dotnet, kube/helm/argo other than
+ *     kube_logs)
  *
  * The diagnostic runners (lint, typecheck, syntax check) are in the table: the
  * CLI exits non-zero WITH findings, so those cases set `exitCode`, and
@@ -94,6 +98,18 @@ const CASES: Array<{
     register: registerTerraformTools,
     tool: "tf_state_list",
     args: { cwd: "." },
+  },
+  {
+    id: "kube_logs",
+    register: registerKubernetesTools,
+    tool: "kube_logs",
+    args: { pod: "worker-5d9f7b6c-ghi56", grep: "ERROR" },
+  },
+  {
+    id: "kube_logs_repeats",
+    register: registerKubernetesTools,
+    tool: "kube_logs",
+    args: { pod: "worker-5d9f7b6c-ghi56" },
   },
   {
     id: "npm_lint",
@@ -233,7 +249,6 @@ describe("benchmark corpus wire size", () => {
         wireT,
       ].join("\t"),
     );
-    expect(sc.count).toBe(2000);
     expect(sc.retained.omitted).toEqual([
       { path: "resources", total: 2000, shown: sc.resources.length },
     ]);

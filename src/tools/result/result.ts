@@ -35,7 +35,7 @@ export function registerResultTools(server: McpServer): void {
     {
       title: "Get Retained Result",
       description:
-        "Page through a result the response budget trimmed. Pass the retained.id from that response; path selects a field (dotted, e.g. files.0.lines), offset/limit slice an array. Snapshot of the original call, kept for retained.expiresInSec.",
+        "Page through a result the response budget trimmed. Pass the retained.id from that response; path selects a field (dotted, e.g. files.0), offset/limit slice an array. Snapshot of the original call, kept for retained.expiresInSec.",
       inputSchema: {
         id: z
           .string()

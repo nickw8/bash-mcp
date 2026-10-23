@@ -123,7 +123,7 @@ export function parseRgJson(stdout: string, opts: ParseRgOptions): ParsedRg {
 export function groupMatchesByFile(
   entries: RgEntry[],
   path: (file: string) => string = (f) => f,
-): Array<{ file: string; lines: string[] }> {
+): Array<[string, ...string[]]> {
   const byFile = new Map<string, string[]>();
   for (const e of entries) {
     const file = path(e.file);
@@ -132,5 +132,5 @@ export function groupMatchesByFile(
     if (lines) lines.push(`${e.line}${sep}${e.text}`);
     else byFile.set(file, [`${e.line}${sep}${e.text}`]);
   }
-  return [...byFile].map(([file, lines]) => ({ file, lines }));
+  return [...byFile].map(([file, lines]) => [file, ...lines]);
 }

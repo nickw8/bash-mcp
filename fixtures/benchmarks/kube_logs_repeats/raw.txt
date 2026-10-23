@@ -1,0 +1,56 @@
+2026-05-31T09:40:11.137Z INFO  starting worker v1.4.2
+2026-05-31T09:40:11.274Z INFO  polling queue jobs-high
+2026-05-31T09:40:11.411Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:11.548Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:11.685Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:11.822Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:11.959Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:12.096Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:12.233Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:12.370Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:12.507Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:12.644Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:12.781Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:12.918Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:13.055Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:13.192Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:13.329Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:13.466Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:13.603Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:13.740Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:13.877Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:14.014Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:14.151Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:14.288Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:14.425Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:14.562Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:14.699Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:14.836Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:14.973Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:15.110Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:15.247Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:15.384Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:15.521Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:15.658Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:15.795Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:15.932Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:16.069Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:16.206Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:16.343Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:16.480Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:16.617Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:16.754Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:16.891Z WARN  backing off 30s
+2026-05-31T09:40:17.028Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:17.165Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:17.302Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:17.439Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:17.576Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:17.713Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:17.850Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:17.987Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:18.124Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:18.261Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:18.398Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:18.535Z ERROR failed to fetch job: context deadline exceeded
+2026-05-31T09:40:18.672Z ERROR giving up after 52 failures

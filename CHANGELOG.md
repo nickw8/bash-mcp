@@ -16,6 +16,24 @@ breaking change did.
   `BASH_MCP_RESPONSE_MODE=full`. See
   [ADR-0015](docs/adr/0015-definetool-fits-every-result-to-a-budget.md).
 - **`rg` omits `truncated` unless it is `true`.** Read a missing key as `false`.
+- **Flat-list tools return rows as positional arrays.** Each tool's description names the
+  order:
+  - `du`: `entries` rows are `[path, sizeBytes]`.
+  - `git_branches`: `branches` rows are `[name, lastCommit]`.
+  - `ls`: `entries` rows are `[name, size, permissions, modified]`, or `[name]` under
+    `nameOnly`. `total` and `path` are gone.
+  - `tf_outputs`: `outputs` rows are `[name, value]`, or `[name]` for a sensitive output.
+    `count` is gone.
+  - `tf_state_list`: `count` is gone, and `byType` only appears above 20 resources.
+  - `rg`: `files` rows are `[file, "line:text", …]`, `[file, count]` under
+    `countPerFile`, or `[file]` under `filesOnly`. `fileCount` is gone.
+
+  Take the dropped counts from the array length.
+- **Repeated lines merge into one, with a count.** `run`, `run_seq`, `batch`, `kube_logs`,
+  and the `gh_run_failure_summary`/`glab_pipeline_failure_summary` evidence merge each run
+  of consecutive lines that differ only by a leading timestamp into its first line,
+  marked ` [×N]`. Blank lines never merge. `run` takes `collapse: false` for verbatim
+  output. `stdoutLines` still counts the original lines.
 - **Diagnostic lists drop exact repeats.** Identical file/line/column/severity/rule/message
   findings appear once. When a budget cuts the list, errors are kept ahead of warnings;
   the kept findings stay in CLI order.
