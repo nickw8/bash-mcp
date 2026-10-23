@@ -57,7 +57,9 @@ async function rpcSession(
   const malformed: string[] = [];
   let stderr = "";
   let buffer = "";
-  const lastId = requests.length + 1;
+  // The server answers concurrent calls in completion order, not request
+  // order, so the session ends once every id has answered — not on the last id.
+  const pending = new Set(requests.map((_, i) => i + 2));
 
   return await new Promise<SessionResult>((resolvePromise, rejectPromise) => {
     const done = () => {
@@ -111,7 +113,8 @@ async function rpcSession(
             send({ ...req, id: i + 2 });
           });
         }
-        if (frame.id === lastId) done();
+        if (frame.id !== undefined && pending.delete(frame.id) && !pending.size)
+          done();
       }
     });
 
