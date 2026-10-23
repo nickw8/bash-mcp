@@ -31,15 +31,9 @@ import {
 } from "./diagnose.js";
 import type { KubeList, KubeResource } from "./parse.js";
 
-/**
- * Probe kubectl for JSON. Missing data reads as `{}` for now — the classifiers
- * cope with an empty object; the no-data fix removes this.
- */
-async function kubectlJson<T extends object>(args: string[]) {
-  const res = await execJson<T>("kubectl", args, { timeout: TIMEOUT.INFRA });
-  return res.error === null && res.data === null
-    ? { ...res, data: {} as T }
-    : res;
+/** Probe kubectl for JSON. */
+function kubectlJson<T>(args: string[]) {
+  return execJson<T>("kubectl", args, { timeout: TIMEOUT.INFRA });
 }
 
 /** Cap `rows` by the budget; `total`/`truncated` are reported only when a budget was asked for. */

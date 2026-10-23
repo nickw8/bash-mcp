@@ -157,17 +157,14 @@ describe.each(cases)("$tool handler", (c) => {
     expect(res.structuredContent.evidence.length).toBeGreaterThan(0);
   });
 
-  // Decided behaviour: no data is a probe that ran and failed. Kube hands `{}`
-  // to its classifier today; only diagnosePod happens to read that as Unknown.
-  // The others are marked `fails` until the fix set flips them.
-  const noDataIt = c.tool === "kube_diagnose_pod" ? it : it.fails;
-  noDataIt(
-    "answers an Unknown triage when the probe gave no data",
-    async () => {
-      execJsonMock.mockResolvedValue(noData);
-      const res = await handler(c.args);
-      expect(res.isError).toBeUndefined();
-      expect(res.structuredContent.status).toBe("Unknown");
-    },
-  );
+  // No data is a probe that ran and failed (ADR-0005), not an empty answer.
+  it("answers an Unknown triage when the probe gave no data", async () => {
+    execJsonMock.mockResolvedValue(noData);
+    const res = await handler(c.args);
+    expect(res.isError).toBeUndefined();
+    expect(res.structuredContent.status).toBe("Unknown");
+    expect(res.structuredContent.evidence[0]).toContain(
+      `${c.wording}: no data`,
+    );
+  });
 });
