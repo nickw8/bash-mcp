@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { TIMEOUT } from "#exec";
@@ -5,7 +7,24 @@ import { onlyFailures, testResultSchema, testRun } from "#parsers";
 import { defineTool } from "#tool";
 import { parseVitestResults } from "./parsers/vitest.js";
 
-/** Register the npm_test tool for structured vitest results. */
+/**
+ * The project's test runner: jest when package.json depends on jest and not
+ * vitest, otherwise vitest — which also covers a workspace package whose
+ * vitest is hoisted to the root and absent from its own package.json.
+ */
+export function detectRunner(cwd: string | undefined): "vitest" | "jest" {
+  try {
+    const pkg = JSON.parse(
+      readFileSync(join(cwd ?? ".", "package.json"), "utf8"),
+    );
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+    return deps.jest && !deps.vitest ? "jest" : "vitest";
+  } catch {
+    return "vitest";
+  }
+}
+
+/** Register the npm_test tool for structured vitest or jest results. */
 export function registerNpmTestTool(server: McpServer) {
   defineTool(
     server,
@@ -13,7 +32,7 @@ export function registerNpmTestTool(server: McpServer) {
     {
       title: "Test (structured)",
       description:
-        "Run vitest and return structured test results: suites, pass/fail counts, failure messages. " +
+        "Run vitest or jest (picked from package.json) and return structured test results: suites, pass/fail counts, failure messages. " +
         "Much more compact than raw test output. Only failures are listed by default; use verbose=true for all tests.",
       equivalentCommands: ["npm test"],
       required: ["cwd"],
@@ -50,11 +69,16 @@ export function registerNpmTestTool(server: McpServer) {
       },
     },
     async ({ cwd, pattern, coverage, verbose }) => {
-      const args = ["vitest", "run", "--reporter=json"];
+      // Vitest's JSON reporter writes jest's report format, so one parser
+      // reads both.
+      const args =
+        detectRunner(cwd) === "jest"
+          ? ["jest", "--json"]
+          : ["vitest", "run", "--reporter=json"];
       if (pattern) args.push(pattern);
       if (coverage) args.push("--coverage");
 
-      // vitest exits non-zero on test failures but still outputs JSON
+      // both exit non-zero on test failures but still output JSON
       return testRun({
         command: "npx",
         args: () => args,

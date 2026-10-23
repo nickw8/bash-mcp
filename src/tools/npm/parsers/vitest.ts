@@ -3,6 +3,8 @@ import type { TestResult, TestSuite } from "./types.js";
 /**
  * Parse vitest's JSON reporter output into structured test suites.
  *
+ * Also reads `jest --json`, whose format vitest's reporter copies.
+ *
  * Vitest's --reporter=json outputs a JSON object with `testResults` array
  * and `numTotalTests`, `numPassedTests`, etc. summary fields.
  */
@@ -67,8 +69,11 @@ export function parseVitestResults(raw: string): {
       skipped:
         ((json.numPendingTests as number) ?? 0) +
         ((json.numTodoTests as number) ?? 0),
+      // jest's report has no top-level endTime; its suites' durations add up.
       duration:
-        ((json.endTime as number) ?? 0) - ((json.startTime as number) ?? 0),
+        json.endTime != null
+          ? (json.endTime as number) - ((json.startTime as number) ?? 0)
+          : suites.reduce((sum, s) => sum + s.duration, 0),
     },
   };
 }

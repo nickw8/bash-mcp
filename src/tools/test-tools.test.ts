@@ -6,7 +6,8 @@
  * carries a typed tail, unreadable output is parse_failed, and concurrent runs
  * never share an artifact path.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   afterEach,
@@ -178,6 +179,18 @@ describe("npm_test", () => {
     execMock.mockResolvedValue(execFail("", 1));
     const r = await npmTest({ cwd: "/p" });
     expect(r.structuredContent.error.kind).toBe("command_failed");
+  });
+
+  it("runs jest when package.json depends on jest and not vitest", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "bash-mcp-jest-"));
+    writeFileSync(
+      join(dir, "package.json"),
+      JSON.stringify({ devDependencies: { jest: "^30" } }),
+    );
+    execMock.mockResolvedValue(execOk(VITEST_JSON));
+    const r = await npmTest({ cwd: dir });
+    expect(execMock.mock.lastCall?.[1]).toEqual(["jest", "--json"]);
+    expect(r.structuredContent.summary.total).toBe(2);
   });
 
   it("answers parse_failed for garbage output", async () => {
