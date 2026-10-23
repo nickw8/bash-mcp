@@ -22,6 +22,7 @@ import { registerFileTools } from "./tools/file/file.js";
 import { registerFilesystemTools } from "./tools/filesystem/filesystem.js";
 import { registerGitDiffContentTools } from "./tools/git/diff.js";
 import { registerGitTools } from "./tools/git/git.js";
+import { registerGithubTools } from "./tools/github/github.js";
 import { registerGuidanceTools } from "./tools/guidance/guidance.js";
 import { registerHelmTools } from "./tools/helm/helm.js";
 import { registerJsonTools } from "./tools/json/json.js";
@@ -73,6 +74,7 @@ const GROUPS: readonly ToolGroup[] = [
   { category: "Shell", register: registerShellTools },
   { category: "Environment", register: registerEnvTools },
   { category: "Environment", register: registerGuidanceTools },
+  { category: "GitHub", register: registerGithubTools },
 ];
 
 /**

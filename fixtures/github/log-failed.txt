@@ -1,0 +1,344 @@
+test (22)	UNKNOWN STEP	﻿2026-08-19T20:32:57.2603479Z Current runner version: '2.336.0'
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2626887Z ##[group]Runner Image Provisioner
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2627851Z Hosted Compute Agent
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2628447Z Version: 20260729.566
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2629155Z Commit: cf7153fe6e25b664e8693c24944bf2b00355d109
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2629896Z Build Date: 2026-07-29T19:17:02Z
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2630587Z Worker ID: {adcfc371-f307-459f-88c8-d628c73d7d9d}
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2631385Z Azure Region: westus
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2631948Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2633910Z ##[group]Operating System
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2634793Z Ubuntu
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2635323Z 24.04.4
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2635893Z LTS
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2636404Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2636978Z ##[group]Runner Image
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2637640Z Image: ubuntu-24.04
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2638245Z Version: 20260810.271.1
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2639512Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260810.271/images/ubuntu/Ubuntu2404-Readme.md
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2641064Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260810.271
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2642105Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2643290Z ##[group]GITHUB_TOKEN Permissions
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2645770Z Contents: read
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2646417Z Metadata: read
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2647059Z Packages: read
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2647626Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2649633Z Secret source: Actions
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2650822Z Prepare workflow directory
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.2995122Z Prepare all required actions
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.3042808Z Getting action download info
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.6343288Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.7572845Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+test (22)	UNKNOWN STEP	2026-08-19T20:32:57.9431039Z Complete job name: test (22)
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0169107Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0178088Z ##[group]Run actions/checkout@v4
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0178850Z with:
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0179304Z   repository: nickw8/bash-mcp
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0183177Z   token: ***
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0183617Z   ssh-strict: true
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0184059Z   ssh-user: git
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0184712Z   persist-credentials: true
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0185195Z   clean: true
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0185636Z   sparse-checkout-cone-mode: true
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0186158Z   fetch-depth: 1
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0186595Z   fetch-tags: false
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0187039Z   show-progress: true
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0187493Z   lfs: false
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0187953Z   submodules: false
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0188409Z   set-safe-directory: true
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0188918Z   allow-unsafe-pr-checkout: false
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.0189706Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1258773Z Syncing repository: nickw8/bash-mcp
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1260758Z ##[group]Getting Git version info
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1261565Z Working directory is '/home/runner/work/bash-mcp/bash-mcp'
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1262663Z [command]/usr/bin/git version
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1332088Z git version 2.54.0
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1355024Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1373334Z Temporarily overriding HOME='/home/runner/work/_temp/acc9201e-36f1-4eb6-a33b-03e4f05c9650' before making global git config changes
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1376903Z Adding repository directory to the temporary git global config as a safe directory
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1380151Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/bash-mcp/bash-mcp
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1434950Z Deleting the contents of '/home/runner/work/bash-mcp/bash-mcp'
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1440133Z ##[group]Initializing the repository
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1446870Z [command]/usr/bin/git init /home/runner/work/bash-mcp/bash-mcp
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1584766Z hint: Using 'master' as the name for the initial branch. This default branch name
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1586233Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1587352Z hint: to use in all of your new repositories, which will suppress this warning,
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1589025Z hint: call:
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1590050Z hint:
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1591167Z hint: 	git config --global init.defaultBranch <name>
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1592419Z hint:
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1593605Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1595395Z hint: 'development'. The just-created branch can be renamed via this command:
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1596840Z hint:
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1597549Z hint: 	git branch -m <name>
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1598195Z hint:
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1598998Z hint: Disable this message with "git config set advice.defaultBranchName false"
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1600238Z Initialized empty Git repository in /home/runner/work/bash-mcp/bash-mcp/.git/
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1603756Z [command]/usr/bin/git remote add origin https://github.com/nickw8/bash-mcp
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1651634Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1652892Z ##[group]Disabling automatic garbage collection
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1656296Z [command]/usr/bin/git config --local gc.auto 0
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1687943Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1688680Z ##[group]Setting up auth
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1696338Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.1734831Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.2148474Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.2198313Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.2432982Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.2470206Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.2693164Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.2731336Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.2732122Z ##[group]Fetching the repository
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.2741159Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +2a3226bddff41f68bdcaa1aba2fffa7273c28434:refs/remotes/origin/main
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.8310514Z From https://github.com/nickw8/bash-mcp
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.8311951Z  * [new ref]         2a3226bddff41f68bdcaa1aba2fffa7273c28434 -> origin/main
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.8351823Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.8353159Z ##[group]Determining the checkout info
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.8355101Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.8360474Z [command]/usr/bin/git sparse-checkout disable
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.8408546Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.8439834Z ##[group]Checking out the ref
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.8444801Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.8686030Z Switched to a new branch 'main'
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.8689313Z branch 'main' set up to track 'origin/main'.
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.8694665Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.8736427Z [command]/usr/bin/git log -1 --format=%H
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.8761996Z 2a3226bddff41f68bdcaa1aba2fffa7273c28434
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.9046514Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.9049299Z ##[group]Run actions/setup-node@v4
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.9049815Z with:
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.9050207Z   node-version: 22
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.9050628Z   cache: npm
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.9051029Z   always-auth: false
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.9051465Z   check-latest: false
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.9055456Z   token: ***
+test (22)	UNKNOWN STEP	2026-08-19T20:32:58.9055876Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.0542370Z Found in cache @ /opt/hostedtoolcache/node/22.23.2/x64
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.0548032Z (node:2164) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.0552830Z ##[group]Environment details
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.0562889Z (Use `node --trace-deprecation ...` to show where the warning was created)
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.4810204Z node: v22.23.2
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.4811222Z npm: 10.9.8
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.4811926Z yarn: 1.22.22
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.4813036Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.4852639Z [command]/opt/hostedtoolcache/node/22.23.2/x64/bin/npm config get cache
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.6050510Z /home/runner/.npm
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.8717430Z npm cache is not found
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.8915033Z ##[group]Run npm ci
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.8915396Z ^[[36;1mnpm ci^[[0m
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.8965744Z shell: /usr/bin/bash -e {0}
+test (22)	UNKNOWN STEP	2026-08-19T20:32:59.8966097Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.8201535Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.8211525Z added 183 packages, and audited 184 packages in 5s
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.8212370Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.8213037Z 53 packages are looking for funding
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.8213651Z   run `npm fund` for details
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.8516700Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.8517303Z 11 vulnerabilities (2 low, 3 moderate, 6 high)
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.8517790Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.8518077Z To address all issues, run:
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.8518905Z   npm audit fix
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.8519432Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.8519928Z Run `npm audit` for details.
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.9096218Z ##[group]Run npm run build
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.9096567Z ^[[36;1mnpm run build^[[0m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.9137895Z shell: /usr/bin/bash -e {0}
+test (22)	UNKNOWN STEP	2026-08-19T20:33:04.9138200Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.0205520Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.0206301Z > @nickw8/bash-mcp@3.0.0 build
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.0206829Z > tsup
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.0207037Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.3775417Z ^[[34mCLI^[[39m Building entry: src/index.ts
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.3785396Z ^[[34mCLI^[[39m Using tsconfig: tsconfig.json
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.3805072Z ^[[34mCLI^[[39m tsup v8.5.1
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.3805947Z ^[[34mCLI^[[39m Using tsup config: /home/runner/work/bash-mcp/bash-mcp/tsup.config.ts
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.3806992Z ^[[34mCLI^[[39m Target: node20
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.3818778Z ^[[34mESM^[[39m Build start
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.4630043Z ^[[32mESM^[[39m ^[[1mdist/index.js ^[[22m^[[32m370.88 KB^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.4630818Z ^[[32mESM^[[39m ⚡️ Build success in 81ms
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.4865887Z ##[group]Run npm test
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.4866325Z ^[[36;1mnpm test^[[0m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.4915241Z shell: /usr/bin/bash -e {0}
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.4915665Z ##[endgroup]
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.5984315Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.5985076Z > @nickw8/bash-mcp@3.0.0 pretest
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.5985608Z > npm run build
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.5985830Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.7308824Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.7325608Z > @nickw8/bash-mcp@3.0.0 build
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.7335078Z > tsup
+test (22)	UNKNOWN STEP	2026-08-19T20:33:05.7335529Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.0946225Z ^[[34mCLI^[[39m Building entry: src/index.ts
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.0947051Z ^[[34mCLI^[[39m Using tsconfig: tsconfig.json
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.0947652Z ^[[34mCLI^[[39m tsup v8.5.1
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.0948600Z ^[[34mCLI^[[39m Using tsup config: /home/runner/work/bash-mcp/bash-mcp/tsup.config.ts
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.0985399Z ^[[34mCLI^[[39m Target: node20
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.0989688Z ^[[34mESM^[[39m Build start
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.1787852Z ^[[32mESM^[[39m ^[[1mdist/index.js ^[[22m^[[32m370.88 KB^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.1789457Z ^[[32mESM^[[39m ⚡️ Build success in 80ms
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.1973743Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.1974014Z > @nickw8/bash-mcp@3.0.0 test
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.1974638Z > vitest run
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.1974806Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.5156441Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.5158204Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.4 ^[[39m^[[90m/home/runner/work/bash-mcp/bash-mcp^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:06.5159178Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:07.4956973Z {"service":"bash-mcp","version":"3.0.0","pid":2315,"tool":"rg","outcome":"error","duration_ms":0,"argCount":0,"errorKind":"invalid_input"}
+test (22)	UNKNOWN STEP	2026-08-19T20:33:07.5107603Z {"service":"bash-mcp","version":"3.0.0","pid":2315,"tool":"dotnet_build","outcome":"error","duration_ms":0,"argCount":0,"errorKind":"invalid_input"}
+test (22)	UNKNOWN STEP	2026-08-19T20:33:07.5111320Z {"service":"bash-mcp","version":"3.0.0","pid":2315,"tool":"npm_lint","outcome":"error","duration_ms":0,"argCount":0,"errorKind":"invalid_input"}
+test (22)	UNKNOWN STEP	2026-08-19T20:33:07.5198094Z {"service":"bash-mcp","version":"3.0.0","pid":2315,"tool":"bash_syntax_check","outcome":"error","duration_ms":0,"argCount":1,"errorKind":"invalid_input"}
+test (22)	UNKNOWN STEP	2026-08-19T20:33:07.5216449Z {"service":"bash-mcp","version":"3.0.0","pid":2315,"tool":"bash_lint","outcome":"error","duration_ms":0,"argCount":1,"errorKind":"invalid_input"}
+test (22)	UNKNOWN STEP	2026-08-19T20:33:07.5222172Z {"service":"bash-mcp","version":"3.0.0","pid":2315,"tool":"batch","outcome":"error","duration_ms":0,"argCount":1,"errorKind":"invalid_input"}
+test (22)	UNKNOWN STEP	2026-08-19T20:33:07.5224928Z {"service":"bash-mcp","version":"3.0.0","pid":2315,"tool":"run_seq","outcome":"error","duration_ms":0,"argCount":1,"errorKind":"invalid_input"}
+test (22)	UNKNOWN STEP	2026-08-19T20:33:07.5244020Z  ^[[32m✓^[[39m src/tool.test.ts ^[[2m(^[[22m^[[2m22 tests^[[22m^[[2m)^[[22m^[[32m 45^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:08.1827018Z  ^[[32m✓^[[39m src/tools/file/file.test.ts ^[[2m(^[[22m^[[2m20 tests^[[22m^[[2m)^[[22m^[[32m 193^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:08.4406162Z  ^[[32m✓^[[39m src/format.test.ts ^[[2m(^[[22m^[[2m31 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:08.6567568Z  ^[[32m✓^[[39m hooks/bash-mcp-redirect.test.ts ^[[2m(^[[22m^[[2m76 tests^[[22m^[[2m)^[[22m^[[33m 1199^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.0804708Z  ^[[32m✓^[[39m src/docs/render.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[32m 101^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.1419851Z  ^[[32m✓^[[39m src/exec.test.ts ^[[2m(^[[22m^[[2m21 tests^[[22m^[[2m)^[[22m^[[33m 439^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.3121090Z  ^[[32m✓^[[39m src/install-claude.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.3531862Z  ^[[32m✓^[[39m src/tools/search/parse.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.5597462Z  ^[[32m✓^[[39m src/tools/dotnet/parsers/trx.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.5913833Z  ^[[32m✓^[[39m src/tools/file/outline/csharp.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.8019001Z  ^[[32m✓^[[39m src/parsers/schemas.test.ts ^[[2m(^[[22m^[[2m27 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.8336433Z  ^[[32m✓^[[39m src/doctor.test.ts ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.9156269Z  ^[[31m❯^[[39m src/transport.stdio.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m | ^[[22m^[[33m1 skipped^[[39m^[[2m)^[[22m^[[33m 3036^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.9158610Z      ^[[33m^[[2m✓^[[22m^[[39m returns parseable frames for a cat of a source file ^[[33m 339^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.9160585Z      ^[[32m✓^[[39m returns parseable frames for the crlf fixture^[[32m 281^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.9162240Z      ^[[32m✓^[[39m returns parseable frames for the nul fixture^[[32m 291^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.9163754Z      ^[[32m✓^[[39m returns parseable frames for the invalid-utf8 fixture^[[32m 292^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.9165748Z      ^[[33m^[[2m✓^[[22m^[[39m returns parseable frames for the lone-surrogate fixture ^[[33m 303^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.9167454Z      ^[[33m^[[2m✓^[[22m^[[39m returns parseable frames for the emoji fixture ^[[33m 315^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.9169569Z      ^[[32m✓^[[39m returns parseable frames for the escaped-quotes fixture^[[32m 248^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.9171247Z      ^[[32m✓^[[39m refuses an argument the tool does not declare^[[32m 264^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.9173002Z      ^[[32m✓^[[39m accepts pattern as an alias for find_files name^[[32m 283^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.9175141Z ^[[31m     ^[[31m×^[[31m reads the whole corpus in one session without desyncing the framer^[[39m^[[33m 407^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:09.9176930Z      ^[[2m^[[90m↓^[[39m^[[22m returns parseable frames for the reported apps.jsonnet range
+test (22)	UNKNOWN STEP	2026-08-19T20:33:10.0703429Z {"service":"bash-mcp","version":"3.0.0","pid":2315,"tool":"find_files","outcome":"error","duration_ms":0,"argCount":2,"errorKind":"invalid_input"}
+test (22)	UNKNOWN STEP	2026-08-19T20:33:10.0856808Z {"service":"bash-mcp","version":"3.0.0","pid":2315,"tool":"ls","outcome":"error","duration_ms":0,"argCount":1}
+test (22)	UNKNOWN STEP	2026-08-19T20:33:10.0887165Z  ^[[32m✓^[[39m src/tools/filesystem/handlers.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:10.1223553Z  ^[[32m✓^[[39m src/tools/kubernetes/diagnose.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:10.2086815Z  ^[[32m✓^[[39m src/response.test.ts ^[[2m(^[[22m^[[2m64 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:10.3732310Z  ^[[32m✓^[[39m src/benchmark.roundtrip.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:10.4317471Z  ^[[32m✓^[[39m src/safety.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:10.5436234Z  ^[[32m✓^[[39m src/tools/run/seq.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 58^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:10.6115257Z  ^[[32m✓^[[39m src/parsers/diagnostics-response.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:10.6726813Z  ^[[32m✓^[[39m src/tools/liquibase/parsers/update-sql.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:11.0868198Z  ^[[32m✓^[[39m src/tools/git/diff.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:11.3518224Z  ^[[32m✓^[[39m src/tools/terraform/parse.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:11.4985651Z  ^[[32m✓^[[39m src/format.budget.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:11.7328401Z  ^[[32m✓^[[39m src/tools/file/git-source.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 184^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:11.8009421Z  ^[[32m✓^[[39m src/error.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:11.9996377Z  ^[[32m✓^[[39m src/logger.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:12.1593126Z  ^[[32m✓^[[39m src/tools/kubernetes/parse.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:12.4867504Z  ^[[32m✓^[[39m src/tools/guidance/guidance.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:12.6779425Z  ^[[32m✓^[[39m src/tools/terraform/plan-summary.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:12.7022062Z  ^[[32m✓^[[39m src/benchmark.fixtures.test.ts ^[[2m(^[[22m^[[2m73 tests^[[22m^[[2m)^[[22m^[[32m 175^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:12.8790473Z  ^[[32m✓^[[39m src/tools/git/parse.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:12.8849391Z  ^[[32m✓^[[39m src/tools/env/env.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:12.9600573Z  ^[[32m✓^[[39m src/index.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[33m 2160^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:12.9602512Z      ^[[33m^[[2m✓^[[22m^[[39m reports an unhandled rejection as one event and exits non-zero ^[[33m 330^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:12.9604632Z      ^[[33m^[[2m✓^[[22m^[[39m reports an uncaught exception the same way ^[[33m 313^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:12.9606748Z      ^[[33m^[[2m✓^[[22m^[[39m writes nothing to stderr on a clean boot ^[[33m 1514^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:13.0582864Z  ^[[32m✓^[[39m src/tools/shell/parsers/bash-test.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:13.1038329Z  ^[[32m✓^[[39m src/tools/dotnet/build.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:13.2287449Z {"service":"bash-mcp","version":"3.0.0","pid":2315,"tool":"rg","outcome":"error","duration_ms":1,"argCount":2}
+test (22)	UNKNOWN STEP	2026-08-19T20:33:13.2408321Z {"service":"bash-mcp","version":"3.0.0","pid":2315,"tool":"glob","outcome":"error","duration_ms":0,"argCount":1}
+test (22)	UNKNOWN STEP	2026-08-19T20:33:13.2410534Z  ^[[32m✓^[[39m src/tools/search/handlers.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:13.2631371Z  ^[[32m✓^[[39m src/tools/argocd/health.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:13.3612243Z  ^[[32m✓^[[39m src/tools/python/parsers/pytest.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:13.4700374Z  ^[[32m✓^[[39m src/tools/helm/triage.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:13.4836013Z  ^[[32m✓^[[39m src/parsers/json-output.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:13.5825624Z  ^[[32m✓^[[39m src/parsers/diagnostic-line.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:13.6765311Z  ^[[32m✓^[[39m src/tools/shell/parsers/shellcheck.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:13.7227193Z  ^[[32m✓^[[39m src/tools/liquibase/parsers/validate.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:13.9090803Z  ^[[32m✓^[[39m src/registry.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 55^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:13.9159844Z  ^[[32m✓^[[39m src/tools/dotnet/parsers/msbuild.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:14.0947052Z  ^[[32m✓^[[39m src/shape.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:14.0995496Z  ^[[32m✓^[[39m src/zero.test.ts ^[[2m(^[[22m^[[2m61 tests^[[22m^[[2m)^[[22m^[[32m 32^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:14.1731744Z  ^[[32m✓^[[39m src/step.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:14.2813015Z  ^[[32m✓^[[39m src/tools/python/parsers/ruff.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:14.3375877Z  ^[[32m✓^[[39m src/tools/liquibase/parsers/status.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:14.3856107Z  ^[[32m✓^[[39m src/tools/npm/parsers/vitest.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:14.4705189Z  ^[[32m✓^[[39m src/tools/liquibase/parsers/banner.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:14.6029808Z  ^[[32m✓^[[39m src/tools/shell/parsers/bash-syntax.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:14.6613984Z  ^[[32m✓^[[39m src/tools/search/window.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:14.7373361Z  ^[[32m✓^[[39m src/tools/terraform/terraform.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:14.8225686Z  ^[[32m✓^[[39m src/tools/kube-args.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:14.8616118Z  ^[[32m✓^[[39m src/version.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:14.9763615Z  ^[[32m✓^[[39m src/tools/liquibase/args.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:15.0056295Z  ^[[32m✓^[[39m src/tools/python/parsers/mypy.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:15.1152193Z  ^[[32m✓^[[39m src/tools/shell/shell.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:15.1487210Z  ^[[32m✓^[[39m src/tools/npm/parsers/biome.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:15.2564532Z  ^[[32m✓^[[39m src/tools/npm/parsers/tsc.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:15.5270588Z  ^[[32m✓^[[39m src/tools/kubernetes/kubernetes.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:15.5297912Z  ^[[32m✓^[[39m src/tools/filesystem/filesystem.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:15.7111173Z  ^[[32m✓^[[39m src/tools/argocd/argocd.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:15.9212522Z  ^[[32m✓^[[39m src/tools/git/git.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:15.9515147Z  ^[[32m✓^[[39m src/tools/helm/helm.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:16.0972783Z  ^[[32m✓^[[39m src/tools/dotnet/dotnet.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:16.3518385Z  ^[[32m✓^[[39m src/tools/python/python.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:16.3682529Z  ^[[32m✓^[[39m src/tools/search/search.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:16.5036146Z  ^[[32m✓^[[39m src/tools/npm/npm.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:16.7367015Z  ^[[32m✓^[[39m src/tools/json/json.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:16.7555892Z  ^[[32m✓^[[39m src/tools/batch/batch.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:16.8889529Z  ^[[32m✓^[[39m src/tools/yaml/yaml.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0215248Z  ^[[32m✓^[[39m src/tools/run/run.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0254115Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0255527Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0256534Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0260427Z ^[[41m^[[1m FAIL ^[[22m^[[49m src/transport.stdio.test.ts^[[2m > ^[[22mstdio transport round-trip^[[2m > ^[[22mreads the whole corpus in one session without desyncing the framer
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0276537Z ^[[31m^[[1mAssertionError^[[22m: expected [ { result: { …(4) }, …(2) }, …(5) ] to have a length of 7 but got 6^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0277778Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0278397Z ^[[32m- Expected^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0279248Z ^[[31m+ Received^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0279778Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0280237Z ^[[32m- 7^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0281014Z ^[[31m+ 6^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0281541Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0282432Z ^[[36m ^[[2m❯^[[22m src/transport.stdio.test.ts:^[[2m263:20^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0328538Z     ^[[90m261|^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0329436Z     ^[[90m262|^[[39m     ^[[34mexpect^[[39m(malformed)^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0331243Z     ^[[90m263|^[[39m     ^[[34mexpect^[[39m(frames)^[[33m.^[[39m^[[34mtoHaveLength^[[39m(names^[[33m.^[[39mlength ^[[33m+^[[39m ^[[34m1^[[39m)^[[33m;^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0332400Z     ^[[90m   |^[[39m                    ^[[31m^^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0332993Z     ^[[90m264|^[[39m   })^[[33m;^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0333447Z     ^[[90m265|^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0333650Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0334064Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0334617Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0334648Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0340063Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m75 passed^[[39m^[[22m^[[90m (76)^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0343363Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m725 passed^[[39m^[[22m^[[2m | ^[[22m^[[33m1 skipped^[[39m^[[90m (727)^[[39m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0344546Z ^[[2m   Start at ^[[22m 20:33:06
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0345766Z ^[[2m   Duration ^[[22m 10.48s^[[2m (transform 1.43s, setup 0ms, import 8.76s, tests 8.48s, environment 12ms)^[[22m
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0347281Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0371109Z 
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0396650Z ##[error]AssertionError: expected [ { result: { …(4) }, …(2) }, …(5) ] to have a length of 7 but got 6
+test (22)	UNKNOWN STEP	
+test (22)	UNKNOWN STEP	- Expected
+test (22)	UNKNOWN STEP	+ Received
+test (22)	UNKNOWN STEP	
+test (22)	UNKNOWN STEP	- 7
+test (22)	UNKNOWN STEP	+ 6
+test (22)	UNKNOWN STEP	
+test (22)	UNKNOWN STEP	 ❯ src/transport.stdio.test.ts:263:20
+test (22)	UNKNOWN STEP	
+test (22)	UNKNOWN STEP	
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0682010Z ##[error]Process completed with exit code 1.
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0819228Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.0820487Z Post job cleanup.
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.1663660Z [command]/usr/bin/git version
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.1706691Z git version 2.54.0
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.1747538Z Temporarily overriding HOME='/home/runner/work/_temp/f00a45c0-6b47-4993-937d-d6cf3d31137b' before making global git config changes
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.1749282Z Adding repository directory to the temporary git global config as a safe directory
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.1754134Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/bash-mcp/bash-mcp
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.1792848Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.1855187Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.2115570Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.2131568Z http.https://github.com/.extraheader
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.2140769Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.2176693Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.2436315Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.2491332Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.2900722Z Cleaning up orphan processes
+test (22)	UNKNOWN STEP	2026-08-19T20:33:17.3226875Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

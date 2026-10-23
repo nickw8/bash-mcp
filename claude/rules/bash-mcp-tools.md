@@ -11,6 +11,7 @@ Prefer these bash-mcp MCP tools over raw shell / built-ins: structured JSON, few
 | Search | `rg`, `glob` | `Grep`, `Bash(grep)` |
 | File | `cat`, `outline` | `Read` (Read only immediately before Edit) |
 | Git | `git_status`, `git_log`, `git_diff`, `git_branches`, `repo_health_summary`, `git_pr_context`, `git_diff_content` | `Bash(git)` |
+| GitHub | `gh_pr_checks`, `gh_run_failure_summary` | `Bash(gh pr checks/gh run view)` |
 | Kubernetes | `kube_get`, `kube_logs`, `kube_contexts`, `kube_diagnose_pod`, `kube_pod_failure_summary`, `kube_deployment_status`, `kube_events_summary` | `Bash(kubectl)` |
 | Terraform | `tf_state_list`, `tf_show`, `tf_plan_summary`, `tf_workspaces`, `tf_outputs`, `tf_providers`, `tf_validate_summary`, `tf_modules_summary`, `tf_backend_info` | `Bash(terraform/tofu)` |
 | Helm | `helm_list`, `helm_status`, `helm_values`, `helm_release_triage` | `Bash(helm)` |
@@ -23,6 +24,6 @@ Prefer these bash-mcp MCP tools over raw shell / built-ins: structured JSON, few
 | Shell | `bash_syntax_check`, `bash_lint`, `bash_test` | `Bash(shellcheck/bats/bash -n)` |
 | Execution | `run`, `run_seq`, `batch` | `Bash(cd && cmd)`, sequential one-off calls |
 
-**Diagnostic tools** collapse multi-call triage into one answer (status + likely causes + suggested next commands + evidence): `kube_diagnose_pod`, `kube_pod_failure_summary`, `kube_deployment_status`, `kube_events_summary`, `argo_app_health_summary`, `helm_release_triage`.
+**Diagnostic tools** collapse multi-call triage into one answer (status + likely causes + suggested next commands + evidence): `kube_diagnose_pod`, `kube_pod_failure_summary`, `kube_deployment_status`, `kube_events_summary`, `argo_app_health_summary`, `helm_release_triage`, `gh_run_failure_summary`.
 
 `Edit` and `Write` stay built-in. `cat` does NOT satisfy the Edit/Write "read first" guard — run the built-in `Read` immediately before editing.

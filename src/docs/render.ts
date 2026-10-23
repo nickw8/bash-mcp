@@ -182,6 +182,7 @@ const CATEGORIES = [
   ["Search", "`Grep`, `Bash(grep)`"],
   ["File", "`Read` (Read only immediately before Edit)"],
   ["Git", "`Bash(git)`"],
+  ["GitHub", "`Bash(gh pr checks/gh run view)`"],
   ["Kubernetes", "`Bash(kubectl)`"],
   ["Terraform", "`Bash(terraform/tofu)`"],
   ["Helm", "`Bash(helm)`"],

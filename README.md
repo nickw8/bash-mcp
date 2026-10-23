@@ -205,6 +205,8 @@ so agents can self-select without the README.
 | read one region of a large file | `cat` | `cat (whole file)`, `sed -n '10,40p'` |
 | keep a broad search from flooding the context | `rg` | `format/fields (text block only)`, `rg \| head` |
 | search for exact code references or symbols | `rg` | `grep -r`, `rg` |
+| check whether a pull request's CI checks pass | `gh_pr_checks` | `gh pr checks`, `gh pr view` |
+| find out why a CI / GitHub Actions run failed | `gh_run_failure_summary` | `gh run view --log-failed`, `gh run list` |
 | triage why a Helm release is unhealthy | `helm_release_triage` | `helm status`, `helm get values` |
 | check whether an ArgoCD app is healthy and in sync | `argo_app_health_summary` | `argocd app get`, `argocd app list` |
 | validate a Liquibase changelog for errors | `liquibase_validate` | `liquibase validate` |
@@ -265,6 +267,13 @@ so agents can self-select without the README.
 | `repo_health_summary` | One-call snapshot of a git working tree: branch, ahead/behind vs upstream, staged/unstaged/untracked counts, recent commits, and the uncommitted diffstat. |
 | `git_pr_context` | Collect the commits and file changes of a branch vs a base ref (for writing a PR description): commit list, changed files with status, and a diffstat over base...head. |
 | `git_diff_content` | Show git diff with structured patch content. |
+
+### GitHub
+
+| Tool | Description |
+|------|-------------|
+| `gh_pr_checks` | Report a pull request's CI checks as counts per state plus the failing and pending checks. |
+| `gh_run_failure_summary` | Diagnose a GitHub Actions run in one call: status, the failed jobs and steps, and the ##[error] lines from the failed log as evidence. |
 
 ### Kubernetes
 
@@ -337,7 +346,7 @@ so agents can self-select without the README.
 | Tool | Description |
 |------|-------------|
 | `npm_lint` | Run biome check and return structured diagnostics with file, line, column, message, and rule. |
-| `npm_test` | Run vitest and return structured test results: suites, pass/fail counts, failure messages. |
+| `npm_test` | Run vitest or jest (picked from package.json) and return structured test results: suites, pass/fail counts, failure messages. |
 | `npm_typecheck` | Run tsc/tsgo --noEmit and return structured type errors with file, line, column, message, and TS error code. |
 
 ### Python

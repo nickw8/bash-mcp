@@ -72,6 +72,10 @@ RULES=(
   "tofu providers|block|mcp__bash-mcp__tf_providers"
   "tofu validate|block|mcp__bash-mcp__tf_validate_summary"
 
+  # ── GitHub CLI ──
+  "gh pr checks|block|mcp__bash-mcp__gh_pr_checks"
+  "gh run view|warn|mcp__bash-mcp__gh_run_failure_summary"
+
   # ── Helm ──
   "helm get values|block|mcp__bash-mcp__helm_values"
   "helm list|block|mcp__bash-mcp__helm_list"

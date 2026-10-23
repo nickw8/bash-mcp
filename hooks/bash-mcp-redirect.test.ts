@@ -108,6 +108,7 @@ const BLOCKED: [command: string, tool: string][] = [
   ["helm list -A", "mcp__bash-mcp__helm_list"],
   ["helm status rel", "mcp__bash-mcp__helm_status"],
   ["helm history rel", "mcp__bash-mcp__helm_release_triage"],
+  ["gh pr checks 12", "mcp__bash-mcp__gh_pr_checks"],
   ["argocd app list", "mcp__bash-mcp__argo_apps"],
   ["argocd app get app1", "mcp__bash-mcp__argo_app_detail"],
   ["argocd app diff app1", "mcp__bash-mcp__argo_app_diff"],
@@ -148,6 +149,13 @@ describe("bash-mcp-redirect: implemented tools BLOCK", () => {
 describe("bash-mcp-redirect: roadmap tools WARN", () => {
   it("generic npm run is advisory", () => {
     expectWarn("npm run build", "mcp__bash-mcp__run");
+  });
+
+  it("gh run view warns toward gh_run_failure_summary", () => {
+    expectWarn(
+      "gh run view 123 --log-failed",
+      "mcp__bash-mcp__gh_run_failure_summary",
+    );
   });
 });
 

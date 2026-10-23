@@ -124,6 +124,22 @@ export const INTENTS = [
       "Structured matches with file/line, far less token noise than raw grep.",
   },
   {
+    intent: "check whether a pull request's CI checks pass",
+    preferredTool: "gh_pr_checks",
+    category: "github",
+    avoid: ["run: gh pr checks", "run: gh pr view"],
+    reason:
+      "Counts checks per state and lists only the failing and pending ones.",
+  },
+  {
+    intent: "find out why a CI / GitHub Actions run failed",
+    preferredTool: "gh_run_failure_summary",
+    category: "github",
+    avoid: ["run: gh run view --log-failed", "run: gh run list"],
+    reason:
+      "Failed jobs and steps plus the ##[error] lines, not the whole failed log.",
+  },
+  {
     intent: "triage why a Helm release is unhealthy",
     preferredTool: "helm_release_triage",
     category: "helm",
