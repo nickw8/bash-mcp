@@ -8,7 +8,7 @@
 
 import { realpathSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { exec, execJson } from "./exec.js";
+import { callSignal, exec, execJson } from "./exec.js";
 
 describe("exec", () => {
   it("captures stdout from a successful command", async () => {
@@ -157,5 +157,57 @@ describe("execJson", () => {
   it("leaves detail unset on success", async () => {
     const result = await execJson("echo", ["{}"]);
     expect(result.detail).toBeUndefined();
+  });
+});
+
+describe("process cleanup", () => {
+  const alive = (pid: number) => {
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  // The shell prints its background child's pid, then waits on it: killing
+  // only the shell would leave `sleep` running.
+  const tree = ["-c", "sleep 30 & echo $!; wait"];
+  const gone = async (pid: number) => {
+    for (let i = 0; i < 20 && alive(pid); i++) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    return !alive(pid);
+  };
+
+  it.skipIf(process.platform === "win32")(
+    "a timeout kills the whole process group",
+    async () => {
+      const result = await exec("sh", tree, { timeout: 300 });
+      expect(result.timedOut).toBe(true);
+      expect(await gone(Number(result.stdout.trim()))).toBe(true);
+    },
+  );
+
+  it.skipIf(process.platform === "win32")(
+    "an aborted call signal kills the tree and says cancelled",
+    async () => {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), 200);
+      const result = await callSignal.run(controller.signal, () =>
+        exec("sh", tree),
+      );
+      expect(result.cancelled).toBe(true);
+      expect(result.timedOut).toBeUndefined();
+      expect(await gone(Number(result.stdout.trim()))).toBe(true);
+    },
+  );
+
+  it("an already-aborted signal does not leave the process running", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const start = Date.now();
+    const result = await exec("sleep", ["5"], { signal: controller.signal });
+    expect(result.cancelled).toBe(true);
+    expect(Date.now() - start).toBeLessThan(3000);
   });
 });
