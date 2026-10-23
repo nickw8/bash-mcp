@@ -76,7 +76,7 @@ export function registerFindTool(server: McpServer) {
         format: z
           .enum(["json", "tsv", "columnar"])
           .optional()
-          .describe("Text-block format, payload unaffected (default: tsv)"),
+          .describe("Text block only (default tsv)"),
       },
       outputSchema: {
         files: z.array(z.string()),

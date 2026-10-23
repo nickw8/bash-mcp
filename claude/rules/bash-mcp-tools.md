@@ -24,6 +24,7 @@ Prefer these bash-mcp MCP tools over raw shell / built-ins: structured JSON, few
 | Python | `python_lint`, `python_test`, `python_typecheck` | `Bash(ruff/pytest/mypy)` |
 | Shell | `bash_syntax_check`, `bash_lint`, `bash_test` | `Bash(shellcheck/bats/bash -n)` |
 | Execution | `run`, `run_seq`, `batch` | `Bash(cd && cmd)`, sequential one-off calls |
+| Results | `result_get` | re-running a command to see what a trimmed response cut |
 
 **Diagnostic tools** collapse multi-call triage into one answer (status + likely causes + suggested next commands + evidence): `kube_diagnose_pod`, `kube_pod_failure_summary`, `kube_deployment_status`, `kube_events_summary`, `argo_app_health_summary`, `helm_release_triage`, `gh_run_failure_summary`, `glab_pipeline_failure_summary`.
 

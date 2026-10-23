@@ -101,7 +101,7 @@ export function registerSearchTools(server: McpServer) {
           .enum(["json", "tsv", "columnar", "bare", "grouped"])
           .optional()
           .describe(
-            "Text-block format (payload unaffected): grouped (default for matches, file header once then line+text, ripgrep-style), tsv, json, columnar (keys once), bare (no header). filesOnly defaults to bare, countPerFile to tsv.",
+            "Text block only: grouped (default), tsv, json, columnar, bare; filesOnly defaults to bare, countPerFile to tsv",
           ),
         fields: z
           .array(z.string())
@@ -123,7 +123,10 @@ export function registerSearchTools(server: McpServer) {
         ),
         fileCount: z.number(),
         matchCount: z.number(),
-        truncated: z.boolean(),
+        truncated: z
+          .literal(true)
+          .optional()
+          .describe("Present only when maxResults cut the matches"),
         totalMatches: z.number().optional(),
       },
       annotations: { readOnlyHint: true },
@@ -184,7 +187,6 @@ export function registerSearchTools(server: McpServer) {
           files,
           fileCount: files.length,
           matchCount: totalMatches,
-          truncated: false,
         };
         return okList(
           structured,
@@ -222,7 +224,6 @@ export function registerSearchTools(server: McpServer) {
           files,
           fileCount: files.length,
           matchCount: files.length,
-          truncated: false,
         };
         return okList(
           structured,
@@ -302,7 +303,7 @@ export function registerSearchTools(server: McpServer) {
         files: groupMatchesByFile(entries, relPath),
         fileCount,
         matchCount,
-        truncated,
+        ...(truncated ? { truncated: true as const } : {}),
         ...(totalMatches !== undefined ? { totalMatches } : {}),
       };
       return okList(
@@ -330,7 +331,7 @@ export function registerSearchTools(server: McpServer) {
         format: z
           .enum(["json", "tsv", "columnar"])
           .optional()
-          .describe("Text-block format, payload unaffected (default: tsv)"),
+          .describe("Text block only (default tsv)"),
       },
       outputSchema: {
         files: z.array(z.string()),

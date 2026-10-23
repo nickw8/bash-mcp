@@ -53,18 +53,15 @@ export const budgetSchema = {
     .enum(["summary", "normal", "full"])
     .optional()
     .describe(
-      "Output size preset: summary (~20 items), normal (~100), full (uncapped, default).",
+      "Item preset: summary 20, normal 100, full (default; also skips the response budget)",
     ),
   maxItems: z
     .number()
     .int()
     .positive()
     .optional()
-    .describe("Explicit cap on returned items; overrides detailLevel."),
-  includeRaw: z
-    .boolean()
-    .optional()
-    .describe("Include raw/verbose fields where supported."),
+    .describe("Item cap; overrides detailLevel"),
+  includeRaw: z.boolean().optional().describe("Include raw/verbose fields"),
 };
 
 /**

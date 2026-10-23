@@ -43,9 +43,7 @@ export function resolveTfBinary(
 const binarySchema = z
   .enum(["terraform", "tofu"])
   .optional()
-  .describe(
-    "Binary to invoke (terraform or tofu). Defaults to $TF_BINARY, else terraform.",
-  );
+  .describe("terraform or tofu (default $TF_BINARY, else terraform)");
 
 /** Register all Terraform tools on the MCP server. */
 export function registerTerraformTools(server: McpServer) {
@@ -335,13 +333,11 @@ export function registerTerraformTools(server: McpServer) {
         format: z
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
-          .describe("Text-block format, payload unaffected (default: tsv)"),
+          .describe("Text block only (default tsv)"),
         fields: z
           .array(z.string())
           .optional()
-          .describe(
-            "Limit the text view to these columns (text block only, not the returned payload)",
-          ),
+          .describe("Text-block columns only"),
       },
       outputSchema: {
         // `type` is readable off the value and `sensitive:false` was on every

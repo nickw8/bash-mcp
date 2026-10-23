@@ -38,13 +38,11 @@ export function registerDuTool(server: McpServer) {
         format: z
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
-          .describe("Text-block format, payload unaffected (default: tsv)"),
+          .describe("Text block only (default tsv)"),
         fields: z
           .array(z.string())
           .optional()
-          .describe(
-            "Limit the text view to these columns (text block only, not the returned payload)",
-          ),
+          .describe("Text-block columns only"),
       },
       outputSchema: {
         // sizeHuman is derived from sizeBytes, so it is rendered in the text

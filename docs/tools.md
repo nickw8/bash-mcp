@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit by hand. Regenerate with `npm run docs:tools`. -->
 
-64 tools. Each entry lists inputs, outputs, and (where known) the raw command(s) it approximates.
+65 tools. Each entry lists inputs, outputs, and (where known) the raw command(s) it approximates.
 
 ## `argo_app_detail`
 
@@ -111,10 +111,10 @@ Run shellcheck and return structured diagnostics with file, line, column, messag
 
 - `files`: string | string[] — Shell script path(s) to lint; a string or array
 - `minSeverity`: "error" | "warning" | "info" _(optional)_ — Minimum severity to include (e.g. 'error' drops warnings and info)
-- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text-block format (payload unaffected): grouped (default, file header once then line:col rule message), tsv, or json
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
-- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
-- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
+- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text block only: grouped (default), tsv, json
+- `fields`: string[] _(optional)_ — Text-block columns only, e.g. ['file','loc']
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Item preset: summary 20, normal 100, full (default; also skips the response budget)
+- `maxItems`: number _(optional)_ — Item cap; overrides detailLevel
 
 **Outputs:**
 
@@ -139,10 +139,10 @@ Check shell scripts for syntax errors with `bash -n` and return structured diagn
 **Inputs:**
 
 - `files`: string | string[] — Shell script path(s) to check; a string or array
-- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text-block format (payload unaffected): grouped (default, file header once then line:col rule message), tsv, or json
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
-- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
-- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
+- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text block only: grouped (default), tsv, json
+- `fields`: string[] _(optional)_ — Text-block columns only, e.g. ['file','loc']
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Item preset: summary 20, normal 100, full (default; also skips the response budget)
+- `maxItems`: number _(optional)_ — Item cap; overrides detailLevel
 
 **Outputs:**
 
@@ -264,10 +264,10 @@ Run dotnet build and return structured diagnostics with file, line, column, mess
 - `project`: string _(optional)_ — Path to .csproj or .sln file (default: auto-detected in cwd)
 - `configuration`: string _(optional)_ — Build configuration (e.g. Debug, Release)
 - `includeWarnings`: boolean _(optional)_ — Include warnings in the response (default: errors only, even on a successful build)
-- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text-block format (payload unaffected): grouped (default, file header once then line:col rule message), tsv, or json
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
-- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
-- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
+- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text block only: grouped (default), tsv, json
+- `fields`: string[] _(optional)_ — Text-block columns only, e.g. ['file','loc']
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Item preset: summary 20, normal 100, full (default; also skips the response budget)
+- `maxItems`: number _(optional)_ — Item cap; overrides detailLevel
 
 **Outputs:**
 
@@ -321,8 +321,8 @@ Show disk usage for paths. Returns one { path, sizeBytes } entry per path, large
 
 - `path`: string — Path to measure
 - `maxDepth`: number _(optional)_ — Depth to summarize
-- `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text-block format, payload unaffected (default: tsv)
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (text block only, not the returned payload)
+- `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text block only (default tsv)
+- `fields`: string[] _(optional)_ — Text-block columns only
 
 **Outputs:**
 
@@ -350,7 +350,7 @@ Find files by name pattern, type, or modification time. Returns structured list 
 - `maxDepth`: number _(optional)_ — Max search depth
 - `modifiedWithin`: string _(optional)_ — Modified within timespan (e.g. '7d', '1h')
 - `withMetadata`: boolean _(optional)_ — Include size (bytes) and mtime (unix timestamp) for each file
-- `format`: "json" | "tsv" | "columnar" _(optional)_ — Text-block format, payload unaffected (default: tsv)
+- `format`: "json" | "tsv" | "columnar" _(optional)_ — Text block only (default tsv)
 
 **Outputs:**
 
@@ -429,8 +429,8 @@ List git branches with current branch marker and last commit info.
 
 - `cwd`: string _(optional)_ — Repository path
 - `remote`: boolean _(optional)_ — Include remote branches
-- `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text-block format, payload unaffected (default: tsv)
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (text block only, not the returned payload)
+- `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text block only (default tsv)
+- `fields`: string[] _(optional)_ — Text-block columns only
 
 **Outputs:**
 
@@ -513,7 +513,7 @@ Structured git log: commit hash, author, date, message. Compact and parseable. U
 - `range`: string _(optional)_ — Git ref range (e.g. 'main..feature', 'HEAD~5..HEAD')
 - `exclude`: string _(optional)_ — Exclude commits matching this grep pattern (uses --invert-grep)
 - `withFiles`: boolean _(optional)_ — Include list of files changed per commit
-- `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text-block format, payload unaffected (default: tsv)
+- `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text block only (default tsv)
 - `fields`: string[] _(optional)_ — Limit the text view to these columns, e.g. ['shortHash','message'] (text block only, not the returned payload)
 
 **Outputs:**
@@ -653,7 +653,7 @@ Find files matching a glob pattern. Returns a compact list of paths.
 
 - `pattern`: string — Glob pattern (e.g. 'src/**/*.ts')
 - `cwd`: string _(optional)_ — Working directory for the glob
-- `format`: "json" | "tsv" | "columnar" _(optional)_ — Text-block format, payload unaffected (default: tsv)
+- `format`: "json" | "tsv" | "columnar" _(optional)_ — Text block only (default tsv)
 
 **Outputs:**
 
@@ -804,8 +804,8 @@ List available kubectl contexts with current context marked.
 
 **Inputs:**
 
-- `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text-block format, payload unaffected (default: tsv)
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (text block only, not the returned payload)
+- `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text block only (default tsv)
+- `fields`: string[] _(optional)_ — Text-block columns only
 
 **Outputs:**
 
@@ -882,9 +882,9 @@ Summarize Warning events in a namespace (grouped by reason, ordered by count) in
 - `namespace`: string _(optional)_ — Namespace
 - `allNamespaces`: boolean _(optional)_ — Search all namespaces (overrides namespace)
 - `context`: string _(optional)_ — Kube context
-- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
-- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
-- `includeRaw`: boolean _(optional)_ — Include raw/verbose fields where supported.
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Item preset: summary 20, normal 100, full (default; also skips the response budget)
+- `maxItems`: number _(optional)_ — Item cap; overrides detailLevel
+- `includeRaw`: boolean _(optional)_ — Include raw/verbose fields
 
 **Outputs:**
 
@@ -919,9 +919,9 @@ Get Kubernetes resources as structured data. Wraps kubectl get -o json and retur
 - `includeLabels`: boolean _(optional)_ — Include each resource's labels (default false — labels are verbose and mostly hashes; use selector to filter or jq to read specific ones)
 - `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text-block format for the item list, payload unaffected (default: tsv)
 - `fields`: string[] _(optional)_ — Limit the text view to these columns, e.g. ['name','status','restarts'] (text view only)
-- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
-- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
-- `includeRaw`: boolean _(optional)_ — Include raw/verbose fields where supported.
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Item preset: summary 20, normal 100, full (default; also skips the response budget)
+- `maxItems`: number _(optional)_ — Item cap; overrides detailLevel
+- `includeRaw`: boolean _(optional)_ — Include raw/verbose fields
 
 **Outputs:**
 
@@ -949,9 +949,9 @@ Get pod logs. Returns structured log lines with timestamps when available. Use g
 - `grep`: string _(optional)_ — Regex pattern to filter log lines (e.g. 'ERROR|WARN', 'timeout'). Only matching lines are returned.
 - `ignoreCase`: boolean _(optional)_ — Case-insensitive grep matching (default: false)
 - `context`: string _(optional)_ — Kube context
-- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
-- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
-- `includeRaw`: boolean _(optional)_ — Include raw/verbose fields where supported.
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Item preset: summary 20, normal 100, full (default; also skips the response budget)
+- `maxItems`: number _(optional)_ — Item cap; overrides detailLevel
+- `includeRaw`: boolean _(optional)_ — Include raw/verbose fields
 
 **Outputs:**
 
@@ -978,9 +978,9 @@ List unhealthy pods in a namespace with their failure reason and evidence — on
 - `namespace`: string _(optional)_ — Namespace
 - `allNamespaces`: boolean _(optional)_ — Search all namespaces (overrides namespace)
 - `context`: string _(optional)_ — Kube context
-- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
-- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
-- `includeRaw`: boolean _(optional)_ — Include raw/verbose fields where supported.
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Item preset: summary 20, normal 100, full (default; also skips the response budget)
+- `maxItems`: number _(optional)_ — Item cap; overrides detailLevel
+- `includeRaw`: boolean _(optional)_ — Include raw/verbose fields
 
 **Outputs:**
 
@@ -1042,9 +1042,9 @@ Render the SQL Liquibase would run for pending changesets (updateSQL) as structu
 - `extraArgs`: string[] _(optional)_ — Additional raw arguments appended to the liquibase invocation.
 - `changesetId`: string _(optional)_ — Return only this changeset's full rendered SQL (matches the changeset id).
 - `batchLint`: boolean _(optional)_ — Lint each changeset for the SQL-Server 'routine DDL must lead its GO-batch' rule (default true).
-- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
-- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
-- `includeRaw`: boolean _(optional)_ — Include raw/verbose fields where supported.
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Item preset: summary 20, normal 100, full (default; also skips the response budget)
+- `maxItems`: number _(optional)_ — Item cap; overrides detailLevel
+- `includeRaw`: boolean _(optional)_ — Include raw/verbose fields
 
 **Outputs:**
 
@@ -1114,8 +1114,8 @@ List files in a directory. Returns structured entries with name, size, permissio
 - `all`: boolean _(optional)_ — Include hidden files
 - `recursive`: boolean _(optional)_ — Recurse into subdirectories (1 level)
 - `nameOnly`: boolean _(optional)_ — Only return names and types (omit size, permissions, modified)
-- `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text-block format, payload unaffected (default: tsv)
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (text block only, not the returned payload)
+- `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text block only (default tsv)
+- `fields`: string[] _(optional)_ — Text-block columns only
 
 **Outputs:**
 
@@ -1139,10 +1139,10 @@ Run biome check and return structured diagnostics with file, line, column, messa
 - `fix`: boolean _(optional)_ — Auto-fix safe issues (default: false)
 - `paths`: string | string[] _(optional)_ — Specific path(s) to lint; a string or array (default: '.')
 - `minSeverity`: "error" | "warning" | "info" _(optional)_ — Minimum severity to include (e.g. 'error' drops warnings and info)
-- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text-block format (payload unaffected): grouped (default, file header once then line:col rule message), tsv, or json
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
-- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
-- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
+- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text block only: grouped (default), tsv, json
+- `fields`: string[] _(optional)_ — Text-block columns only, e.g. ['file','loc']
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Item preset: summary 20, normal 100, full (default; also skips the response budget)
+- `maxItems`: number _(optional)_ — Item cap; overrides detailLevel
 
 **Outputs:**
 
@@ -1191,10 +1191,10 @@ Run tsc/tsgo --noEmit and return structured type errors with file, line, column,
 
 - `cwd`: string — Project root directory
 - `project`: string _(optional)_ — Path to tsconfig.json (default: auto-detected by tsc)
-- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text-block format (payload unaffected): grouped (default, file header once then line:col rule message), tsv, or json
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
-- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
-- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
+- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text block only: grouped (default), tsv, json
+- `fields`: string[] _(optional)_ — Text-block columns only, e.g. ['file','loc']
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Item preset: summary 20, normal 100, full (default; also skips the response budget)
+- `maxItems`: number _(optional)_ — Item cap; overrides detailLevel
 
 **Outputs:**
 
@@ -1243,10 +1243,10 @@ Run ruff check and return structured diagnostics with file, line, column, messag
 - `fix`: boolean _(optional)_ — Auto-fix safe issues (default: false)
 - `paths`: string | string[] _(optional)_ — Specific path(s) to lint; a string or array (default: '.')
 - `minSeverity`: "error" | "warning" | "info" _(optional)_ — Minimum severity to include (e.g. 'error' drops warnings and info)
-- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text-block format (payload unaffected): grouped (default, file header once then line:col rule message), tsv, or json
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
-- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
-- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
+- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text block only: grouped (default), tsv, json
+- `fields`: string[] _(optional)_ — Text-block columns only, e.g. ['file','loc']
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Item preset: summary 20, normal 100, full (default; also skips the response budget)
+- `maxItems`: number _(optional)_ — Item cap; overrides detailLevel
 
 **Outputs:**
 
@@ -1295,10 +1295,10 @@ Run mypy and return structured type errors with file, line, column, message, and
 
 - `cwd`: string — Project root directory
 - `paths`: string | string[] _(optional)_ — Specific path(s) to check; a string or array (default: '.')
-- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text-block format (payload unaffected): grouped (default, file header once then line:col rule message), tsv, or json
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload
-- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
-- `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
+- `format`: "grouped" | "tsv" | "json" _(optional)_ — Text block only: grouped (default), tsv, json
+- `fields`: string[] _(optional)_ — Text-block columns only, e.g. ['file','loc']
+- `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Item preset: summary 20, normal 100, full (default; also skips the response budget)
+- `maxItems`: number _(optional)_ — Item cap; overrides detailLevel
 
 **Outputs:**
 
@@ -1346,6 +1346,29 @@ git log -n 5
 git diff --stat
 ```
 
+## `result_get`
+
+`read-only`
+
+Page through a result the response budget trimmed. Pass the retained.id from that response; path selects a field (dotted, e.g. files.0.lines), offset/limit slice an array. Snapshot of the original call, kept for retained.expiresInSec.
+
+**Inputs:**
+
+- `id`: string — retained.id from a trimmed response
+- `path`: string _(optional)_ — Dotted path into the payload; omit for the whole payload
+- `offset`: number _(optional)_ — Default 0
+- `limit`: number _(optional)_ — Default 100
+
+**Outputs:**
+
+- `id`: string
+- `tool`: string
+- `capturedAt`: string
+- `path`: string
+- `total`: number _(optional)_
+- `offset`: number
+- `value`: unknown
+
 ## `rg`
 
 `read-only`
@@ -1367,7 +1390,7 @@ Search file contents with ripgrep. Returns structured matches with file, line nu
 - `countPerFile`: boolean _(optional)_ — Return match counts grouped by file instead of individual matches
 - `fixedStrings`: boolean _(optional)_ — Treat pattern as literal string
 - `maxLineLength`: number _(optional)_ — Window matched line text to ~this many chars centered on the match, so long/minified lines don't dump in full (0 = unlimited, default 120)
-- `format`: "json" | "tsv" | "columnar" | "bare" | "grouped" _(optional)_ — Text-block format (payload unaffected): grouped (default for matches, file header once then line+text, ripgrep-style), tsv, json, columnar (keys once), bare (no header). filesOnly defaults to bare, countPerFile to tsv.
+- `format`: "json" | "tsv" | "columnar" | "bare" | "grouped" _(optional)_ — Text block only: grouped (default), tsv, json, columnar, bare; filesOnly defaults to bare, countPerFile to tsv
 - `fields`: string[] _(optional)_ — Limit the text view to these columns (e.g. ['file','line']); text view only
 
 **Outputs:**
@@ -1375,7 +1398,7 @@ Search file contents with ripgrep. Returns structured matches with file, line nu
 - `files`: object[]
 - `fileCount`: number
 - `matchCount`: number
-- `truncated`: boolean
+- `truncated`: true _(optional)_ — Present only when maxResults cut the matches
 - `totalMatches`: number _(optional)_
 
 **Equivalent commands:**
@@ -1477,9 +1500,9 @@ List Terraform/OpenTofu outputs (name, value) with sensitive values redacted —
 **Inputs:**
 
 - `cwd`: string — Terraform project directory
-- `binary`: "terraform" | "tofu" _(optional)_ — Binary to invoke (terraform or tofu). Defaults to $TF_BINARY, else terraform.
-- `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text-block format, payload unaffected (default: tsv)
-- `fields`: string[] _(optional)_ — Limit the text view to these columns (text block only, not the returned payload)
+- `binary`: "terraform" | "tofu" _(optional)_ — terraform or tofu (default $TF_BINARY, else terraform)
+- `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text block only (default tsv)
+- `fields`: string[] _(optional)_ — Text-block columns only
 
 **Outputs:**
 
@@ -1504,7 +1527,7 @@ Run terraform plan and return a structured summary of changes (add/change/destro
 - `target`: string _(optional)_ — Target specific resource
 - `varFile`: string _(optional)_ — Var file to use
 - `planFile`: string _(optional)_ — Path to a saved plan file (from `terraform plan -out`); summarized via `show -json` instead of re-running plan.
-- `binary`: "terraform" | "tofu" _(optional)_ — Binary to invoke (terraform or tofu). Defaults to $TF_BINARY, else terraform.
+- `binary`: "terraform" | "tofu" _(optional)_ — terraform or tofu (default $TF_BINARY, else terraform)
 
 **Outputs:**
 
@@ -1530,7 +1553,7 @@ List the Terraform/OpenTofu version and selected provider versions for the proje
 **Inputs:**
 
 - `cwd`: string — Terraform project directory
-- `binary`: "terraform" | "tofu" _(optional)_ — Binary to invoke (terraform or tofu). Defaults to $TF_BINARY, else terraform.
+- `binary`: "terraform" | "tofu" _(optional)_ — terraform or tofu (default $TF_BINARY, else terraform)
 
 **Outputs:**
 
@@ -1552,7 +1575,7 @@ Show current Terraform state as structured JSON. Returns resource summary with t
 **Inputs:**
 
 - `cwd`: string — Terraform project directory
-- `binary`: "terraform" | "tofu" _(optional)_ — Binary to invoke (terraform or tofu). Defaults to $TF_BINARY, else terraform.
+- `binary`: "terraform" | "tofu" _(optional)_ — terraform or tofu (default $TF_BINARY, else terraform)
 
 **Outputs:**
 
@@ -1574,7 +1597,7 @@ List resources in Terraform state. Returns the resource addresses plus a byType 
 **Inputs:**
 
 - `cwd`: string — Terraform project directory
-- `binary`: "terraform" | "tofu" _(optional)_ — Binary to invoke (terraform or tofu). Defaults to $TF_BINARY, else terraform.
+- `binary`: "terraform" | "tofu" _(optional)_ — terraform or tofu (default $TF_BINARY, else terraform)
 - `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Text-block format, payload unaffected (default: bare — one address per line)
 
 **Outputs:**
@@ -1598,7 +1621,7 @@ Validate the Terraform/OpenTofu config and return a compact pass/fail summary wi
 **Inputs:**
 
 - `cwd`: string — Terraform project directory
-- `binary`: "terraform" | "tofu" _(optional)_ — Binary to invoke (terraform or tofu). Defaults to $TF_BINARY, else terraform.
+- `binary`: "terraform" | "tofu" _(optional)_ — terraform or tofu (default $TF_BINARY, else terraform)
 
 **Outputs:**
 
@@ -1622,7 +1645,7 @@ List Terraform workspaces with current workspace marked.
 **Inputs:**
 
 - `cwd`: string — Terraform project directory
-- `binary`: "terraform" | "tofu" _(optional)_ — Binary to invoke (terraform or tofu). Defaults to $TF_BINARY, else terraform.
+- `binary`: "terraform" | "tofu" _(optional)_ — terraform or tofu (default $TF_BINARY, else terraform)
 
 **Outputs:**
 

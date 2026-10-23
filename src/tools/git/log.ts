@@ -44,7 +44,7 @@ export function registerGitLogTool(server: McpServer) {
         format: z
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
-          .describe("Text-block format, payload unaffected (default: tsv)"),
+          .describe("Text block only (default tsv)"),
         fields: z
           .array(z.string())
           .optional()
