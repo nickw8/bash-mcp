@@ -99,6 +99,10 @@ breaking change did.
 - Treat `retained` as "there is more"; call `result_get` with its `id` to read the rest,
   or set `BASH_MCP_RESPONSE_MODE=full`.
 - Read `rg`'s `truncated` as optional.
+- Read `du`, `git_branches`, `ls`, `tf_outputs` and `rg` rows by position, in the order
+  each tool's description names, and take dropped counts from the array length.
+- Read `kube_logs` `lines` as strings; the timestamp is the text before the first space.
+- Read a `tf_plan_summary` replacement as `replace`, not `delete,create`.
 - Stop sending `format`/`fields`; 6.0.0 refuses them.
 - If a client lists too many tools, set `BASH_MCP_PROFILE`.
 

@@ -68,7 +68,7 @@ Legend: `[x]` done and verified · `[~]` done with a documented gap · `[ ]` ope
 ## Phase 8 — Docs and release readiness
 - [x] README, configuration, architecture, ADRs, CHANGELOG, migration notes
 - [x] Full validation pass (see v5-audit.md §Verification)
-- [~] Release recommendation (D12)
+- [x] Release recommendation (D12): released as 5.0.0
 
 ## Decisions
 
