@@ -9,7 +9,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
 import { helmContext, namespaceSchema } from "#kube-args";
-import { isUnrunnable, triageSchema, unknownTriage } from "#parsers";
+import { triageRun, triageSchema } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
 import type { HelmHistoryEntry, HelmRelease, HelmStatus } from "./payload.js";
@@ -203,36 +203,26 @@ export function registerHelmTools(server: McpServer) {
     },
     async ({ release, namespace, context }) => {
       const ctxArgs = helmContext(context);
-      const statusRes = await execJson<HelmStatus>(
-        "helm",
-        ["status", release, "-n", namespace, "-o", "json", ...ctxArgs],
-        { timeout: TIMEOUT.INFRA },
-      );
-      if (statusRes.error || !statusRes.data) {
-        const why = statusRes.error ?? "helm status: no data";
-        if (isUnrunnable(statusRes.detail)) {
-          return err(why, {}, statusRes.detail);
-        }
-        // helm answered and the answer was no — a triage of "Unknown", not an
-        // error (ADR-0005). A release that does not exist is a finding.
-        return ok({
-          healthy: false,
-          revision: 0,
-          revisions: 0,
-          ...unknownTriage(`helm status failed: ${why}`, [
-            `helm_list namespace=${namespace}`,
-          ]),
-        });
-      }
-
-      // History is best-effort — a missing history shouldn't fail the triage.
-      const histRes = await execJson<HelmHistoryEntry[]>(
-        "helm",
-        ["history", release, "-n", namespace, "-o", "json", ...ctxArgs],
-        { timeout: TIMEOUT.INFRA },
-      );
-
-      return ok({ ...triageRelease(statusRes.data, histRes.data ?? []) });
+      return triageRun({
+        probe: () =>
+          execJson<HelmStatus>(
+            "helm",
+            ["status", release, "-n", namespace, "-o", "json", ...ctxArgs],
+            { timeout: TIMEOUT.INFRA },
+          ),
+        empty: { healthy: false, revision: 0, revisions: 0 },
+        failure: "helm status failed",
+        suggestedNextCommands: [`helm_list namespace=${namespace}`],
+        classify: async (status) => {
+          // History is best-effort — a missing history shouldn't fail the triage.
+          const hist = await execJson<HelmHistoryEntry[]>(
+            "helm",
+            ["history", release, "-n", namespace, "-o", "json", ...ctxArgs],
+            { timeout: TIMEOUT.INFRA },
+          );
+          return triageRelease(status, hist.data ?? []);
+        },
+      });
     },
   );
 }

@@ -21,6 +21,7 @@ from the model, not to add features the underlying CLI lacks.
 | **ToolRecord** | A flattened tool description — name, title, description, readOnlyHint, equivalentCommands, schemas, category. |
 | **Diagnostic tool** | A tool that collapses multi-call triage into one answer: a Triage plus its tool-specific fields. |
 | **Triage** | The four-field envelope every Diagnostic tool answers with — `status`, `likelyCauses[]`, `suggestedNextCommands[]`, `evidence[]`. One declaration in `src/parsers/schemas.ts`, used as a schema (`triageSchema`) and as a type (`Triage`). |
+| **Triage run** | One Probe read as a Triage — the decision (never ran → error, ran and failed or gave no data → Unknown triage, answered → the tool's classifier) that every Diagnostic tool hands its CLI call to, owned by `triageRun` in `src/parsers/triage-run.ts`. |
 | **Diagnostic** | A single lint/typecheck/build finding (`file`, `line`, `column`, `severity`, `rule`, `message`). Different thing from a *diagnostic tool*. |
 | **Diagnostic run** | One or more CLI invocations' output read as Diagnostics and answered as counts plus findings — or, when the CLI never ran or printed nothing readable, an error. Owned by the runner in `src/parsers/diagnostics-response.ts`. |
 | **Wide event** | The one structured JSON line `defineTool` emits per call, to stderr. |

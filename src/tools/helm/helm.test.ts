@@ -74,7 +74,9 @@ describe("helm_release_triage handler", () => {
     const res = await handler(args);
     expect(res.isError).toBeUndefined();
     expect(res.structuredContent.status).toBe("Unknown");
-    expect(res.structuredContent.evidence[0]).toContain("helm status: no data");
+    expect(res.structuredContent.evidence[0]).toContain(
+      "helm status failed: no data",
+    );
   });
 
   it("answers the classifier's output on success", async () => {

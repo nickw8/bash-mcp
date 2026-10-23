@@ -17,15 +17,13 @@ import { execJson, TIMEOUT } from "#exec";
 import { kubectlContext, namespaceSchema } from "#kube-args";
 import {
   applyBudget,
+  type BudgetParams,
   budgetSchema,
-  isUnrunnable,
+  triageRun,
   triageSchema,
-  unknownTriage,
 } from "#parsers";
-import { err, ok } from "#response";
 import { defineTool } from "#tool";
 import {
-  type Diagnosis,
   diagnoseDeployment,
   diagnosePod,
   type KubeEvent,
@@ -33,14 +31,23 @@ import {
 } from "./diagnose.js";
 import type { KubeList, KubeResource } from "./parse.js";
 
-/** Return a Diagnosis as an MCP response (explicit literal for ok()'s type). */
-function okDiagnosis(d: Diagnosis) {
-  return ok({
-    status: d.status,
-    likelyCauses: d.likelyCauses,
-    suggestedNextCommands: d.suggestedNextCommands,
-    evidence: d.evidence,
-  });
+/**
+ * Probe kubectl for JSON. Missing data reads as `{}` for now — the classifiers
+ * cope with an empty object; the no-data fix removes this.
+ */
+async function kubectlJson<T extends object>(args: string[]) {
+  const res = await execJson<T>("kubectl", args, { timeout: TIMEOUT.INFRA });
+  return res.error === null && res.data === null
+    ? { ...res, data: {} as T }
+    : res;
+}
+
+/** Cap `rows` by the budget; `total`/`truncated` are reported only when a budget was asked for. */
+function budgeted<R>(rows: R[], budget: BudgetParams) {
+  const hasBudget =
+    budget.detailLevel !== undefined || budget.maxItems !== undefined;
+  const { items, total, truncated } = applyBudget(rows, budget);
+  return { items, extra: hasBudget ? { total, truncated } : {} };
 }
 
 /** Register the kube diagnostic tools on the MCP server. */
@@ -68,29 +75,23 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     async ({ pod, namespace, context }) => {
-      const res = await execJson<KubeResource>(
-        "kubectl",
-        [
-          "get",
-          "pod",
-          pod,
-          "-n",
-          namespace,
-          "-o",
-          "json",
-          ...kubectlContext(context),
-        ],
-        { timeout: TIMEOUT.INFRA },
-      );
-      if (res.error) {
-        if (isUnrunnable(res.detail)) return err(res.error, {}, res.detail);
-        return okDiagnosis(
-          unknownTriage(`kubectl get pod failed: ${res.error}`, [
-            `kube_events_summary namespace=${namespace}`,
+      return triageRun({
+        probe: () =>
+          kubectlJson<KubeResource>([
+            "get",
+            "pod",
+            pod,
+            "-n",
+            namespace,
+            "-o",
+            "json",
+            ...kubectlContext(context),
           ]),
-        );
-      }
-      return okDiagnosis(diagnosePod(res.data ?? {}));
+        empty: {},
+        failure: "kubectl get pod failed",
+        suggestedNextCommands: [`kube_events_summary namespace=${namespace}`],
+        classify: diagnosePod,
+      });
     },
   );
 
@@ -129,55 +130,52 @@ export function registerKubeDiagnosticTools(server: McpServer) {
     },
     async ({ namespace, allNamespaces, context, detailLevel, maxItems }) => {
       const scope = allNamespaces ? ["--all-namespaces"] : ["-n", namespace];
-      const res = await execJson<KubeList>(
-        "kubectl",
-        ["get", "pods", ...scope, "-o", "json", ...kubectlContext(context)],
-        { timeout: TIMEOUT.INFRA },
-      );
-      if (res.error) {
-        if (isUnrunnable(res.detail)) return err(res.error, {}, res.detail);
-        return ok({
-          ...unknownTriage(`kubectl get pods failed: ${res.error}`),
-          pods: [],
-        });
-      }
-
-      const healthy = new Set(["Running", "Succeeded"]);
-      const allPods = (res.data?.items ?? [])
-        .map((p) => ({ p, d: diagnosePod(p) }))
-        .filter(({ d }) => !healthy.has(d.status) || d.evidence.length > 0)
-        .map(({ p, d }) => ({
-          name: p.metadata?.name ?? "",
-          namespace: p.metadata?.namespace ?? namespace,
-          status: d.status,
-          evidence: d.evidence,
-        }));
-
-      const hasBudget = detailLevel !== undefined || maxItems !== undefined;
-      const {
-        items: pods,
-        truncated,
-        total,
-      } = applyBudget(allPods, {
-        detailLevel,
-        maxItems,
+      return triageRun({
+        probe: () =>
+          kubectlJson<KubeList>([
+            "get",
+            "pods",
+            ...scope,
+            "-o",
+            "json",
+            ...kubectlContext(context),
+          ]),
+        empty: { pods: [] },
+        failure: "kubectl get pods failed",
+        classify: (list) => {
+          const healthy = new Set(["Running", "Succeeded"]);
+          const allPods = (list.items ?? [])
+            .map((p) => ({ p, d: diagnosePod(p) }))
+            .filter(({ d }) => !healthy.has(d.status) || d.evidence.length > 0)
+            .map(({ p, d }) => ({
+              name: p.metadata?.name ?? "",
+              namespace: p.metadata?.namespace ?? namespace,
+              status: d.status,
+              evidence: d.evidence,
+            }));
+          const { items: pods, extra } = budgeted(allPods, {
+            detailLevel,
+            maxItems,
+          });
+          // status/causes reflect the full set; evidence + pods are the budgeted view.
+          return {
+            status: allPods.length ? "Unhealthy" : "Healthy",
+            likelyCauses: allPods.length
+              ? [
+                  "One or more pods are failing; see per-pod status and evidence.",
+                ]
+              : [],
+            suggestedNextCommands: allPods.length
+              ? [
+                  `kube_diagnose_pod pod=${pods[0]?.name} namespace=${pods[0]?.namespace}`,
+                ]
+              : [],
+            evidence: pods.map((p) => `${p.namespace}/${p.name}: ${p.status}`),
+            pods,
+            ...extra,
+          };
+        },
       });
-
-      // status/causes reflect the full set; evidence + pods are the budgeted view.
-      const base = {
-        status: allPods.length ? "Unhealthy" : "Healthy",
-        likelyCauses: allPods.length
-          ? ["One or more pods are failing; see per-pod status and evidence."]
-          : [],
-        suggestedNextCommands: allPods.length
-          ? [
-              `kube_diagnose_pod pod=${pods[0]?.name} namespace=${pods[0]?.namespace}`,
-            ]
-          : [],
-        evidence: pods.map((p) => `${p.namespace}/${p.name}: ${p.status}`),
-        pods,
-      };
-      return ok(hasBudget ? { ...base, total, truncated } : base);
     },
   );
 
@@ -202,27 +200,22 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     async ({ name, namespace, context }) => {
-      const res = await execJson<KubeResource>(
-        "kubectl",
-        [
-          "get",
-          "deployment",
-          name,
-          "-n",
-          namespace,
-          "-o",
-          "json",
-          ...kubectlContext(context),
-        ],
-        { timeout: TIMEOUT.INFRA },
-      );
-      if (res.error) {
-        if (isUnrunnable(res.detail)) return err(res.error, {}, res.detail);
-        return okDiagnosis(
-          unknownTriage(`kubectl get deployment failed: ${res.error}`),
-        );
-      }
-      return okDiagnosis(diagnoseDeployment(res.data ?? {}));
+      return triageRun({
+        probe: () =>
+          kubectlJson<KubeResource>([
+            "get",
+            "deployment",
+            name,
+            "-n",
+            namespace,
+            "-o",
+            "json",
+            ...kubectlContext(context),
+          ]),
+        empty: {},
+        failure: "kubectl get deployment failed",
+        classify: diagnoseDeployment,
+      });
     },
   );
 
@@ -250,29 +243,27 @@ export function registerKubeDiagnosticTools(server: McpServer) {
     },
     async ({ namespace, allNamespaces, context, detailLevel, maxItems }) => {
       const scope = allNamespaces ? ["--all-namespaces"] : ["-n", namespace];
-      const res = await execJson<{ items: KubeEvent[] }>(
-        "kubectl",
-        ["get", "events", ...scope, "-o", "json", ...kubectlContext(context)],
-        { timeout: TIMEOUT.INFRA },
-      );
-      if (res.error) {
-        if (isUnrunnable(res.detail)) return err(res.error, {}, res.detail);
-        return okDiagnosis(
-          unknownTriage(`kubectl get events failed: ${res.error}`),
-        );
-      }
-      const diag = summarizeEvents(res.data?.items ?? []);
-      const hasBudget = detailLevel !== undefined || maxItems !== undefined;
-      const {
-        items: evidence,
-        truncated,
-        total,
-      } = applyBudget(diag.evidence, {
-        detailLevel,
-        maxItems,
+      return triageRun({
+        probe: () =>
+          kubectlJson<{ items?: KubeEvent[] }>([
+            "get",
+            "events",
+            ...scope,
+            "-o",
+            "json",
+            ...kubectlContext(context),
+          ]),
+        empty: {},
+        failure: "kubectl get events failed",
+        classify: (list) => {
+          const diag = summarizeEvents(list.items ?? []);
+          const { items: evidence, extra } = budgeted(diag.evidence, {
+            detailLevel,
+            maxItems,
+          });
+          return { ...diag, evidence, ...extra };
+        },
       });
-      const base = { ...diag, evidence };
-      return ok(hasBudget ? { ...base, total, truncated } : base);
     },
   );
 }

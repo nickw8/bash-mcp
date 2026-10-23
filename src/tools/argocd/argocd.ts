@@ -9,7 +9,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execJson, TIMEOUT } from "#exec";
-import { isUnrunnable, triageSchema, unknownTriage } from "#parsers";
+import { triageRun, triageSchema } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
 import { summarizeAppHealth } from "./health.js";
@@ -233,27 +233,19 @@ export function registerArgocdTools(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     async ({ name }) => {
-      const result = await execJson<ArgoApp>(
-        "argocd",
-        ["app", "get", name, "-o", "json"],
-        { timeout: TIMEOUT.INFRA },
-      );
-      if (result.error || !result.data) {
-        const why = result.error ?? "argocd app get: no data";
-        if (isUnrunnable(result.detail)) {
-          return err(why, { name }, result.detail);
-        }
-        // argocd answered and the answer was no — a triage of "Unknown", not
-        // an error (ADR-0005). An app that does not exist is a finding.
-        return ok({
-          name,
-          syncStatus: "Unknown",
-          healthy: false,
-          ...unknownTriage(`argocd app get failed: ${why}`, ["argo_apps"]),
-        });
-      }
-      const summary = summarizeAppHealth(result.data);
-      return ok({ ...summary, name: summary.name || name });
+      return triageRun({
+        probe: () =>
+          execJson<ArgoApp>("argocd", ["app", "get", name, "-o", "json"], {
+            timeout: TIMEOUT.INFRA,
+          }),
+        empty: { name, syncStatus: "Unknown", healthy: false },
+        failure: "argocd app get failed",
+        suggestedNextCommands: ["argo_apps"],
+        classify: (app) => {
+          const summary = summarizeAppHealth(app);
+          return { ...summary, name: summary.name || name };
+        },
+      });
     },
   );
 }

@@ -79,7 +79,7 @@ describe("argo_app_health_summary handler", () => {
       status: "Unknown",
     });
     expect(res.structuredContent.evidence[0]).toContain(
-      "argocd app get: no data",
+      "argocd app get failed: no data",
     );
   });
 
