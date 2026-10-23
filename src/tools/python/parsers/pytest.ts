@@ -58,8 +58,10 @@ export function parsePytestResults(xml: string): {
       });
     } else if (skippedMatch) {
       totalSkipped++;
+      tests.push({ name: fullName, status: "skipped", duration });
     } else {
       totalPassed++;
+      tests.push({ name: fullName, status: "passed", duration });
     }
   }
 

@@ -27,9 +27,13 @@ E       AssertionError</failure>
     expect(suites[0]?.passed).toBe(1);
     expect(suites[0]?.failed).toBe(1);
     expect(suites[0]?.skipped).toBe(1);
-    expect(suites[0]?.tests).toHaveLength(1);
-    expect(suites[0]?.tests[0]?.status).toBe("failed");
-    expect(suites[0]?.tests[0]?.failureMessage).toContain("assert False");
+    // Every test is kept; python_test trims to failures unless verbose.
+    expect(suites[0]?.tests.map((t) => t.status)).toEqual([
+      "passed",
+      "failed",
+      "skipped",
+    ]);
+    expect(suites[0]?.tests[1]?.failureMessage).toContain("assert False");
     expect(summary.total).toBe(3);
     expect(summary.passed).toBe(1);
     expect(summary.failed).toBe(1);

@@ -202,10 +202,13 @@ describe("python_test", () => {
     expect(r.structuredContent.suites[0].tests[0].status).toBe("failed");
   });
 
-  it("verbose adds nothing: parsePytestResults keeps only failures", async () => {
+  it("lists every test when verbose", async () => {
     pytestWrites(PYTEST_XML);
     const r = await pythonTest({ cwd: "/p", verbose: true });
-    expect(r.structuredContent.suites[0].tests).toHaveLength(1);
+    const statuses = r.structuredContent.suites[0].tests.map(
+      (t: { status: string }) => t.status,
+    );
+    expect(statuses.sort()).toEqual(["failed", "passed"]);
   });
 
   it("passes -k and the path through", async () => {
