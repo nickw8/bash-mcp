@@ -4,6 +4,14 @@ Notable changes per release. Releases before 2.0.0 are in the git log
 (`git log --oneline --grep '^chore(release)'`); this file starts where the first
 breaking change did.
 
+## 5.0.1 — 2026-10-23
+
+### Fixed
+
+- **CI and release workflows no longer warn about Node 20.** `actions/checkout` and
+  `actions/setup-node` moved from v4 to v7, which run on Node 24. No change to the
+  published package.
+
 ## 5.0.0 — 2026-10-23
 
 ### Breaking
