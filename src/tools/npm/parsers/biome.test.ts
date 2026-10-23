@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { parseBiomeDiagnostics } from "./biome.js";
+import { biomeChangedCount, parseBiomeDiagnostics } from "./biome.js";
 
 describe("parseBiomeDiagnostics", () => {
   it("parses biome JSON diagnostics", () => {
@@ -77,5 +77,19 @@ describe("parseBiomeDiagnostics", () => {
         message: "This is an unexpected use of the debugger statement.",
       },
     ]);
+  });
+});
+
+describe("biomeChangedCount", () => {
+  it("reads summary.changed from real biome --fix output", () => {
+    const raw =
+      '{"summary":{"changed":2,"unchanged":2,"matches":0,"errors":0,"warnings":2},"diagnostics":[],"command":"check"}';
+    expect(biomeChangedCount(raw)).toBe(2);
+  });
+
+  it("is 0 for blank, non-JSON or summary-less output", () => {
+    expect(biomeChangedCount("")).toBe(0);
+    expect(biomeChangedCount("not json")).toBe(0);
+    expect(biomeChangedCount('{"diagnostics":[]}')).toBe(0);
   });
 });

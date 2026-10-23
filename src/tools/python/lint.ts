@@ -68,7 +68,9 @@ export function registerPythonLintTool(server: McpServer) {
         results: result,
         parse: parseRuffDiagnostics,
         minSeverity,
-        fixedPattern: /Fixed (\d+) file/,
+        // ruff's JSON mode prints only the findings left after --fix (or `[]`);
+        // it reports no fixed count, so this stays 0.
+        fields: () => ({ fixedCount: 0 }),
         bareWhen: "blank-output",
         onParseError: (output) =>
           err("Failed to parse ruff JSON output", {

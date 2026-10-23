@@ -166,13 +166,8 @@ export interface DiagnosticRunOpts<F extends Record<string, unknown>> {
   count?: "severity" | "total";
   /** Drop findings below this severity — after counting. */
   minSeverity?: keyof typeof SEVERITY_RANK;
-  /** Pattern whose first capture group is a fixed-file count in the output (0 if absent). */
-  fixedPattern?: RegExp;
-  /** Tool-specific output fields, merged after the counts (+ `fixedCount` when `fixedPattern` is set). */
-  fields?: (
-    counts: Counts & { fixedCount: number },
-    results: ExecResult[],
-  ) => F;
+  /** Tool-specific output fields, merged after the counts. */
+  fields?: (counts: Counts, results: ExecResult[]) => F;
   /** Keys of the output fields echoed in the text meta (default: all of them). */
   metaKeys?: string[];
   /**
@@ -241,15 +236,8 @@ export function diagnosticRun<F extends Record<string, unknown>>(
     );
   }
 
-  let fixedCount = 0;
-  if (o.fixedPattern) {
-    const m = texts[0]?.match(o.fixedPattern);
-    fixedCount = m ? parseInt(m[1] ?? "0", 10) : 0;
-  }
-
-  const base = o.fixedPattern ? { ...counts, fixedCount } : counts;
-  const extra = o.fields?.({ ...counts, fixedCount }, results);
-  const fields = { ...base, ...extra };
+  const extra = o.fields?.(counts, results);
+  const fields = { ...counts, ...extra };
 
   const bare =
     o.bareWhen === "no-findings"

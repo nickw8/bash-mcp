@@ -10,7 +10,7 @@ import {
 } from "#parsers";
 import { err } from "#response";
 import { defineTool } from "#tool";
-import { parseBiomeDiagnostics } from "./parsers/biome.js";
+import { biomeChangedCount, parseBiomeDiagnostics } from "./parsers/biome.js";
 
 /** Register the npm_lint tool for structured biome diagnostics. */
 export function registerNpmLintTool(server: McpServer) {
@@ -71,7 +71,9 @@ export function registerNpmLintTool(server: McpServer) {
         results: result,
         parse: parseBiomeDiagnostics,
         minSeverity,
-        fixedPattern: /Fixed (\d+) file/,
+        fields: (_counts, [r]) => ({
+          fixedCount: fix ? biomeChangedCount(r?.stdout || r?.stderr || "") : 0,
+        }),
         bareWhen: "blank-output",
         // JSON parse failed — return raw output as a single diagnostic
         onParseError: (output) =>

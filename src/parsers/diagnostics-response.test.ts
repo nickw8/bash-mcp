@@ -192,24 +192,22 @@ describe("diagnosticRun", () => {
     ]);
   });
 
-  it("reads a fixed count and maps extra fields", () => {
+  it("maps extra fields from the counts and the results", () => {
     const r = diagnosticRun({
       command: "x",
-      results: res("e0\nFixed 3 files"),
-      parse: (t) => parse(t.replace(/Fixed.*/, "")),
-      fixedPattern: /Fixed (\d+) file/,
-      fields: (c, [x]) => ({ ok: x?.exitCode === 0, seen: c.fixedCount }),
+      results: res("e0", "", 1),
+      parse,
+      fields: (c, [x]) => ({ ok: x?.exitCode === 0, seen: c.errorCount }),
       metaKeys: ["errorCount"],
     });
     expect(r.structuredContent).toMatchObject({
       errorCount: 1,
       warningCount: 0,
-      fixedCount: 3,
-      ok: true,
-      seen: 3,
+      ok: false,
+      seen: 1,
     });
     expect(r.content[0]?.text).toContain("errorCount");
-    expect(r.content[0]?.text).not.toContain("fixedCount");
+    expect(r.content[0]?.text).not.toContain("seen");
   });
 
   it("answers bare ok for blank output or no findings, as asked", () => {
@@ -220,7 +218,7 @@ describe("diagnosticRun", () => {
         throw new Error("never called");
       },
       bareWhen: "blank-output",
-      fixedPattern: /Fixed (\d+)/,
+      fields: () => ({ fixedCount: 0 }),
     });
     expect(blank.structuredContent).toEqual({
       errors: [],

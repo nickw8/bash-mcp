@@ -42,3 +42,24 @@ describe("python_lint with ruff missing", () => {
     });
   });
 });
+
+// Real `ruff check --fix --output-format json` (0.17.1) prints only the
+// remaining findings, or `[]` when all were fixed; no fixed count in JSON mode.
+describe("python_lint fixedCount", () => {
+  it("stays 0 after a clean --fix run", async () => {
+    execMock.mockResolvedValue({
+      stdout: "[]",
+      stderr: "",
+      exitCode: 0,
+    });
+    const r = await captureHandler(
+      registerPythonTools,
+      "python_lint",
+    )({ cwd: "/p", fix: true });
+    expect(r.structuredContent).toMatchObject({
+      errorCount: 0,
+      warningCount: 0,
+      fixedCount: 0,
+    });
+  });
+});

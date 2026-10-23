@@ -55,6 +55,16 @@ export function parseBiomeDiagnostics(raw: string): Diagnostic[] {
     });
 }
 
+/** Files biome rewrote (`summary.changed`); 0 for blank or unreadable output. */
+export function biomeChangedCount(raw: string): number {
+  try {
+    const changed = JSON.parse(raw)?.summary?.changed;
+    return typeof changed === "number" ? changed : 0;
+  } catch {
+    return 0;
+  }
+}
+
 /** Map biome severity strings (including "fatal") to our three-level enum. */
 function mapSeverity(s: string): "error" | "warning" | "info" {
   if (s === "error" || s === "fatal") return "error";
