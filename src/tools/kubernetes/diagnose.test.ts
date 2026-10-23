@@ -31,6 +31,7 @@ describe("diagnosePod", () => {
     const d = diagnosePod(pod("pod-crashloop.json"));
     expect(d.status).toBe("CrashLoopBackOff");
     expect(d.evidence.join(" ")).toContain("CrashLoopBackOff");
+    expect(d.evidence.join(" ")).toContain("last exit 1 (Error)");
     expect(d.likelyCauses.join(" ").toLowerCase()).toContain("logs");
     expect(d.suggestedNextCommands.some((c) => c.startsWith("kube_logs"))).toBe(
       true,
@@ -68,6 +69,30 @@ describe("diagnosePod", () => {
     expect(d.status).toBe("Running");
     expect(d.likelyCauses).toHaveLength(0);
     expect(d.evidence).toHaveLength(0);
+  });
+
+  it("names the last exit of a repeatedly restarting container", () => {
+    const d = diagnosePod({
+      status: {
+        phase: "Running",
+        containerStatuses: [
+          {
+            name: "app",
+            ready: true,
+            restartCount: 4,
+            state: { running: {} },
+            lastState: {
+              terminated: { exitCode: 2, message: `panic: ${"x".repeat(300)}` },
+            },
+          },
+        ],
+      },
+    });
+    expect(d.status).toBe("Restarting");
+    expect(d.evidence[0]).toMatch(
+      /^total restarts: 4; last exit 2: panic: x+$/,
+    );
+    expect(d.evidence[0]?.length).toBeLessThan(250);
   });
 
   it("never throws on malformed input", () => {

@@ -11,7 +11,7 @@
  */
 
 import type { Triage } from "#parsers";
-import { type KubeResource, podStatus } from "./parse.js";
+import { type ContainerStatus, type KubeResource, podStatus } from "./parse.js";
 
 /** The shared diagnostic answer shape returned by all kube diagnostics. */
 export type Diagnosis = Triage;
@@ -25,6 +25,9 @@ export interface KubeEvent {
   lastTimestamp?: string;
   involvedObject?: { kind?: string; name?: string; namespace?: string };
 }
+
+/** Chars of a container's termination message kept as crash evidence. */
+const MAX_EXIT_MESSAGE = 200;
 
 /** Pods named by warning events that get a `kube_diagnose_pod` suggestion. */
 const MAX_POD_SUGGESTIONS = 3;
@@ -46,13 +49,27 @@ function totalRestarts(pod: KubeResource): number {
   return containers(pod).reduce((sum, c) => sum + (c.restartCount ?? 0), 0);
 }
 
+/**
+ * `; last exit 1 (Error): <message>` from a container's previous run, or "".
+ * The termination message is often the line that explains the crash.
+ */
+function lastExit(c: ContainerStatus): string {
+  const t = c.lastState?.terminated;
+  if (!t) return "";
+  const why = t.reason ? ` (${t.reason})` : "";
+  const msg = t.message?.trim()
+    ? `: ${t.message.trim().slice(0, MAX_EXIT_MESSAGE)}`
+    : "";
+  return `; last exit ${t.exitCode ?? "?"}${why}${msg}`;
+}
+
 /** Evidence if any container is waiting with one of the given reasons. */
 function waitingReason(pod: KubeResource, reasons: string[]): string | null {
   for (const c of containers(pod)) {
     const r = c.state?.waiting?.reason;
     if (r && reasons.includes(r)) {
       const msg = c.state?.waiting?.message;
-      return `container "${c.name}" is ${r}${msg ? `: ${msg}` : ""}`;
+      return `container "${c.name}" is ${r}${msg ? `: ${msg}` : ""}${lastExit(c)}`;
     }
   }
   return null;
@@ -135,7 +152,10 @@ export function diagnosePod(pod: KubeResource): Diagnosis {
     likelyCauses.push(
       "Container has restarted repeatedly; inspect logs for a recurring error.",
     );
-    evidence.push(`total restarts: ${restarts}`);
+    const worst = containers(pod).reduce((a, b) =>
+      b.restartCount > a.restartCount ? b : a,
+    );
+    evidence.push(`total restarts: ${restarts}${lastExit(worst)}`);
   }
 
   const status = primaryReason ?? podStatus(pod);

@@ -74,6 +74,10 @@ breaking change did.
   pod read `Running` (its phase); it now reads `CrashLoopBackOff`, and a failing init
   container reads `Init:<reason>`. The pod diagnostics fall back to the same status, and
   `kube_pod_failure_summary` treats `Completed` as healthy.
+- Crash evidence names the container's last exit. A `CrashLoopBackOff` or repeatedly
+  restarting container's evidence ends `; last exit 1 (Error)`, plus the first 200
+  characters of its termination message. Before, only an `OOMKilled` crash had an exit
+  code.
 
 ### Migration
 
