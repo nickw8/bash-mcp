@@ -2,7 +2,7 @@
  * Fixture-driven tests for the pure Kubernetes parsers.
  *
  * summarizeResource is exercised against real `kubectl get -o json` shape from
- * fixtures/kubectl/pods.json; the log/context parsers use inline samples. No
+ * fixtures/kubectl/pods.json; the context parser uses inline samples. No
  * cluster, no network.
  */
 
@@ -16,7 +16,6 @@ import {
   type KubeList,
   type KubeResource,
   parseContexts,
-  parseLogLines,
   podStatus,
   summarizeResource,
 } from "./parse.js";
@@ -180,29 +179,6 @@ describe("podStatus (kubectl printPod STATUS)", () => {
       }),
     };
     expect(summarizeResource(item).status).toBe("CrashLoopBackOff");
-  });
-});
-
-describe("parseLogLines", () => {
-  it("splits RFC3339 timestamp from the message", () => {
-    const out = parseLogLines(
-      "2024-01-01T00:00:00Z hello world\n2024-01-01T00:00:01Z second line",
-    );
-    expect(out).toHaveLength(2);
-    expect(out[0]).toEqual({
-      timestamp: "2024-01-01T00:00:00Z",
-      message: "hello world",
-    });
-  });
-
-  it("treats non-timestamped lines as message-only", () => {
-    const out = parseLogLines("no timestamp here");
-    expect(out[0]).toEqual({ timestamp: "", message: "no timestamp here" });
-  });
-
-  it("drops blank lines and handles empty input", () => {
-    expect(parseLogLines("")).toEqual([]);
-    expect(parseLogLines("\n\n")).toEqual([]);
   });
 });
 

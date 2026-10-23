@@ -30,6 +30,10 @@ breaking change did.
   - `rg`: `files` rows are `[file, "line:text", …]`, `[file, count]` under
     `countPerFile`, or `[file]` under `filesOnly`. `fileCount` is gone.
 
+  - `kube_logs`: `lines` rows are strings, `"<timestamp> <message>"` as kubectl prints
+    them, not `{ timestamp, message }`. `count` and `pod` are gone. `maxItems` and a
+    budget cut keep the newest lines.
+
   Take the dropped counts from the array length.
 - **Repeated lines merge into one, with a count.** `run`, `run_seq`, `batch`, `kube_logs`,
   and the `gh_run_failure_summary`/`glab_pipeline_failure_summary` evidence merge each run

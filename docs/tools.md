@@ -937,7 +937,7 @@ kubectl get <resource> -o json
 
 `read-only`
 
-Get pod logs. Returns structured log lines with timestamps when available; consecutive repeats of a message merge into the first, marked ' [×N]'. Use grep to filter lines by regex pattern (e.g. 'ERROR|WARN') instead of piping through shell commands.
+Get pod logs. lines are as kubectl prints them, '<timestamp> <message>', oldest first; consecutive repeats of a message merge into the first, marked ' [×N]', and a budget cut keeps the newest. Use grep to filter lines by regex pattern (e.g. 'ERROR|WARN') instead of piping through shell commands.
 
 **Inputs:**
 
@@ -955,9 +955,7 @@ Get pod logs. Returns structured log lines with timestamps when available; conse
 
 **Outputs:**
 
-- `lines`: object[]
-- `count`: number
-- `pod`: string
+- `lines`: string[]
 - `total`: number _(optional)_
 - `truncated`: boolean _(optional)_
 

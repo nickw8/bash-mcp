@@ -172,27 +172,6 @@ function formatAge(date: Date): string {
   return `${days}d`;
 }
 
-/** Parse `kubectl logs --timestamps` output into timestamped lines. */
-export function parseLogLines(
-  stdout: string,
-): Array<{ timestamp: string; message: string }> {
-  return stdout
-    .trim()
-    .split("\n")
-    .filter(Boolean)
-    .map((line) => {
-      const spaceIdx = line.indexOf(" ");
-      const first = line[0];
-      if (spaceIdx > 0 && first !== undefined && first >= "0" && first <= "9") {
-        return {
-          timestamp: line.slice(0, spaceIdx),
-          message: line.slice(spaceIdx + 1),
-        };
-      }
-      return { timestamp: "", message: line };
-    });
-}
-
 /** Parse `kubectl config get-contexts --no-headers` output. */
 export function parseContexts(stdout: string): {
   current: string;

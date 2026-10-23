@@ -15,7 +15,7 @@
     "id": "kube_logs",
     "command": "kubectl logs (ERROR filter)",
     "weight": 4,
-    "budget": 95
+    "budget": 56
   },
   {
     "id": "tf_plan_summary",
@@ -231,6 +231,6 @@
     "id": "kube_logs_repeats",
     "command": "kubectl logs (retry loop)",
     "weight": 1,
-    "budget": 230
+    "budget": 172
   }
 ]

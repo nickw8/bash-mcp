@@ -19,15 +19,10 @@ import {
 } from "#kube-args";
 import { applyBudget, budgetSchema, parseJsonishOutput } from "#parsers";
 import { err, ok, okList } from "#response";
-import { collapseRepeats, markRepeat } from "#shape";
+import { collapseRepeats, lineKey, markRepeat } from "#shape";
 import { defineTool } from "#tool";
 import { registerKubeDiagnosticTools } from "./diagnostics.js";
-import {
-  type KubeList,
-  parseContexts,
-  parseLogLines,
-  summarizeResource,
-} from "./parse.js";
+import { type KubeList, parseContexts, summarizeResource } from "./parse.js";
 
 /** Register all Kubernetes tools on the MCP server. */
 export function registerKubernetesTools(server: McpServer) {
@@ -208,7 +203,7 @@ export function registerKubernetesTools(server: McpServer) {
     {
       title: "Kubectl logs",
       description:
-        "Get pod logs. Returns structured log lines with timestamps when available; consecutive repeats of a message merge into the first, marked ' [×N]'. " +
+        "Get pod logs. lines are as kubectl prints them, '<timestamp> <message>', oldest first; consecutive repeats of a message merge into the first, marked ' [×N]', and a budget cut keeps the newest. " +
         "Use grep to filter lines by regex pattern (e.g. 'ERROR|WARN') instead of piping through shell commands.",
       equivalentCommands: ["kubectl logs <pod> -n <ns>"],
       required: ["pod"],
@@ -236,18 +231,12 @@ export function registerKubernetesTools(server: McpServer) {
         ...budgetSchema,
       },
       outputSchema: {
-        lines: z.array(
-          z.object({
-            timestamp: z.string(),
-            message: z.string(),
-          }),
-        ),
-        count: z.number(),
-        pod: z.string(),
+        lines: z.array(z.string()),
         total: z.number().optional(),
         truncated: z.boolean().optional(),
       },
       annotations: { readOnlyHint: true },
+      budgetTail: ["lines"],
     },
     // Empty fallback for a `required` argument — see the note in batch.ts.
     async ({
@@ -276,36 +265,26 @@ export function registerKubernetesTools(server: McpServer) {
 
       const result = await exec("kubectl", args, { timeout: TIMEOUT.INFRA });
 
-      if (result.exitCode !== 0) {
-        return err(result.stderr, { pod });
-      }
+      if (result.exitCode !== 0) return err(result.stderr);
 
-      let lines = parseLogLines(result.stdout);
-
+      // One string per line, as kubectl prints it: a {timestamp, message}
+      // object per line cost more than the raw log. grep and the repeat merge
+      // read the message, past the timestamp.
+      let lines = result.stdout.split("\n").filter((l) => l.trim() !== "");
       if (grep) {
         const re = new RegExp(grep, ignoreCase ? "i" : undefined);
-        lines = lines.filter((l) => re.test(l.message));
+        lines = lines.filter((l) => re.test(lineKey(l)));
       }
-      // A crash loop repeats one message: keep the first timestamp, count the rest.
-      lines = collapseRepeats(
-        lines,
-        (l) => l.message,
-        (l, n) => ({ ...l, message: markRepeat(l.message, n) }),
-      );
+      lines = collapseRepeats(lines, lineKey, markRepeat);
 
       const hasBudget = detailLevel !== undefined || maxItems !== undefined;
       const {
         items: capped,
         truncated,
         total,
-      } = applyBudget(lines, {
-        detailLevel,
-        maxItems,
-      });
+      } = applyBudget(lines, { detailLevel, maxItems }, { tail: true });
       return ok(
-        hasBudget
-          ? { lines: capped, count: capped.length, pod, total, truncated }
-          : { lines: capped, count: capped.length, pod },
+        hasBudget ? { lines: capped, total, truncated } : { lines: capped },
       );
     },
   );
