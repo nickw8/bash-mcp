@@ -11,9 +11,13 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+  type ContainerState,
+  type ContainerStatus,
   type KubeList,
+  type KubeResource,
   parseContexts,
   parseLogLines,
+  podStatus,
   summarizeResource,
 } from "./parse.js";
 
@@ -55,6 +59,127 @@ describe("summarizeResource (fixtures/kubectl/pods.json)", () => {
   it("never throws on an empty resource", () => {
     expect(() => summarizeResource({})).not.toThrow();
     expect(summarizeResource({}).status).toBe("Unknown");
+  });
+});
+
+describe("podStatus (kubectl printPod STATUS)", () => {
+  const c = (state: ContainerState, ready = false): ContainerStatus => ({
+    name: "app",
+    ready,
+    restartCount: 0,
+    state,
+  });
+  const pod = (status: KubeResource["status"], deleting = false) => ({
+    metadata: deleting ? { deletionTimestamp: "2026-10-23T00:00:00Z" } : {},
+    status,
+  });
+
+  it.each<[string, KubeResource, string]>([
+    [
+      "crash loop under a Running phase",
+      pod({
+        phase: "Running",
+        containerStatuses: [c({ waiting: { reason: "CrashLoopBackOff" } })],
+      }),
+      "CrashLoopBackOff",
+    ],
+    [
+      "terminated reason",
+      pod({
+        phase: "Running",
+        containerStatuses: [
+          c({ terminated: { reason: "Error", exitCode: 1 } }),
+        ],
+      }),
+      "Error",
+    ],
+    [
+      "terminated by signal with no reason",
+      pod({
+        phase: "Running",
+        containerStatuses: [c({ terminated: { exitCode: 137, signal: 9 } })],
+      }),
+      "Signal:9",
+    ],
+    [
+      "terminated with no reason or signal",
+      pod({
+        phase: "Running",
+        containerStatuses: [c({ terminated: { exitCode: 2 } })],
+      }),
+      "ExitCode:2",
+    ],
+    [
+      "failing init container",
+      pod({
+        phase: "Pending",
+        initContainerStatuses: [
+          c({ terminated: { reason: "Error", exitCode: 1 } }),
+        ],
+      }),
+      "Init:Error",
+    ],
+    [
+      "init container waiting on a pull",
+      pod({
+        phase: "Pending",
+        initContainerStatuses: [c({ waiting: { reason: "ErrImagePull" } })],
+      }),
+      "Init:ErrImagePull",
+    ],
+    [
+      "second of two init containers running",
+      pod({
+        phase: "Pending",
+        initContainerStatuses: [
+          c({ terminated: { exitCode: 0 } }),
+          c({ running: {} }),
+        ],
+      }),
+      "Init:1/2",
+    ],
+    [
+      "completed sidecar beside a running container",
+      pod({
+        phase: "Running",
+        containerStatuses: [
+          c({ running: {} }, true),
+          c({ terminated: { reason: "Completed", exitCode: 0 } }),
+        ],
+      }),
+      "Running",
+    ],
+    [
+      "pod reason over phase",
+      pod({ phase: "Failed", reason: "Evicted" }),
+      "Evicted",
+    ],
+    [
+      "deleting",
+      pod(
+        { phase: "Running", containerStatuses: [c({ running: {} }, true)] },
+        true,
+      ),
+      "Terminating",
+    ],
+    [
+      "deleting on a lost node",
+      pod({ phase: "Running", reason: "NodeLost" }, true),
+      "Unknown",
+    ],
+  ])("%s", (_, input, want) => {
+    expect(podStatus(input)).toBe(want);
+  });
+
+  it("is what summarizeResource reports for a pod", () => {
+    const item: KubeResource = {
+      kind: "Pod",
+      ...pod({
+        phase: "Running",
+        containerStatuses: [c({ waiting: { reason: "CrashLoopBackOff" } })],
+      }),
+    };
+    expect(summarizeResource(item).status).toBe("CrashLoopBackOff");
   });
 });
 

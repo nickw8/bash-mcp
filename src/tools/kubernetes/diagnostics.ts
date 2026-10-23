@@ -147,7 +147,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         empty: { pods: [] },
         failure: "kubectl get pods failed",
         classify: (list) => {
-          const healthy = new Set(["Running", "Succeeded"]);
+          const healthy = new Set(["Running", "Succeeded", "Completed"]);
           const allPods = (list.items ?? [])
             .map((p) => ({ p, d: diagnosePod(p) }))
             .filter(({ d }) => !healthy.has(d.status) || d.evidence.length > 0)

@@ -70,6 +70,10 @@ breaking change did.
   SIGKILL after 2 s. Before, only the direct child was killed, so its grandchildren kept
   running. Live children are also killed when the server exits.
 - The text block is capped to the same budget as the payload.
+- `kube_get` reports a pod's status the way `kubectl get pods` prints it. A crash-looping
+  pod read `Running` (its phase); it now reads `CrashLoopBackOff`, and a failing init
+  container reads `Init:<reason>`. The pod diagnostics fall back to the same status, and
+  `kube_pod_failure_summary` treats `Completed` as healthy.
 
 ### Migration
 

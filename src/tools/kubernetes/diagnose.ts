@@ -11,7 +11,7 @@
  */
 
 import type { Triage } from "#parsers";
-import type { KubeResource } from "./parse.js";
+import { type KubeResource, podStatus } from "./parse.js";
 
 /** The shared diagnostic answer shape returned by all kube diagnostics. */
 export type Diagnosis = Triage;
@@ -111,7 +111,7 @@ const RULES: FailureRule[] = [
 
 /**
  * Diagnose a single pod from its parsed JSON. Returns the standard diagnostic
- * shape; status is the primary failure reason, else the pod phase.
+ * shape; status is the primary failure reason, else the kubectl STATUS.
  */
 export function diagnosePod(pod: KubeResource): Diagnosis {
   const name = pod.metadata?.name ?? "";
@@ -138,7 +138,7 @@ export function diagnosePod(pod: KubeResource): Diagnosis {
     evidence.push(`total restarts: ${restarts}`);
   }
 
-  const status = primaryReason ?? pod.status?.phase ?? "Unknown";
+  const status = primaryReason ?? podStatus(pod);
 
   const suggestedNextCommands: string[] = [];
   if (name) {

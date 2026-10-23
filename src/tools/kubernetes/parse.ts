@@ -13,10 +13,12 @@ export interface KubeResource {
     name?: string;
     namespace?: string;
     creationTimestamp?: string;
+    deletionTimestamp?: string;
     labels?: Record<string, string>;
   };
   status?: {
     phase?: string;
+    reason?: string;
     conditions?: Array<{
       type: string;
       status: string;
@@ -27,13 +29,8 @@ export interface KubeResource {
     replicas?: number;
     availableReplicas?: number;
     unavailableReplicas?: number;
-    containerStatuses?: Array<{
-      name: string;
-      ready: boolean;
-      restartCount: number;
-      state?: ContainerState;
-      lastState?: ContainerState;
-    }>;
+    containerStatuses?: ContainerStatus[];
+    initContainerStatuses?: ContainerStatus[];
   };
   spec?: {
     replicas?: number;
@@ -44,10 +41,24 @@ export interface KubeResource {
   };
 }
 
+/** One entry of `status.containerStatuses` / `initContainerStatuses`. */
+export interface ContainerStatus {
+  name: string;
+  ready: boolean;
+  restartCount: number;
+  state?: ContainerState;
+  lastState?: ContainerState;
+}
+
 /** A container state union as kubectl reports it (only one key is set). */
 export interface ContainerState {
   waiting?: { reason?: string; message?: string };
-  terminated?: { reason?: string; message?: string; exitCode?: number };
+  terminated?: {
+    reason?: string;
+    message?: string;
+    exitCode?: number;
+    signal?: number;
+  };
   running?: { startedAt?: string };
 }
 
@@ -84,11 +95,58 @@ export function summarizeResource(item: KubeResource) {
   return {
     name: meta.name ?? "",
     namespace: meta.namespace ?? "",
-    status: status.phase ?? inferStatus(status.conditions),
+    status:
+      item.kind === "Pod" || status.containerStatuses
+        ? podStatus(item)
+        : (status.phase ?? inferStatus(status.conditions)),
     age,
     labels: meta.labels ?? {},
     extra,
   };
+}
+
+/** `Signal:N` or `ExitCode:N` for a terminated state with no reason. */
+function exitStatus(t: { exitCode?: number; signal?: number }): string {
+  return t.signal ? `Signal:${t.signal}` : `ExitCode:${t.exitCode ?? 0}`;
+}
+
+/**
+ * A pod's STATUS as `kubectl get pods` prints it (kubectl's `printPod`): a
+ * failing init container, else the last app container's waiting or terminated
+ * reason, else the pod reason or phase. A crash-looping pod's phase stays
+ * `Running`; this reports `CrashLoopBackOff`.
+ */
+export function podStatus(pod: KubeResource): string {
+  const status = pod.status ?? {};
+  let reason = status.reason || status.phase || "Unknown";
+
+  const inits = status.initContainerStatuses ?? [];
+  let initializing = false;
+  for (const [i, c] of inits.entries()) {
+    const t = c.state?.terminated;
+    const w = c.state?.waiting?.reason;
+    if (t && t.exitCode === 0) continue;
+    if (t) reason = `Init:${t.reason || exitStatus(t)}`;
+    else if (w && w !== "PodInitializing") reason = `Init:${w}`;
+    else reason = `Init:${i}/${inits.length}`;
+    initializing = true;
+    break;
+  }
+
+  if (!initializing) {
+    let hasRunning = false;
+    for (const c of [...(status.containerStatuses ?? [])].reverse()) {
+      const t = c.state?.terminated;
+      if (c.state?.waiting?.reason) reason = c.state.waiting.reason;
+      else if (t) reason = t.reason || exitStatus(t);
+      else if (c.ready && c.state?.running) hasRunning = true;
+    }
+    if (reason === "Completed" && hasRunning) reason = "Running";
+  }
+
+  if (pod.metadata?.deletionTimestamp)
+    return status.reason === "NodeLost" ? "Unknown" : "Terminating";
+  return reason;
 }
 
 /** Infer a simple status string from Kubernetes conditions when phase is absent. */
