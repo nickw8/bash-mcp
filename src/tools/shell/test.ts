@@ -1,8 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec, TIMEOUT } from "#exec";
-import type { TestResult } from "#parsers";
-import { err, ok } from "#response";
+import { TIMEOUT } from "#exec";
+import { type TestResult, testRun } from "#parsers";
+import { err } from "#response";
 import { checkCommandAllowed } from "#safety";
 import { defineTool } from "#tool";
 import { parseBashTest } from "./parsers/bash-test.js";
@@ -84,28 +84,23 @@ export function registerBashTestTool(server: McpServer) {
         );
       }
 
-      const result = await exec(command, args, { cwd, timeout });
-
-      if (result.errorCode === "ENOENT") {
-        return err(
-          `${command} is not installed.`,
-          { exitCode: 127 },
-          {
-            kind: "missing_binary",
-            message: `${command} not found on PATH`,
-            command,
-            suggestion: `Install '${command}' or ensure it is on PATH.`,
-          },
-        );
-      }
-
-      const { summary, tests } = parseBashTest(
-        `${result.stdout}\n${result.stderr}`,
-      );
-      return ok({
-        summary,
-        ...partition(tests),
-        exitCode: result.exitCode,
+      return testRun({
+        command,
+        args: () => args,
+        artifact: "stdout",
+        output: (r) => `${r.stdout}\n${r.stderr}`,
+        parseBlank: true,
+        cwd,
+        timeout,
+        parse: parseBashTest,
+        errorFields: (r) => ({
+          exitCode: r.errorCode === "ENOENT" ? 127 : r.exitCode,
+        }),
+        payload: ({ summary, tests }, r) => ({
+          summary,
+          ...partition(tests),
+          exitCode: r.exitCode,
+        }),
       });
     },
   );

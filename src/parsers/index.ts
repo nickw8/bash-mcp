@@ -12,5 +12,6 @@ export * from "./diagnostics-response.js";
 export * from "./json-output.js";
 export * from "./schemas.js";
 export * from "./strip-prefix.js";
+export * from "./test-run.js";
 export * from "./triage-run.js";
 export * from "./types.js";

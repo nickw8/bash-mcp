@@ -10,14 +10,10 @@
  * minimal for the common case.
  */
 
-import { readdirSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec, TIMEOUT } from "#exec";
-import { testResultSchema } from "#parsers";
-import { err, ok } from "#response";
+import { TIMEOUT } from "#exec";
+import { testResultSchema, testRun } from "#parsers";
 import { defineTool } from "#tool";
 import { detectSolution } from "./detect.js";
 import { aggregateTrx } from "./parsers/trx.js";
@@ -61,9 +57,6 @@ export function registerDotnetTestTool(server: McpServer) {
     },
     // Empty fallback for a `required` argument — see the note in batch.ts.
     async ({ cwd = "", filter, project }) => {
-      // Create a temp directory for TRX output
-      const resultsDir = join(tmpdir(), `bash-mcp-trx-${Date.now()}`);
-
       const args = ["test"];
 
       const target = project ?? detectSolution(cwd);
@@ -71,67 +64,39 @@ export function registerDotnetTestTool(server: McpServer) {
 
       if (filter) args.push("--filter", filter);
 
-      args.push("--logger:trx", `--results-directory:${resultsDir}`);
-
-      const result = await exec("dotnet", args, {
+      // One TRX per test project in a multi-project run
+      return testRun({
+        command: "dotnet",
+        args: (resultsDir) => [
+          ...args,
+          "--logger:trx",
+          `--results-directory:${resultsDir}`,
+        ],
+        artifact: "dir",
+        suffix: ".trx",
         cwd,
         timeout: TIMEOUT.BUILD,
-      });
-
-      // Find and read every TRX file (one per test project in a multi-project run)
-      let trxContents: string[] = [];
-      try {
-        trxContents = findTrxFiles(resultsDir).map((f) =>
-          readFileSync(f, "utf8"),
-        );
-      } catch {
-        // TRX dir may not exist if dotnet test failed before producing output
-      } finally {
-        // Clean up temp directory
-        try {
-          rmSync(resultsDir, { recursive: true, force: true });
-        } catch {
-          // Best-effort cleanup
-        }
-      }
-
-      if (trxContents.length === 0) {
-        const output = `${result.stdout}\n${result.stderr}`.trim();
-        return err(output.slice(0, 500) || "No test output received", {
-          exitCode: result.exitCode,
+        parse: aggregateTrx,
+        errorFields: (r) => ({
+          exitCode: r.exitCode,
           summary: "No TRX output produced",
-        });
-      }
-
-      const { results, passed, failed, skipped, total } =
-        aggregateTrx(trxContents);
-
-      const parts: string[] = [];
-      if (passed > 0) parts.push(`${passed} passed`);
-      if (failed > 0) parts.push(`${failed} failed`);
-      if (skipped > 0) parts.push(`${skipped} skipped`);
-      const summary = parts.join(", ") || "0 tests";
-
-      return ok({
-        exitCode: result.exitCode,
-        passed,
-        failed,
-        skipped,
-        total,
-        failures: results,
-        summary,
+        }),
+        payload: ({ results, passed, failed, skipped, total }, r) => {
+          const parts: string[] = [];
+          if (passed > 0) parts.push(`${passed} passed`);
+          if (failed > 0) parts.push(`${failed} failed`);
+          if (skipped > 0) parts.push(`${skipped} skipped`);
+          return {
+            exitCode: r.exitCode,
+            passed,
+            failed,
+            skipped,
+            total,
+            failures: results,
+            summary: parts.join(", ") || "0 tests",
+          };
+        },
       });
     },
   );
-}
-
-/** Find all .trx files in a directory (one per test project), in readdir order. */
-function findTrxFiles(dir: string): string[] {
-  try {
-    return readdirSync(dir)
-      .filter((f) => f.endsWith(".trx"))
-      .map((f) => join(dir, f));
-  } catch {
-    return [];
-  }
 }

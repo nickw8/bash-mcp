@@ -1,8 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec, TIMEOUT } from "#exec";
-import { testResultSchema } from "#parsers";
-import { err, ok } from "#response";
+import { TIMEOUT } from "#exec";
+import { onlyFailures, testResultSchema, testRun } from "#parsers";
 import { defineTool } from "#tool";
 import { parseVitestResults } from "./parsers/vitest.js";
 
@@ -55,33 +54,24 @@ export function registerNpmTestTool(server: McpServer) {
       if (pattern) args.push(pattern);
       if (coverage) args.push("--coverage");
 
-      const result = await exec("npx", args, { cwd, timeout: TIMEOUT.BUILD });
-
       // vitest exits non-zero on test failures but still outputs JSON
-      const output = result.stdout || result.stderr;
-      if (!output.trim()) {
-        return err("No test output received");
-      }
-
-      try {
-        // vitest may prefix JSON with non-JSON lines (deprecation warnings, etc.)
-        // Find the first { and parse from there
-        const jsonStart = output.indexOf("{");
-        if (jsonStart < 0) throw new Error("No JSON found in output");
-        const jsonStr = output.slice(jsonStart);
-
-        const { suites, summary } = parseVitestResults(jsonStr);
-
-        if (!verbose) {
-          for (const suite of suites) {
-            suite.tests = suite.tests.filter((t) => t.status === "failed");
-          }
-        }
-
-        return ok({ suites, summary });
-      } catch {
-        return err("Failed to parse vitest JSON output");
-      }
+      return testRun({
+        command: "npx",
+        args: () => args,
+        artifact: "stdout",
+        cwd,
+        timeout: TIMEOUT.BUILD,
+        parse: (output: string) => {
+          // vitest may prefix JSON with non-JSON lines (deprecation warnings, etc.)
+          const jsonStart = output.indexOf("{");
+          if (jsonStart < 0) throw new Error("No JSON found in output");
+          return parseVitestResults(output.slice(jsonStart));
+        },
+        payload: ({ suites, summary }) => ({
+          suites: onlyFailures(suites, verbose),
+          summary,
+        }),
+      });
     },
   );
 }

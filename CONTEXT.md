@@ -24,6 +24,7 @@ from the model, not to add features the underlying CLI lacks.
 | **Triage run** | One Probe read as a Triage — the decision (never ran → error, ran and failed or gave no data → Unknown triage, answered → the tool's classifier) that every Diagnostic tool hands its CLI call to, owned by `triageRun` in `src/parsers/triage-run.ts`. |
 | **Diagnostic** | A single lint/typecheck/build finding (`file`, `line`, `column`, `severity`, `rule`, `message`). Different thing from a *diagnostic tool*. |
 | **Diagnostic run** | One or more CLI invocations' output read as Diagnostics and answered as counts plus findings — or, when the CLI never ran or printed nothing readable, an error. Owned by the runner in `src/parsers/diagnostics-response.ts`. |
+| **Test run** | One test CLI invocation read as a test report — the decision (never ran or timed out → classified error, no report or blank output → error carrying the output tail, unreadable report → `parse_failed`, otherwise the tool's payload) that every Test tool (`npm_test`, `python_test`, `dotnet_test`, `bash_test`) hands its CLI call to. Owns the exec call and a unique temp artifact (file, directory, or stdout). Owned by `testRun` in `src/parsers/test-run.ts`. |
 | **Wide event** | The one structured JSON line `defineTool` emits per call, to stderr. |
 | **Probe** | A capability check that a CLI is installed (`PROBES` / `runProbe` in `env.ts`), used by `check_environment` and `--doctor`. |
 | **Intent** | An entry in guidance `INTENTS` — a task phrased as the user's goal, mapped to a preferred tool and what to avoid. |

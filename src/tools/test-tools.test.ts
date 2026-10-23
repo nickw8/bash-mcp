@@ -1,8 +1,8 @@
 /**
  * The four test tools (npm_test, python_test, dotnet_test, bash_test) through
  * their handlers with `exec` mocked. Success shapes are the contract
- * (ADR-0009/0010); the `it.fails` cases pin the failure policy the shared Test
- * run is meant to give them — missing binary and timeout classified, no output
+ * (ADR-0009/0010); the failure-policy cases pin what the shared Test run
+ * gives them — missing binary and timeout classified, no output
  * carries a typed tail, unreadable output is parse_failed, and concurrent runs
  * never share an artifact path.
  */
@@ -162,25 +162,25 @@ describe("npm_test", () => {
     expect(r.isError).toBe(true);
   });
 
-  it.fails("classifies a missing npx as missing_binary", async () => {
+  it("classifies a missing npx as missing_binary", async () => {
     execMock.mockResolvedValue(missingBinary);
     const r = await npmTest({ cwd: "/p" });
     expect(r.structuredContent.error.kind).toBe("missing_binary");
   });
 
-  it.fails("classifies a timeout as timeout", async () => {
+  it("classifies a timeout as timeout", async () => {
     execMock.mockResolvedValue(timedOut);
     const r = await npmTest({ cwd: "/p" });
     expect(r.structuredContent.error.kind).toBe("timeout");
   });
 
-  it.fails("types blank output as command_failed", async () => {
+  it("types blank output as command_failed", async () => {
     execMock.mockResolvedValue(execFail("", 1));
     const r = await npmTest({ cwd: "/p" });
     expect(r.structuredContent.error.kind).toBe("command_failed");
   });
 
-  it.fails("answers parse_failed for garbage output", async () => {
+  it("answers parse_failed for garbage output", async () => {
     execMock.mockResolvedValue(execOk("{not json at all"));
     const r = await npmTest({ cwd: "/p" });
     expect(r.isError).toBe(true);
@@ -222,13 +222,13 @@ describe("python_test", () => {
     expect(r.content?.[0]?.text).toContain("ModuleNotFoundError");
   });
 
-  it.fails("classifies a missing python3 as missing_binary", async () => {
+  it("classifies a missing python3 as missing_binary", async () => {
     execMock.mockResolvedValue(missingBinary);
     const r = await pythonTest({ cwd: "/p" });
     expect(r.structuredContent.error.kind).toBe("missing_binary");
   });
 
-  it.fails("classifies a timeout as timeout, even with a partial XML", async () => {
+  it("classifies a timeout as timeout, even with a partial XML", async () => {
     execMock.mockImplementation(async (_cmd, args) => {
       writeFileSync(argValue(args ?? [], /^--junitxml=/), PYTEST_XML);
       return timedOut;
@@ -237,13 +237,15 @@ describe("python_test", () => {
     expect(r.structuredContent.error.kind).toBe("timeout");
   });
 
-  it.fails("types a run with no XML as command_failed", async () => {
-    execMock.mockResolvedValue(execFail("ModuleNotFoundError: nope", 2));
+  it("types a run with no XML as command_failed", async () => {
+    execMock.mockResolvedValue(
+      execFail("ImportError: cannot import name x", 2),
+    );
     const r = await pythonTest({ cwd: "/p" });
     expect(r.structuredContent.error.kind).toBe("command_failed");
   });
 
-  it.fails("gives concurrent runs distinct artifact paths", async () => {
+  it("gives concurrent runs distinct artifact paths", async () => {
     vi.spyOn(Date, "now").mockReturnValue(1);
     const paths: string[] = [];
     execMock.mockImplementation(async (_cmd, args) => {
@@ -284,19 +286,19 @@ describe("dotnet_test", () => {
     expect(r.content?.[0]?.text).toContain("MSB1009");
   });
 
-  it.fails("classifies a missing dotnet as missing_binary", async () => {
+  it("classifies a missing dotnet as missing_binary", async () => {
     execMock.mockResolvedValue(missingBinary);
     const r = await dotnetTest({ cwd: "/nonexistent-dir", project: "a.sln" });
     expect(r.structuredContent.error.kind).toBe("missing_binary");
   });
 
-  it.fails("classifies a timeout as timeout", async () => {
+  it("classifies a timeout as timeout", async () => {
     execMock.mockResolvedValue(timedOut);
     const r = await dotnetTest({ cwd: "/nonexistent-dir", project: "a.sln" });
     expect(r.structuredContent.error.kind).toBe("timeout");
   });
 
-  it.fails("gives concurrent runs distinct results directories", async () => {
+  it("gives concurrent runs distinct results directories", async () => {
     vi.spyOn(Date, "now").mockReturnValue(1);
     const dirs: string[] = [];
     execMock.mockImplementation(async (_cmd, args) => {
@@ -362,7 +364,7 @@ describe("bash_test", () => {
     expect(execMock).not.toHaveBeenCalled();
   });
 
-  it.fails("classifies a timeout as timeout", async () => {
+  it("classifies a timeout as timeout", async () => {
     execMock.mockResolvedValue(timedOut);
     const r = await bashTest({ file: "t.bats" });
     expect(r.structuredContent.error.kind).toBe("timeout");
