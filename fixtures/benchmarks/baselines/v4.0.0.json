@@ -1,0 +1,244 @@
+{
+  "name": "v4.0.0",
+  "commit": "fc85b4762a7c88e111bb678b6f499e76405a7075",
+  "capturedAt": "2026-10-23",
+  "tokenizer": "o200k_base",
+  "fixtures": {
+    "kube_get": {
+      "raw": 234,
+      "struct": 226
+    },
+    "kube_diagnose_pod": {
+      "raw": 309,
+      "struct": 112
+    },
+    "kube_logs": {
+      "raw": 143,
+      "struct": 82
+    },
+    "tf_plan_summary": {
+      "raw": 220,
+      "struct": 55
+    },
+    "helm_list": {
+      "raw": 149,
+      "struct": 117
+    },
+    "argo_apps": {
+      "raw": 149,
+      "struct": 102
+    },
+    "git_diff": {
+      "raw": 161,
+      "struct": 56
+    },
+    "ls": {
+      "raw": 146,
+      "struct": 153
+    },
+    "tree": {
+      "raw": 81,
+      "struct": 70
+    },
+    "du": {
+      "raw": 35,
+      "struct": 62
+    },
+    "rg": {
+      "raw": 39,
+      "struct": 70
+    },
+    "rg_extract": {
+      "raw": 104,
+      "struct": 75
+    },
+    "outline": {
+      "raw": 232,
+      "struct": 94
+    },
+    "git_status": {
+      "raw": 116,
+      "struct": 53
+    },
+    "git_log": {
+      "raw": 143,
+      "struct": 94
+    },
+    "git_branches": {
+      "raw": 53,
+      "struct": 73
+    },
+    "kube_contexts": {
+      "raw": 44,
+      "struct": 34
+    },
+    "kube_events_summary": {
+      "raw": 141,
+      "struct": 137
+    },
+    "tf_state_list": {
+      "raw": 34,
+      "struct": 72
+    },
+    "tf_outputs": {
+      "raw": 54,
+      "struct": 73
+    },
+    "helm_status": {
+      "raw": 123,
+      "struct": 56
+    },
+    "argo_app_detail": {
+      "raw": 158,
+      "struct": 98
+    },
+    "npm_typecheck": {
+      "raw": 73,
+      "struct": 63
+    },
+    "python_test": {
+      "raw": 174,
+      "struct": 45
+    },
+    "dotnet_build": {
+      "raw": 150,
+      "struct": 77
+    },
+    "check_environment": {
+      "raw": 118,
+      "struct": 107
+    },
+    "npm_lint": {
+      "raw": 298,
+      "struct": 117
+    },
+    "python_lint": {
+      "raw": 254,
+      "struct": 90
+    },
+    "python_typecheck": {
+      "raw": 88,
+      "struct": 94
+    },
+    "bash_lint": {
+      "raw": 366,
+      "struct": 73
+    },
+    "bash_syntax_check": {
+      "raw": 29,
+      "struct": 35
+    },
+    "bash_test": {
+      "raw": 61,
+      "struct": 78
+    },
+    "liquibase_status": {
+      "raw": 1270,
+      "struct": 880
+    },
+    "liquibase_validate": {
+      "raw": 217,
+      "struct": 154
+    },
+    "liquibase_update_sql": {
+      "raw": 2953,
+      "struct": 181
+    },
+    "dotnet_test": {
+      "raw": 1027,
+      "struct": 103
+    },
+    "gh_run_failure_summary": {
+      "raw": 21343,
+      "struct": 158
+    },
+    "glab_pipeline_failure_summary": {
+      "raw": 1282,
+      "struct": 249
+    }
+  },
+  "aggregates": {
+    "totalRaw": 32571,
+    "totalStr": 4468,
+    "tokenWeighted": 86.28227564397777,
+    "median": 31.126142789198333,
+    "frequencyWeighted": 83.09961425005673
+  },
+  "schema": {
+    "tokenizer": "o200k_base",
+    "protocolVersion": "2025-06-18",
+    "tools": 64,
+    "instructions": 195,
+    "wire": 23722,
+    "model": 12973,
+    "description": 2644,
+    "input": 9634,
+    "output": 8036,
+    "perTool": {
+      "ls": 227,
+      "tree": 223,
+      "du": 178,
+      "find_files": 310,
+      "rg": 645,
+      "glob": 124,
+      "git_status": 71,
+      "git_log": 321,
+      "git_diff": 208,
+      "git_branches": 144,
+      "repo_health_summary": 112,
+      "git_pr_context": 132,
+      "kube_get": 451,
+      "kube_logs": 315,
+      "kube_contexts": 118,
+      "kube_diagnose_pod": 131,
+      "kube_pod_failure_summary": 195,
+      "kube_deployment_status": 104,
+      "kube_events_summary": 197,
+      "tf_state_list": 168,
+      "tf_show": 106,
+      "tf_plan_summary": 178,
+      "tf_workspaces": 100,
+      "tf_outputs": 186,
+      "tf_providers": 106,
+      "tf_validate_summary": 109,
+      "tf_modules_summary": 86,
+      "tf_backend_info": 80,
+      "argo_apps": 83,
+      "argo_app_detail": 69,
+      "argo_app_diff": 67,
+      "argo_app_health_summary": 89,
+      "helm_list": 115,
+      "helm_status": 90,
+      "helm_values": 116,
+      "helm_release_triage": 118,
+      "jq": 217,
+      "yq": 163,
+      "cat": 417,
+      "outline": 161,
+      "run": 399,
+      "run_seq": 361,
+      "batch": 237,
+      "git_diff_content": 275,
+      "npm_lint": 347,
+      "npm_test": 150,
+      "npm_typecheck": 292,
+      "dotnet_build": 341,
+      "dotnet_test": 139,
+      "liquibase_validate": 245,
+      "liquibase_update_sql": 408,
+      "liquibase_status": 237,
+      "python_lint": 350,
+      "python_test": 151,
+      "python_typecheck": 285,
+      "bash_syntax_check": 282,
+      "bash_lint": 311,
+      "bash_test": 168,
+      "check_environment": 85,
+      "list_guidance": 142,
+      "gh_pr_checks": 145,
+      "gh_run_failure_summary": 151,
+      "glab_ci_status": 227,
+      "glab_pipeline_failure_summary": 215
+    }
+  }
+}
