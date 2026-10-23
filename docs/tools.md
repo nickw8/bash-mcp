@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — do not edit by hand. Regenerate with `npm run docs:tools`. -->
 
-62 tools. Each entry lists inputs, outputs, and (where known) the raw command(s) it approximates.
+64 tools. Each entry lists inputs, outputs, and (where known) the raw command(s) it approximates.
 
 ## `argo_app_detail`
 
@@ -579,6 +579,68 @@ Structured git status: branch, staged/unstaged/untracked files. Replaces parsing
 
 ```sh
 git status
+```
+
+## `glab_ci_status`
+
+`read-only`
+
+Report a GitLab pipeline's jobs as counts per status plus the failed, running and pending jobs. Defaults to the current branch's latest pipeline; pass mr for a merge request's head pipeline. Passing, skipped and manual jobs are counted, not listed, unless all=true.
+
+**Inputs:**
+
+- `pipeline`: string | number _(optional)_ — Pipeline ID (default: the latest pipeline on `branch`)
+- `mr`: string | number _(optional)_ — Merge request IID: read its head pipeline instead
+- `branch`: string _(optional)_ — Branch whose latest pipeline to read (default: current branch)
+- `repo`: string _(optional)_ — GROUP/REPO or URL (default: the repo at `cwd`)
+- `cwd`: string _(optional)_ — Repository path (default: the server's working directory)
+- `all`: boolean _(optional)_ — List passing, skipped and manual jobs too
+
+**Outputs:**
+
+- `pipeline`: number
+- `status`: string
+- `url`: string
+- `counts`: object
+- `jobs`: object[]
+
+**Equivalent commands:**
+
+```sh
+glab ci get
+glab ci status
+```
+
+## `glab_pipeline_failure_summary`
+
+`read-only`
+
+Diagnose a GitLab pipeline in one call: status, the failed jobs and why GitLab says they failed, and the last script lines of each failed job's trace as evidence. Allowed-to-fail jobs are noted, not counted as the failure. Defaults to the current branch's latest pipeline.
+
+**Inputs:**
+
+- `pipeline`: string | number _(optional)_ — Pipeline ID (default: the latest pipeline on `branch`)
+- `mr`: string | number _(optional)_ — Merge request IID: read its head pipeline instead
+- `branch`: string _(optional)_ — Branch whose latest pipeline to read (default: current branch)
+- `repo`: string _(optional)_ — GROUP/REPO or URL (default: the repo at `cwd`)
+- `cwd`: string _(optional)_ — Repository path (default: the server's working directory)
+
+**Outputs:**
+
+- `pipeline`: number
+- `branch`: string
+- `url`: string
+- `failedJobs`: object[]
+- `status`: string
+- `likelyCauses`: string[]
+- `suggestedNextCommands`: string[]
+- `evidence`: string[]
+
+**Equivalent commands:**
+
+```sh
+glab ci get --output json
+glab ci trace <job>
 ```
 
 ## `glob`

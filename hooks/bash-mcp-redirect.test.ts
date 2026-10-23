@@ -157,6 +157,14 @@ describe("bash-mcp-redirect: roadmap tools WARN", () => {
       "mcp__bash-mcp__gh_run_failure_summary",
     );
   });
+
+  it("glab ci warns toward the GitLab tools", () => {
+    expectWarn("glab ci get -p 12", "mcp__bash-mcp__glab_ci_status");
+    expectWarn(
+      "glab ci trace 5003",
+      "mcp__bash-mcp__glab_pipeline_failure_summary",
+    );
+  });
 });
 
 /** Commands the hook must leave completely alone. */

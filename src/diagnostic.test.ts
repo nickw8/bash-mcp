@@ -20,6 +20,7 @@ import { registerArgocdTools } from "./tools/argocd/argocd.js";
 import { summarizeAppHealth } from "./tools/argocd/health.js";
 import type { ArgoApp } from "./tools/argocd/payload.js";
 import { registerGithubTools } from "./tools/github/github.js";
+import { registerGitlabTools } from "./tools/gitlab/gitlab.js";
 import { registerHelmTools } from "./tools/helm/helm.js";
 import type { HelmStatus } from "./tools/helm/payload.js";
 import { type HelmHistoryEntry, triageRelease } from "./tools/helm/triage.js";
@@ -101,6 +102,7 @@ const handlers = new Map([
   ...captureHandlers(registerHelmTools),
   ...captureHandlers(registerArgocdTools),
   ...captureHandlers(registerGithubTools),
+  ...captureHandlers(registerGitlabTools),
 ]);
 const argsFor: Record<string, unknown> = {
   kube_diagnose_pod: { pod: "p", namespace: "qa", context: "ctx" },
@@ -110,6 +112,7 @@ const argsFor: Record<string, unknown> = {
   helm_release_triage: { release: "r", namespace: "qa", context: "ctx" },
   argo_app_health_summary: { name: "a" },
   gh_run_failure_summary: { run: 1 },
+  glab_pipeline_failure_summary: { pipeline: 1 },
 };
 const failedProbe = {
   data: null,

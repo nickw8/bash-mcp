@@ -1,0 +1,28 @@
+
+Getting job trace...
+Showing logs for secrets job #5003.
+2026-10-19T12:33:30.000000Z 00O Running with gitlab-runner 18.4.0
+2026-10-19T12:33:30.000000Z 00O section_start:1792413210:prepare_executor
+2026-10-19T12:33:30.000000Z 00O+Preparing the "kubernetes" executor
+2026-10-19T12:33:31.000000Z 00O section_end:1792413211:prepare_executor
+2026-10-19T12:33:31.000000Z 00O+section_start:1792413211:step_script
+2026-10-19T12:33:31.000000Z 00O+Executing "step_script" stage of the job script
+2026-10-19T12:33:32.000000Z 01O $ /analyzer run
+2026-10-19T12:33:38.000000Z 01O [INFO] [secrets] ▶ Running analyzer
+2026-10-19T12:33:41.000000Z 01O [INFO] [secrets] ▶ 12:33PM INF 6 commits scanned.
+2026-10-19T12:33:41.000000Z 01O [INFO] [secrets] ▶ 12:33PM INF scanned ~19385745 bytes (19.39 MB) in 455ms
+2026-10-19T12:33:41.000000Z 01O [INFO] [secrets] ▶ 12:33PM WRN leaks found: 18
+2026-10-19T12:33:41.000000Z 01O [INFO] [secrets] ▶ Creating report
+2026-10-19T12:33:41.000000Z 01O $ apk add --no-cache -q jq
+2026-10-19T12:33:42.000000Z 01O $ if grep -q '"vulnerabilities":\[{' gl-secret-detection-report.json; then # collapsed multi-line command
+2026-10-19T12:33:42.000000Z 01O Secrets found; see the security report artifact or the merge request widget.
+2026-10-19T12:33:42.000000Z 01O 
+2026-10-19T12:33:42.000000Z 00O section_end:1792413222:step_script
+2026-10-19T12:33:42.000000Z 00O+section_start:1792413222:upload_artifacts_on_failure
+2026-10-19T12:33:42.000000Z 00O+Uploading artifacts for failed job
+2026-10-19T12:33:43.000000Z 01O Uploading artifacts as "archive" to coordinator... 201 Created  correlation_id=a4cfd0107e8d5347-IAD id=5003 responseStatus=201 Created token=***
+2026-10-19T12:33:44.000000Z 00O section_end:1792413224:upload_artifacts_on_failure
+2026-10-19T12:33:44.000000Z 00O+section_start:1792413224:cleanup_file_variables
+2026-10-19T12:33:44.000000Z 00O+Cleaning up project directory and file based variables
+2026-10-19T12:33:45.000000Z 00O section_end:1792413225:cleanup_file_variables
+2026-10-19T12:33:45.000000Z 00O ERROR: Job failed: command terminated with exit code 1

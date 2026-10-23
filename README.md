@@ -207,6 +207,8 @@ so agents can self-select without the README.
 | search for exact code references or symbols | `rg` | `grep -r`, `rg` |
 | check whether a pull request's CI checks pass | `gh_pr_checks` | `gh pr checks`, `gh pr view` |
 | find out why a CI / GitHub Actions run failed | `gh_run_failure_summary` | `gh run view --log-failed`, `gh run list` |
+| check whether a GitLab pipeline or merge request's jobs pass | `glab_ci_status` | `glab ci get`, `glab ci status` |
+| find out why a GitLab CI pipeline failed | `glab_pipeline_failure_summary` | `glab ci trace`, `glab ci view` |
 | triage why a Helm release is unhealthy | `helm_release_triage` | `helm status`, `helm get values` |
 | check whether an ArgoCD app is healthy and in sync | `argo_app_health_summary` | `argocd app get`, `argocd app list` |
 | validate a Liquibase changelog for errors | `liquibase_validate` | `liquibase validate` |
@@ -274,6 +276,13 @@ so agents can self-select without the README.
 |------|-------------|
 | `gh_pr_checks` | Report a pull request's CI checks as counts per state plus the failing and pending checks. |
 | `gh_run_failure_summary` | Diagnose a GitHub Actions run in one call: status, the failed jobs and steps, and the ##[error] lines from the failed log as evidence. |
+
+### GitLab
+
+| Tool | Description |
+|------|-------------|
+| `glab_ci_status` | Report a GitLab pipeline's jobs as counts per status plus the failed, running and pending jobs. |
+| `glab_pipeline_failure_summary` | Diagnose a GitLab pipeline in one call: status, the failed jobs and why GitLab says they failed, and the last script lines of each failed job's trace as evidence. |
 
 ### Kubernetes
 

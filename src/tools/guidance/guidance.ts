@@ -140,6 +140,21 @@ export const INTENTS = [
       "Failed jobs and steps plus the ##[error] lines, not the whole failed log.",
   },
   {
+    intent: "check whether a GitLab pipeline or merge request's jobs pass",
+    preferredTool: "glab_ci_status",
+    category: "gitlab",
+    avoid: ["run: glab ci get", "run: glab ci status"],
+    reason: "Counts jobs per status and lists only the ones needing attention.",
+  },
+  {
+    intent: "find out why a GitLab CI pipeline failed",
+    preferredTool: "glab_pipeline_failure_summary",
+    category: "gitlab",
+    avoid: ["run: glab ci trace", "run: glab ci view"],
+    reason:
+      "Blocking failed jobs plus the tail of each one's script output, not the whole trace.",
+  },
+  {
     intent: "triage why a Helm release is unhealthy",
     preferredTool: "helm_release_triage",
     category: "helm",

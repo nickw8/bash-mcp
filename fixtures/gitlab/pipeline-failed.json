@@ -1,0 +1,56 @@
+{
+  "id": 1001,
+  "iid": 42,
+  "status": "failed",
+  "ref": "feature/login",
+  "sha": "4acbcb04726263397cd2cbc9d1c56eb9e4a69051",
+  "source": "push",
+  "web_url": "https://gitlab.com/acme/app/-/pipelines/1001",
+  "jobs": [
+    {
+      "id": 5005,
+      "name": "deploy",
+      "stage": "deploy",
+      "status": "manual",
+      "allow_failure": true,
+      "failure_reason": "",
+      "web_url": "https://gitlab.com/acme/app/-/jobs/5005"
+    },
+    {
+      "id": 5004,
+      "name": "lint",
+      "stage": "verify",
+      "status": "failed",
+      "allow_failure": true,
+      "failure_reason": "script_failure",
+      "web_url": "https://gitlab.com/acme/app/-/jobs/5004"
+    },
+    {
+      "id": 5003,
+      "name": "secrets",
+      "stage": "verify",
+      "status": "failed",
+      "allow_failure": false,
+      "failure_reason": "script_failure",
+      "web_url": "https://gitlab.com/acme/app/-/jobs/5003"
+    },
+    {
+      "id": 5002,
+      "name": "docs",
+      "stage": "build",
+      "status": "skipped",
+      "allow_failure": false,
+      "failure_reason": "",
+      "web_url": "https://gitlab.com/acme/app/-/jobs/5002"
+    },
+    {
+      "id": 5001,
+      "name": "build",
+      "stage": "build",
+      "status": "success",
+      "allow_failure": false,
+      "failure_reason": "",
+      "web_url": "https://gitlab.com/acme/app/-/jobs/5001"
+    }
+  ]
+}

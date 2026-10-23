@@ -51,6 +51,7 @@ export const PROBES: Probe[] = [
   { name: "bats", binary: "bats", versionArgs: ["--version"] },
   // Not wrapped (gh aside), but they decide whether a `run` fallback works.
   { name: "gh", binary: "gh", versionArgs: ["--version"] },
+  { name: "glab", binary: "glab", versionArgs: ["--version"] },
   // `--version`, not `docker version`: the latter contacts the daemon.
   { name: "docker", binary: "docker", versionArgs: ["--version"] },
   { name: "python", binary: "python3", versionArgs: ["--version"] },

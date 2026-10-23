@@ -76,6 +76,11 @@ RULES=(
   "gh pr checks|block|mcp__bash-mcp__gh_pr_checks"
   "gh run view|warn|mcp__bash-mcp__gh_run_failure_summary"
 
+  # ── GitLab CLI ──
+  "glab ci get|warn|mcp__bash-mcp__glab_ci_status"
+  "glab ci status|warn|mcp__bash-mcp__glab_ci_status"
+  "glab ci trace|warn|mcp__bash-mcp__glab_pipeline_failure_summary"
+
   # ── Helm ──
   "helm get values|block|mcp__bash-mcp__helm_values"
   "helm list|block|mcp__bash-mcp__helm_list"

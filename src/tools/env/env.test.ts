@@ -54,6 +54,7 @@ describe("PROBES", () => {
       "shellcheck",
       "bats",
       "gh",
+      "glab",
       "docker",
       "python",
       "pnpm",
