@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "bash-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["dist/index.js"]
+    }
+  }
+}
