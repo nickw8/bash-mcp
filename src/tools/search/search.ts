@@ -101,7 +101,7 @@ export function registerSearchTools(server: McpServer) {
           .enum(["json", "tsv", "columnar", "bare", "grouped"])
           .optional()
           .describe(
-            "Output format: grouped (default for matches, file header once then line+text, ripgrep-style), tsv, json, columnar (keys once), bare (no header). filesOnly defaults to bare, countPerFile to tsv.",
+            "Text-block format (payload unaffected): grouped (default for matches, file header once then line+text, ripgrep-style), tsv, json, columnar (keys once), bare (no header). filesOnly defaults to bare, countPerFile to tsv.",
           ),
         fields: z
           .array(z.string())
@@ -330,7 +330,7 @@ export function registerSearchTools(server: McpServer) {
         format: z
           .enum(["json", "tsv", "columnar"])
           .optional()
-          .describe("Output format (default: tsv)"),
+          .describe("Text-block format, payload unaffected (default: tsv)"),
       },
       outputSchema: {
         files: z.array(z.string()),

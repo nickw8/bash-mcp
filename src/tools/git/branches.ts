@@ -21,7 +21,7 @@ export function registerGitBranchesTool(server: McpServer) {
         format: z
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
-          .describe("Output format (default: tsv)"),
+          .describe("Text-block format, payload unaffected (default: tsv)"),
         fields: z
           .array(z.string())
           .optional()

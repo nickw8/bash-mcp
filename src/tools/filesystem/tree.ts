@@ -116,7 +116,9 @@ export function registerTreeTool(server: McpServer) {
         format: z
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
-          .describe("Output format (default: bare — paths, dirs end with /)"),
+          .describe(
+            "Text-block format, payload unaffected (default: bare — paths, dirs end with /)",
+          ),
       },
       outputSchema: {
         dirs: z.number(),

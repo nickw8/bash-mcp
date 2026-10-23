@@ -73,7 +73,9 @@ export function registerKubernetesTools(server: McpServer) {
         format: z
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
-          .describe("Output format for the item list (default: tsv)"),
+          .describe(
+            "Text-block format for the item list, payload unaffected (default: tsv)",
+          ),
         fields: z
           .array(z.string())
           .optional()
@@ -314,7 +316,7 @@ export function registerKubernetesTools(server: McpServer) {
         format: z
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
-          .describe("Output format (default: tsv)"),
+          .describe("Text-block format, payload unaffected (default: tsv)"),
         fields: z
           .array(z.string())
           .optional()

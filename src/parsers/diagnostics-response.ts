@@ -36,7 +36,7 @@ export const diagnosticInputSchema = {
     .enum(["grouped", "tsv", "json"])
     .optional()
     .describe(
-      "Text format: grouped (default, file header once then line:col rule message), tsv, or json",
+      "Text-block format (payload unaffected): grouped (default, file header once then line:col rule message), tsv, or json",
     ),
   fields: z
     .array(z.string())

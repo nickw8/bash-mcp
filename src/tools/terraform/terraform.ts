@@ -65,7 +65,9 @@ export function registerTerraformTools(server: McpServer) {
         format: z
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
-          .describe("Output format (default: bare — one address per line)"),
+          .describe(
+            "Text-block format, payload unaffected (default: bare — one address per line)",
+          ),
       },
       outputSchema: {
         // Addresses only: `module.network.aws_subnet.public[0]` already carries
@@ -333,7 +335,7 @@ export function registerTerraformTools(server: McpServer) {
         format: z
           .enum(["json", "tsv", "columnar", "bare"])
           .optional()
-          .describe("Output format (default: tsv)"),
+          .describe("Text-block format, payload unaffected (default: tsv)"),
         fields: z
           .array(z.string())
           .optional()
