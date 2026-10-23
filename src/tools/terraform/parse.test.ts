@@ -13,6 +13,7 @@ import {
   parsePlanJson,
   parseProviders,
   parseValidate,
+  planAction,
 } from "./parse.js";
 
 const fixtures = join(
@@ -107,7 +108,20 @@ describe("parsePlanJson", () => {
     expect(p.change).toBe(1); // s3 update
     expect(p.destroy).toBe(1); // db replace
     expect(p.changes).toHaveLength(3); // no-op excluded
+    expect(p.changes.map((c) => c.action)).toContain("replace");
     expect(p.noChanges).toBe(false);
+  });
+
+  it.each<[string | string[], string]>([
+    [["delete", "create"], "replace"],
+    [["create", "delete"], "replace"],
+    ["replace", "replace"],
+    [["no-op"], "no-op"],
+    ["noop", "no-op"],
+    ["read", "read"],
+    [[], "unknown"],
+  ])("planAction(%j) is %s", (input, want) => {
+    expect(planAction(input)).toBe(want);
   });
 
   it("reports noChanges for an empty plan", () => {

@@ -78,6 +78,10 @@ breaking change did.
   restarting container's evidence ends `; last exit 1 (Error)`, plus the first 200
   characters of its termination message. Before, only an `OOMKilled` crash had an exit
   code.
+- `tf_plan_summary` without `planFile` counted a replacement as nothing and counted drift
+  (`resource_drift`) as a planned change. It now counts a replace as one add and one
+  destroy, as terraform's `Plan:` line and the `planFile` path do, skips drift, and takes
+  terraform's `change_summary` totals when the stream has them.
 
 ### Migration
 

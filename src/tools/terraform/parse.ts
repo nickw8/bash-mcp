@@ -75,24 +75,33 @@ export function parseBackend(raw: {
 }
 
 /**
- * Count one resource change's actions. A replace is `["delete","create"]` (or
- * the reverse), so it counts as both an add and a destroy — the tallies are
- * independent, not a first-match dispatch.
- *
- * Shared by both plan paths: `parsePlanJson` (from `terraform show -json`) and
- * the `-json` stream loop in `tf_plan_summary`. They previously counted
- * replaces differently, so one tool reported two different numbers depending
- * on whether `planFile` was passed.
+ * One resource change's action, in one vocabulary for both plan paths.
+ * `terraform show -json` gives a list (`["delete","create"]` for a replace);
+ * the `plan -json` stream gives a word (`"replace"`, `"noop"`). Both come out
+ * as `create`, `update`, `delete`, `replace`, `read` or `no-op`; anything
+ * else (`move`, `import`, `forget`) passes through.
  */
-export function tallyActions(actions: string[]): {
+export function planAction(actions: string | string[]): string {
+  const a = Array.isArray(actions) ? actions : [actions];
+  if (a.includes("create") && a.includes("delete")) return "replace";
+  if (a.length === 1 && a[0] === "noop") return "no-op";
+  return a.join(",") || "unknown";
+}
+
+/**
+ * Count one {@link planAction}. A replace counts as an add and a destroy, as
+ * terraform's own `Plan: N to add, N to change, N to destroy` line does.
+ */
+export function tallyActions(action: string): {
   add: number;
   change: number;
   destroy: number;
 } {
+  const replace = action === "replace";
   return {
-    add: actions.includes("create") ? 1 : 0,
-    change: actions.includes("update") ? 1 : 0,
-    destroy: actions.includes("delete") ? 1 : 0,
+    add: replace || action === "create" ? 1 : 0,
+    change: action === "update" ? 1 : 0,
+    destroy: replace || action === "delete" ? 1 : 0,
   };
 }
 
@@ -118,12 +127,9 @@ export function parsePlanJson(raw: {
   for (const rc of raw?.resource_changes ?? []) {
     const actions = rc.change?.actions ?? [];
     if (actions.length === 0 || actions.includes("no-op")) continue;
-    changes.push({
-      action: actions.join(","),
-      address: rc.address ?? "",
-      type: rc.type ?? "",
-    });
-    const t = tallyActions(actions);
+    const action = planAction(actions);
+    changes.push({ action, address: rc.address ?? "", type: rc.type ?? "" });
+    const t = tallyActions(action);
     add += t.add;
     change += t.change;
     destroy += t.destroy;

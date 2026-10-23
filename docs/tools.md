@@ -1516,7 +1516,7 @@ terraform output -json
 
 `read-only`
 
-Run terraform plan and return a structured summary of changes (add/change/destroy counts and affected resources).
+Run terraform plan and return a structured summary of changes (add/change/destroy counts and affected resources). Each action is create, update, delete, replace or read; a replace counts in add and destroy, as terraform's Plan line does.
 
 **Inputs:**
 

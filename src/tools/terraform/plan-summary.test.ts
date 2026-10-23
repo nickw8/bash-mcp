@@ -12,27 +12,52 @@ const execMock = vi.mocked(exec);
 
 const { registerTerraformTools } = await import("./terraform.js");
 
-/** A replace, an update, and a plain create — one of each counting rule. */
+/**
+ * A replace, an update, and a plain create — one of each counting rule.
+ * `stream` is the word `terraform plan -json` uses for the same change.
+ */
 const ADDRESSES = [
   {
     addr: "aws_instance.web",
     type: "aws_instance",
     actions: ["delete", "create"],
+    stream: "replace",
   },
-  { addr: "aws_s3_bucket.logs", type: "aws_s3_bucket", actions: ["update"] },
-  { addr: "aws_vpc.main", type: "aws_vpc", actions: ["create"] },
+  {
+    addr: "aws_s3_bucket.logs",
+    type: "aws_s3_bucket",
+    actions: ["update"],
+    stream: "update",
+  },
+  {
+    addr: "aws_vpc.main",
+    type: "aws_vpc",
+    actions: ["create"],
+    stream: "create",
+  },
 ];
 
-/** `terraform plan -json` stream form. */
-const planStream = ADDRESSES.map((r) =>
+const streamLine = (
+  type: string,
+  addr: string,
+  rtype: string,
+  action: string,
+) =>
   JSON.stringify({
-    type: "planned_change",
-    change: {
-      action: r.actions,
-      resource: { addr: r.addr, resource_type: r.type },
-    },
-  }),
-).join("\n");
+    type,
+    change: { action, resource: { addr, resource_type: rtype } },
+  });
+
+/**
+ * `terraform plan -json` stream form, with a drift line that must not count
+ * and no `change_summary`, so the tally is what is tested.
+ */
+const planStream = [
+  ...ADDRESSES.map((r) =>
+    streamLine("planned_change", r.addr, r.type, r.stream),
+  ),
+  streamLine("resource_drift", "aws_iam_role.ci", "aws_iam_role", "update"),
+].join("\n");
 
 /** The same plan in `terraform show -json <planfile>` form. */
 const planShow = {
@@ -75,16 +100,25 @@ describe("tf_plan_summary counting", () => {
     const plan = captureHandler(registerTerraformTools, "tf_plan_summary");
     const streamed = await plan({ cwd: "." });
 
-    const saved = parsePlanJson(planShow);
+    const { noChanges: _, ...saved } = parsePlanJson(planShow);
 
-    expect({
-      add: streamed.structuredContent.add,
-      change: streamed.structuredContent.change,
-      destroy: streamed.structuredContent.destroy,
-    }).toEqual({
-      add: saved.add,
-      change: saved.change,
-      destroy: saved.destroy,
+    expect(streamed.structuredContent).toMatchObject(saved);
+    expect(saved.changes[0]?.action).toBe("replace");
+  });
+
+  it("takes terraform's change_summary totals over the tally", async () => {
+    const summary = JSON.stringify({
+      type: "change_summary",
+      changes: { add: 5, change: 0, remove: 4, operation: "plan" },
+    });
+    execMock.mockResolvedValue(execOk(`${planStream}\n${summary}`));
+    const plan = captureHandler(registerTerraformTools, "tf_plan_summary");
+    const result = await plan({ cwd: "." });
+
+    expect(result.structuredContent).toMatchObject({
+      add: 5,
+      change: 0,
+      destroy: 4,
     });
   });
 });

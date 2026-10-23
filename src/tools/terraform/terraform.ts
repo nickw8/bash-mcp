@@ -22,6 +22,7 @@ import {
   parsePlanJson,
   parseProviders,
   parseValidate,
+  planAction,
   tallyActions,
 } from "./parse.js";
 
@@ -180,7 +181,7 @@ export function registerTerraformTools(server: McpServer) {
         "terraform show -json <planfile>",
       ],
       description:
-        "Run terraform plan and return a structured summary of changes (add/change/destroy counts and affected resources).",
+        "Run terraform plan and return a structured summary of changes (add/change/destroy counts and affected resources). Each action is create, update, delete, replace or read; a replace counts in add and destroy, as terraform's Plan line does.",
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
         target: z.string().optional().describe("Target specific resource"),
@@ -239,43 +240,36 @@ export function registerTerraformTools(server: McpServer) {
         change = 0,
         destroy = 0;
 
+      // `resource_drift` lines are changes made outside terraform, not planned
+      // changes, so only `planned_change` is listed and counted. Terraform's
+      // own `change_summary` totals win over the tally when present.
+      let summary: { add?: number; change?: number; remove?: number } | null =
+        null;
       for (const line of result.stdout.split("\n").filter(Boolean)) {
         try {
           const msg = JSON.parse(line);
-          if (msg.type === "planned_change" || msg.type === "resource_drift") {
-            const c = msg.change ?? {};
-            const action = Array.isArray(c.action)
-              ? c.action.join(",")
-              : (c.action ?? "unknown");
-            changes.push({
-              action,
-              address: c.resource?.addr ?? "",
-              type: c.resource?.resource_type ?? "",
-            });
-            const t = tallyActions(
-              Array.isArray(c.action) ? c.action : [action],
-            );
-            add += t.add;
-            change += t.change;
-            destroy += t.destroy;
-          }
+          if (msg.type === "change_summary") summary = msg.changes ?? {};
+          if (msg.type !== "planned_change") continue;
+          const c = msg.change ?? {};
+          const action = planAction(c.action ?? []);
+          if (action === "no-op") continue;
+          changes.push({
+            action,
+            address: c.resource?.addr ?? "",
+            type: c.resource?.resource_type ?? "",
+          });
+          const t = tallyActions(action);
+          add += t.add;
+          change += t.change;
+          destroy += t.destroy;
         } catch {
           /* skip non-json lines */
         }
       }
-
-      // JSON mode emits per-resource changes but not always a summary;
-      // the human-readable summary ("X to add, Y to change, Z to destroy") appears on stderr
-
-      for (const line of result.stderr.split("\n")) {
-        const match = line.match(
-          /(\d+) to add, (\d+) to change, (\d+) to destroy/,
-        );
-        if (match) {
-          add = parseInt(match[1] ?? "0", 10);
-          change = parseInt(match[2] ?? "0", 10);
-          destroy = parseInt(match[3] ?? "0", 10);
-        }
+      if (summary) {
+        add = summary.add ?? 0;
+        change = summary.change ?? 0;
+        destroy = summary.remove ?? 0;
       }
 
       const noChanges = add === 0 && change === 0 && destroy === 0;
