@@ -107,14 +107,20 @@ function kindFromStderr(stderr: string): ToolErrorKind {
   ) {
     return "permission_denied";
   }
-  if (
-    s.includes("not found") ||
-    s.includes("notfound") ||
-    s.includes("no such")
-  ) {
+  // Whole words only: kubectl's `(NotFound)` and gRPC's `code = NotFound`
+  // match, an exception like `ModuleNotFoundError` does not.
+  if (/\bnot ?found\b/.test(s) || s.includes("no such")) {
     return "not_found";
   }
   return "command_failed";
+}
+
+/** The message when the CLI wrote nothing to stderr. */
+function fallbackMessage(kind: ToolErrorKind, command: string): string {
+  if (kind === "missing_binary")
+    return `'${command}' is not installed or not on PATH`;
+  if (kind === "timeout") return `Command '${command}' timed out`;
+  return `Command '${command}' failed`;
 }
 
 /**
@@ -143,7 +149,7 @@ export function classifyError(
 
   return {
     kind,
-    message: result.stderr.trim() || `Command '${command}' failed`,
+    message: result.stderr.trim() || fallbackMessage(kind, command),
     command,
     suggestion: suggestionFor(kind, command, result.errorCode),
     exitCode: result.exitCode,

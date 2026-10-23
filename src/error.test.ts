@@ -66,6 +66,32 @@ describe("classifyError", () => {
     expect(e.kind).toBe("not_found");
   });
 
+  it("a gRPC NotFound code → not_found", () => {
+    const e = classifyError(
+      res({ stderr: "rpc error: code = NotFound desc = app missing" }),
+      "argocd",
+    );
+    expect(e.kind).toBe("not_found");
+  });
+
+  it("an exception named *NotFoundError is not a missing resource", () => {
+    const e = classifyError(
+      res({ stderr: "ModuleNotFoundError: No module named 'requests'" }),
+      "python3",
+    );
+    expect(e.kind).toBe("command_failed");
+  });
+
+  it("names a missing binary when stderr is empty", () => {
+    const e = classifyError(res({ errorCode: "ENOENT" }), "bats");
+    expect(e.message).toBe("'bats' is not installed or not on PATH");
+  });
+
+  it("names a timeout when stderr is empty", () => {
+    const e = classifyError(res({ timedOut: true }), "bash");
+    expect(e.message).toBe("Command 'bash' timed out");
+  });
+
   it("unrecognized stderr → command_failed", () => {
     const e = classifyError(res({ stderr: "boom: something broke" }), "git");
     expect(e.kind).toBe("command_failed");
