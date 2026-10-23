@@ -39,7 +39,7 @@ export function registerBashLintTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ files, minSeverity, format, fields, detailLevel, maxItems }) => {
+    async ({ files, minSeverity, detailLevel, maxItems }) => {
       const result = await exec(
         "shellcheck",
         ["-f", "json1", ...toArray(files)],
@@ -55,8 +55,6 @@ export function registerBashLintTool(server: McpServer) {
           errorCount,
           warningCount,
         }),
-        format,
-        textFields: fields,
         detailLevel,
         maxItems,
       });

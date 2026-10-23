@@ -1,7 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
-import type { ListFormat } from "#format";
 import { okList } from "#response";
 import { defineTool } from "#tool";
 
@@ -18,14 +17,6 @@ export function registerGitBranchesTool(server: McpServer) {
       inputSchema: {
         cwd: z.string().optional().describe("Repository path"),
         remote: z.boolean().optional().describe("Include remote branches"),
-        format: z
-          .enum(["json", "tsv", "columnar", "bare"])
-          .optional()
-          .describe("Text block only (default tsv)"),
-        fields: z
-          .array(z.string())
-          .optional()
-          .describe("Text-block columns only"),
       },
       outputSchema: {
         current: z.string(),
@@ -37,8 +28,8 @@ export function registerGitBranchesTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ cwd, remote, format, fields }) => {
-      const fmt = (format ?? "tsv") as ListFormat;
+    async ({ cwd, remote }) => {
+      const fmt = "tsv";
       const args = ["branch", "-v", "--no-color"];
       if (remote) args.push("-a");
 
@@ -75,7 +66,6 @@ export function registerGitBranchesTool(server: McpServer) {
         rows,
         { current: currentBranch },
         fmt,
-        { fields },
       );
     },
   );

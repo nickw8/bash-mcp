@@ -13,10 +13,10 @@ in `src/registry.ts` is the source of truth.
 
 | Profile | Groups | Tools | Wire tokens | Model tokens |
 |---|---|---:|---:|---:|
-| `core` | Filesystem, Search, Git, File, Execution, Environment, Results | 21 | 8,800 | 4,914 |
-| `development` | core + Node.js, .NET, Python, Shell, Data, Liquibase, GitHub, GitLab | 41 | 17,360 | 9,502 |
-| `infrastructure` | core + Kubernetes, Terraform, ArgoCD, Helm, Data, Liquibase, GitHub, GitLab | 54 | 19,733 | 10,221 |
-| `all` (default) | everything | 65 | 24,513 | 12,806 |
+| `core` | Filesystem, Search, Git, File, Execution, Environment, Results | 21 | 8,378 | 4,492 |
+| `development` | core + Node.js, .NET, Python, Shell, Data, Liquibase, GitHub, GitLab | 41 | 16,497 | 8,639 |
+| `infrastructure` | core + Kubernetes, Terraform, ArgoCD, Helm, Data, Liquibase, GitHub, GitLab | 54 | 19,086 | 9,620 |
+| `all` (default) | everything | 65 | 23,425 | 11,764 |
 
 o200k_base tokens, from `node scripts/schema-footprint.mjs` with the profile set.
 **Wire** is the whole `tools/list` entry, `outputSchema` included. **Model** is name,

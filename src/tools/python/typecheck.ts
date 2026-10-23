@@ -35,7 +35,7 @@ export function registerPythonTypecheckTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ cwd, paths, format, fields, detailLevel, maxItems }) => {
+    async ({ cwd, paths, detailLevel, maxItems }) => {
       const pathList = toArray(paths);
       const args = [
         "--show-column-numbers",
@@ -57,8 +57,6 @@ export function registerPythonTypecheckTool(server: McpServer) {
           errorCount: found,
           success: r?.exitCode === 0,
         }),
-        format,
-        textFields: fields,
         detailLevel,
         maxItems,
       });

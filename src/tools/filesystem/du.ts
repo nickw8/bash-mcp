@@ -1,7 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
-import type { ListFormat } from "#format";
 import { err, okList } from "#response";
 import { defineTool } from "#tool";
 
@@ -35,14 +34,6 @@ export function registerDuTool(server: McpServer) {
           .optional()
           .default(1)
           .describe("Depth to summarize"),
-        format: z
-          .enum(["json", "tsv", "columnar", "bare"])
-          .optional()
-          .describe("Text block only (default tsv)"),
-        fields: z
-          .array(z.string())
-          .optional()
-          .describe("Text-block columns only"),
       },
       outputSchema: {
         // [path, sizeBytes] pairs: an object per row paid both key names on
@@ -51,8 +42,8 @@ export function registerDuTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ path, maxDepth, format, fields }) => {
-      const fmt = (format ?? "tsv") as ListFormat;
+    async ({ path, maxDepth }) => {
+      const fmt = "tsv";
       const depth = maxDepth ?? 1;
       // `-k` and `-d` are portable (POSIX; GNU has -d since coreutils 8.6).
       // BSD du has no byte mode, so 1K blocks are the only unit both platforms
@@ -83,7 +74,6 @@ export function registerDuTool(server: McpServer) {
         rows,
         {},
         fmt,
-        { fields },
       );
     },
   );

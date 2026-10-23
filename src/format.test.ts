@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatList, projectRows, summarize } from "./format.js";
+import { formatList, summarize } from "./format.js";
 
 const ROWS = [
   { name: "a", size: 1 },
@@ -84,23 +84,6 @@ describe("formatList — grouped", () => {
     expect(formatList(MATCHES, "grouped", { matchCount: 3 })).toBe(
       "matchCount\t3\n---\na.ts:\n1\tx\n9\ty\nb.ts:\n4\tz",
     );
-  });
-});
-
-describe("projectRows", () => {
-  it("returns rows unchanged when fields is empty/undefined", () => {
-    expect(projectRows(ROWS)).toBe(ROWS);
-    expect(projectRows(ROWS, [])).toBe(ROWS);
-  });
-
-  it("keeps only the named fields, in order", () => {
-    expect(projectRows([{ a: 1, b: 2, c: 3 }], ["c", "a"])).toEqual([
-      { c: 3, a: 1 },
-    ]);
-  });
-
-  it("skips fields absent from a row", () => {
-    expect(projectRows([{ a: 1 }], ["a", "missing"])).toEqual([{ a: 1 }]);
   });
 });
 

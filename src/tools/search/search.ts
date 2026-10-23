@@ -10,7 +10,6 @@ import { isAbsolute, relative } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
-import type { ListFormat } from "#format";
 import { err, okList } from "#response";
 import { defineTool } from "#tool";
 import { groupMatchesByFile, parseRgJson } from "./parse.js";
@@ -97,18 +96,6 @@ export function registerSearchTools(server: McpServer) {
           .describe(
             "Window matched line text to ~this many chars centered on the match, so long/minified lines don't dump in full (0 = unlimited, default 120)",
           ),
-        format: z
-          .enum(["json", "tsv", "columnar", "bare", "grouped"])
-          .optional()
-          .describe(
-            "Text block only: grouped (default), tsv, json, columnar, bare; filesOnly defaults to bare, countPerFile to tsv",
-          ),
-        fields: z
-          .array(z.string())
-          .optional()
-          .describe(
-            "Limit the text view to these columns (e.g. ['file','line']); text view only",
-          ),
       },
       outputSchema: {
         // One row per file, path first: the path is paid for once and each
@@ -148,8 +135,6 @@ export function registerSearchTools(server: McpServer) {
       countPerFile,
       fixedStrings,
       maxLineLength,
-      format,
-      fields,
     }) => {
       const limit = maxResults ?? 30;
       const globs = glob ? (Array.isArray(glob) ? glob : [glob]) : [];
@@ -158,7 +143,7 @@ export function registerSearchTools(server: McpServer) {
       };
 
       if (countPerFile) {
-        const fmt = (format ?? "tsv") as ListFormat;
+        const fmt = "tsv";
         const args = ["--count-matches", "--no-heading"];
         if (ignoreCase) args.push("-i");
         pushGlobs(args);
@@ -194,12 +179,11 @@ export function registerSearchTools(server: McpServer) {
           files,
           { fileCount: files.length, matchCount: totalMatches },
           fmt,
-          { fields },
         );
       }
 
       if (filesOnly) {
-        const fmt = (format ?? "bare") as ListFormat;
+        const fmt = "bare";
         const args = ["--files-with-matches", "--no-heading"];
         if (ignoreCase) args.push("-i");
         pushGlobs(args);
@@ -227,11 +211,10 @@ export function registerSearchTools(server: McpServer) {
           files,
           { fileCount: files.length, matchCount: files.length },
           fmt,
-          { fields },
         );
       }
 
-      const fmt = (format ?? "grouped") as ListFormat;
+      const fmt = "grouped";
       const maxLen = maxLineLength ?? 120;
       // Extract mode: emit matched substrings (or capture-group rewrites)
       // instead of whole lines. `replace` implies extraction.
@@ -307,7 +290,6 @@ export function registerSearchTools(server: McpServer) {
         textRows,
         { fileCount, matchCount, truncated, totalMatches },
         fmt,
-        { fields },
       );
     },
   );
@@ -324,10 +306,6 @@ export function registerSearchTools(server: McpServer) {
       inputSchema: {
         pattern: z.string().describe("Glob pattern (e.g. 'src/**/*.ts')"),
         cwd: z.string().optional().describe("Working directory for the glob"),
-        format: z
-          .enum(["json", "tsv", "columnar"])
-          .optional()
-          .describe("Text block only (default tsv)"),
       },
       outputSchema: {
         files: z.array(z.string()),
@@ -335,8 +313,8 @@ export function registerSearchTools(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ pattern, cwd, format }) => {
-      const fmt = (format ?? "tsv") as ListFormat;
+    async ({ pattern, cwd }) => {
+      const fmt = "tsv";
       const args = ["--files", "-g", pattern];
 
       const result = await exec("rg", args, cwd ? { cwd } : {});

@@ -9,7 +9,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execJson, TIMEOUT } from "#exec";
-import type { ListFormat } from "#format";
 import {
   allNamespacesSchema,
   contextSchema,
@@ -66,18 +65,6 @@ export function registerKubernetesTools(server: McpServer) {
           .describe(
             "Include each resource's labels (default false — labels are verbose and mostly hashes; use selector to filter or jq to read specific ones)",
           ),
-        format: z
-          .enum(["json", "tsv", "columnar", "bare"])
-          .optional()
-          .describe(
-            "Text-block format for the item list, payload unaffected (default: tsv)",
-          ),
-        fields: z
-          .array(z.string())
-          .optional()
-          .describe(
-            "Limit the text view to these columns, e.g. ['name','status','restarts'] (text view only)",
-          ),
         ...budgetSchema,
       },
       annotations: { readOnlyHint: true },
@@ -92,12 +79,10 @@ export function registerKubernetesTools(server: McpServer) {
       context,
       jq: jqFilter,
       includeLabels,
-      format,
-      fields,
       detailLevel,
       maxItems,
     }) => {
-      const fmt = (format ?? "tsv") as ListFormat;
+      const fmt = "tsv";
       const args = ["get", resource, "-o", "json"];
       if (name) args.splice(2, 0, name);
       args.push(...namespaceScope(namespace, allNamespaces));
@@ -191,7 +176,6 @@ export function registerKubernetesTools(server: McpServer) {
           truncated,
         },
         fmt,
-        { fields },
       );
     },
   );
@@ -298,16 +282,7 @@ export function registerKubernetesTools(server: McpServer) {
       description:
         "List available kubectl contexts with current context marked.",
       equivalentCommands: ["kubectl config get-contexts"],
-      inputSchema: {
-        format: z
-          .enum(["json", "tsv", "columnar", "bare"])
-          .optional()
-          .describe("Text block only (default tsv)"),
-        fields: z
-          .array(z.string())
-          .optional()
-          .describe("Text-block columns only"),
-      },
+      inputSchema: {},
       outputSchema: {
         current: z.string(),
         // The current context is named once at the top level, and `cluster` is
@@ -322,8 +297,8 @@ export function registerKubernetesTools(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ format, fields }) => {
-      const fmt = (format ?? "tsv") as ListFormat;
+    async () => {
+      const fmt = "tsv";
       const result = await exec("kubectl", [
         "config",
         "get-contexts",
@@ -341,7 +316,6 @@ export function registerKubernetesTools(server: McpServer) {
         parsed.contexts,
         { current: parsed.current },
         fmt,
-        { fields },
       );
     },
   );

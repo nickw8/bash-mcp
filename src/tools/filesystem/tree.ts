@@ -113,12 +113,6 @@ export function registerTreeTool(server: McpServer) {
           .describe(
             "Pipe-separated patterns to exclude (default: node_modules|.git|dist|__pycache__|.venv|.next|.terraform)",
           ),
-        format: z
-          .enum(["json", "tsv", "columnar", "bare"])
-          .optional()
-          .describe(
-            "Text-block format, payload unaffected (default: bare — paths, dirs end with /)",
-          ),
       },
       outputSchema: {
         dirs: z.number(),
@@ -129,8 +123,8 @@ export function registerTreeTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ path, maxDepth, dirsOnly, pattern, exclude, format }) => {
-      const fmt = (format ?? "bare") as ListFormat;
+    async ({ path, maxDepth, dirsOnly, pattern, exclude }) => {
+      const fmt = "bare";
       const defaultExcludes =
         "node_modules|.git|dist|__pycache__|.venv|.next|.terraform";
       const args = [

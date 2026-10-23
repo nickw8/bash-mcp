@@ -250,6 +250,20 @@ describe.skipIf(!existsSync(distPath))("stdio transport round-trip", () => {
     expect(frames[1]?.result?.structuredContent).toBeUndefined();
   });
 
+  // v4 declared format/fields on list tools; v5 drops them unread (ADR-0018).
+  it("ignores the retired format/fields arguments", async () => {
+    const { frames } = await rpcSession([
+      callTool("find_files", {
+        path: corpusDir,
+        pattern: "emoji",
+        format: "json",
+        fields: ["file"],
+      }),
+    ]);
+
+    expect(frames[1]?.result?.structuredContent).toMatchObject({ count: 1 });
+  });
+
   it("accepts pattern as an alias for find_files name", async () => {
     const { frames } = await rpcSession([
       callTool("find_files", { path: corpusDir, pattern: "emoji" }),

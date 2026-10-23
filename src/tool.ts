@@ -96,6 +96,32 @@ interface ToolConfig<
 const retainedSchema = z.record(z.unknown()).optional();
 
 /**
+ * Arguments v4 declared on list and diagnostic tools and v5 removed (ADR-0018).
+ * They shaped only the text block. Until 6.0.0 a call that still sends one has
+ * it dropped instead of refused; every other undeclared key is still refused
+ * (ADR-0014). A tool that declares the name itself gets it as usual.
+ */
+const RETIRED_ARGS = ["format", "fields"];
+
+/**
+ * The strict input object, minus the retired arguments. A subclass rather than
+ * `z.preprocess`: the SDK advertises a non-object schema as `{}` in tools/list.
+ */
+class RetiredArgsObject extends z.ZodObject<ZodRawShape, "strict"> {
+  override _parse(input: Parameters<z.ZodObject<ZodRawShape>["_parse"]>[0]) {
+    const data = input.data as Record<string, unknown> | null;
+    const retired =
+      data && typeof data === "object" && !Array.isArray(data)
+        ? RETIRED_ARGS.filter((k) => k in data && !(k in this.shape))
+        : [];
+    if (retired.length === 0) return super._parse(input);
+    const kept = { ...data };
+    for (const k of retired) delete kept[k];
+    return super._parse({ ...input, data: kept });
+  }
+}
+
+/**
  * A flattened record of a registered tool, captured as a side effect of
  * `defineTool` for doc generation. Read via `getRegisteredTools()`; the live
  * server ignores it. See `src/registry.ts` for `buildRegistry()`.
@@ -383,7 +409,13 @@ export function defineTool<
     : undefined;
   const registerConfig = {
     ...rest,
-    ...(inputShape ? { inputSchema: z.object(inputShape).strict() } : {}),
+    ...(inputShape
+      ? {
+          inputSchema: new RetiredArgsObject(
+            z.object(inputShape).strict()._def,
+          ),
+        }
+      : {}),
     ...(config.outputSchema
       ? { outputSchema: { ...config.outputSchema, retained: retainedSchema } }
       : {}),

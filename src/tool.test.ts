@@ -63,6 +63,38 @@ describe("defineTool", () => {
     expect(schema.safeParse({ nope: 1 }).success).toBe(false);
   });
 
+  it("drops the retired format/fields arguments and refuses any other undeclared key", () => {
+    const { server, captured } = fakeServer();
+    const { logger } = capturingLogger();
+    defineTool(
+      server,
+      "t",
+      { inputSchema: { cwd: z.string().optional() } },
+      async () => ok({}),
+      logger,
+    );
+    const schema = captured[0]!.config.inputSchema as ZodObject<ZodRawShape>;
+    expect(schema.shape).toHaveProperty("cwd");
+    expect(
+      schema.safeParse({ cwd: ".", format: "tsv", fields: ["a"] }),
+    ).toEqual({ success: true, data: { cwd: "." } });
+    expect(schema.safeParse({ format: "tsv", nope: 1 }).success).toBe(false);
+  });
+
+  it("passes format through to a tool that declares it", () => {
+    const { server, captured } = fakeServer();
+    const { logger } = capturingLogger();
+    defineTool(
+      server,
+      "t",
+      { inputSchema: { format: z.string().optional() } },
+      async () => ok({}),
+      logger,
+    );
+    const schema = captured[0]!.config.inputSchema as ZodObject<ZodRawShape>;
+    expect(schema.parse({ format: "yaml" })).toEqual({ format: "yaml" });
+  });
+
   it("folds equivalentCommands into _meta, preserving caller _meta", () => {
     const { server, captured } = fakeServer();
     const { logger } = capturingLogger();

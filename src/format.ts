@@ -109,19 +109,6 @@ function summarizeField(key: string, value: unknown): string | undefined {
   return `${key}=${String(value)}`;
 }
 
-/**
- * Restrict each row to the named fields (in the given order), dropping the rest.
- * Used for the `fields` projection: callers keep full `structuredContent` but emit
- * only the requested columns in the text block. A field absent from a row is
- * skipped for that row. Empty/undefined `fields` returns the rows unchanged.
- */
-export function projectRows(rows: Row[], fields?: string[]): Row[] {
-  if (!fields || fields.length === 0) return rows;
-  return rows.map((r) =>
-    Object.fromEntries(fields.filter((f) => f in r).map((f) => [f, r[f]])),
-  );
-}
-
 /** Union of keys across all rows, preserving first-seen order. */
 function unionKeys(rows: Row[]): string[] {
   const keys: string[] = [];

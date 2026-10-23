@@ -35,7 +35,7 @@ export function registerBashSyntaxCheckTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ files, format, fields, detailLevel, maxItems }) => {
+    async ({ files, detailLevel, maxItems }) => {
       // `bash -n` parses a single script file (extra args become positional
       // params), so check each file separately and merge the diagnostics.
       const results = await Promise.all(
@@ -48,8 +48,6 @@ export function registerBashSyntaxCheckTool(server: McpServer) {
         results,
         parse: parseBashSyntax,
         fields: ({ found }) => ({ errorCount: found, valid: found === 0 }),
-        format,
-        textFields: fields,
         detailLevel,
         maxItems,
       });

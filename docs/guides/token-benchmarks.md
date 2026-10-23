@@ -252,9 +252,9 @@ What is left is JSON's own punctuation, which no reshape removes.
 
 The three existing levers relate to this as follows:
 
-- **`format` / `fields`** shape the text block only. They are spec-correct for clients that
-  render `content[]`, and remain supported, but they save a `structuredContent`-rendering
-  client nothing. They are no longer described as token controls.
+- **`format` / `fields`** shaped the text block only, so they saved a
+  `structuredContent`-rendering client nothing and cost every client 1,084 schema tokens.
+  v5 removed them ([ADR-0018](../adr/0018-text-block-format-is-fixed-per-tool.md)).
 - **Output budgets** (`detailLevel` / `maxItems`) do bite: they cap the rows in
   `structuredContent` itself, and truncated output notes `shown`/`total`.
 - **Per-tool caps and projections that shrink the payload** — `rg`'s `maxResults`,
@@ -324,12 +324,14 @@ stores the rest for `result_get`. The test fails if wire exceeds a third of raw.
 | Profile | Tools | Wire | Model |
 | --- | ---: | ---: | ---: |
 | v4.0.0 (all) | 64 | 23,722 | 12,973 |
-| `all` | 65 | 24,513 | 12,806 |
-| `infrastructure` | 54 | 19,733 | 10,221 |
-| `development` | 41 | 17,360 | 9,502 |
-| `core` | 21 | 8,800 | 4,914 |
+| `all` | 65 | 23,425 | 11,764 |
+| `infrastructure` | 54 | 19,086 | 9,620 |
+| `development` | 41 | 16,497 | 8,639 |
+| `core` | 21 | 8,378 | 4,492 |
 
-`all` gained `result_get` and its wire cost rose 3%; model-facing cost fell 1%.
+`all` gained `result_get` and dropped `format`/`fields` from 19 tools
+([ADR-0018](../adr/0018-text-block-format-is-fixed-per-tool.md)): wire cost fell 1% and
+model-facing cost 9%.
 `src/benchmark.gate.test.ts` fails if model cost grows more than 5% over the baseline.
 
 **Whole tasks.** `node scripts/task-eval.mjs` replays six scenarios from

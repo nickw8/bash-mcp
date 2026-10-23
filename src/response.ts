@@ -8,7 +8,7 @@
 
 import type { ZodRawShape, ZodTypeAny } from "zod";
 import type { ToolError } from "#error";
-import { formatList, type ListFormat, projectRows, summarize } from "#format";
+import { formatList, type ListFormat, summarize } from "#format";
 
 /**
  * The zero value of one declared field.
@@ -100,25 +100,19 @@ export function ok<T extends Record<string, unknown>>(
  * Build a response for list-shaped data, formatting the text content
  * using the specified format while keeping structuredContent as JSON.
  *
- * `opts.fields` restricts the text block to the named columns (in order);
- * structuredContent is unaffected, so the agent can ask for exactly the columns
- * it needs without losing the full typed payload.
- *
- * The default `json` format now summarizes rather than re-serializing, for the
- * reason in `ok()`. The other formats are explicit caller requests for the rows
- * in the text block, so they still render them.
+ * The `json` format summarizes rather than re-serializing, for the reason in
+ * `ok()`. The other formats render the rows; each tool picks one (ADR-0018).
  */
 export function okList<T extends Record<string, unknown>>(
   structuredContent: T,
   rows: Record<string, unknown>[],
   meta: Record<string, unknown>,
   format: ListFormat = "json",
-  opts: { fields?: string[] } = {},
 ) {
   const text =
     format === "json"
       ? summarize(structuredContent)
-      : formatList(projectRows(rows, opts.fields), format, meta);
+      : formatList(rows, format, meta);
   return {
     content: [{ type: "text" as const, text }],
     structuredContent,

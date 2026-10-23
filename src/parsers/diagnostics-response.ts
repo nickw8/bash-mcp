@@ -14,7 +14,6 @@
 import { z } from "zod";
 import { classifyError } from "#error";
 import type { ExecResult } from "#exec";
-import type { ListFormat } from "#format";
 import { err, okList } from "#response";
 import { applyBudget, budgetSchema, countBySeverity } from "./schemas.js";
 import type { BudgetParams, Diagnostic } from "./types.js";
@@ -28,20 +27,9 @@ const budgetControls = {
 
 /**
  * Input-schema fragment shared by every diagnostic tool. Spread into a tool's
- * `inputSchema` to add the text-format selector, column projection, and output
- * budget without redefining them each time.
+ * `inputSchema` to add the output budget without redefining it each time.
  */
-export const diagnosticInputSchema = {
-  format: z
-    .enum(["grouped", "tsv", "json"])
-    .optional()
-    .describe("Text block only: grouped (default), tsv, json"),
-  fields: z
-    .array(z.string())
-    .optional()
-    .describe("Text-block columns only, e.g. ['file','loc']"),
-  ...budgetControls,
-};
+export const diagnosticInputSchema = budgetControls;
 
 /** One file's diagnostics: the path once, then `line:col [severity] [rule] message` per finding. */
 export const fileDiagnosticsSchema = z.object({
@@ -107,9 +95,7 @@ export function diagnosticRows(diags: Diagnostic[]): Record<string, unknown>[] {
 const SEVERITY_RANK = { error: 3, warning: 2, info: 1 } as const;
 
 export interface DiagnosticsResponseOpts {
-  format?: ListFormat;
   budget?: BudgetParams;
-  fields?: string[];
   /** Extra meta lines (errorCount, warningCount, …) shown above the rows. */
   meta?: Record<string, unknown>;
   /** Payload key holding the grouped diagnostics (default `errors`). */
@@ -155,7 +141,7 @@ function keepMostSevere(diags: Diagnostic[], count: number): Diagnostic[] {
  * Build a diagnostic response. The grouped, budget-capped diagnostics are
  * written into the payload under `opts.key` (overriding whatever the caller
  * put there), with `total`/`truncated` added when the budget bit; the text
- * block is the same list rendered grouped/tsv/json.
+ * block is the same list rendered grouped.
  */
 export function diagnosticsResponse<T extends Record<string, unknown>>(
   structuredContent: T,
@@ -179,9 +165,7 @@ export function diagnosticsResponse<T extends Record<string, unknown>>(
     [opts.key ?? "errors"]: compactDiagnostics(items),
     ...(truncated ? { total, truncated } : {}),
   };
-  return okList(payload, rows, meta, opts.format ?? "grouped", {
-    fields: opts.fields,
-  });
+  return okList(payload, rows, meta, "grouped");
 }
 
 /** What a run found, counted before any minSeverity filtering. */
@@ -203,11 +187,8 @@ export interface DiagnosticRunOpts<F extends Record<string, unknown>> {
   minSeverity?: keyof typeof SEVERITY_RANK;
   /** The tool's structured output fields (counts and extras), also shown as the text meta. */
   fields: (counts: DiagnosticCounts, results: ExecResult[]) => F;
-  format?: ListFormat;
   detailLevel?: BudgetParams["detailLevel"];
   maxItems?: BudgetParams["maxItems"];
-  /** Limit the text view to these columns. */
-  textFields?: string[];
 }
 
 /**
@@ -262,8 +243,6 @@ export function diagnosticRun<F extends Record<string, unknown>>(
 
   const fields = o.fields(counts, results);
   return diagnosticsResponse(fields, diagnostics, {
-    format: o.format,
-    fields: o.textFields,
     budget: { detailLevel: o.detailLevel, maxItems: o.maxItems },
     meta: fields,
   });

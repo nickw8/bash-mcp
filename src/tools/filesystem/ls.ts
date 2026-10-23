@@ -1,7 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
-import type { ListFormat } from "#format";
 import { lsTimeArgs } from "#platform";
 import { err, okList } from "#response";
 import { defineTool } from "#tool";
@@ -42,14 +41,6 @@ export function registerLsTool(server: McpServer) {
           .optional()
           .describe("Recurse into subdirectories (1 level)"),
         nameOnly: z.boolean().optional().describe("Entries are [name] alone"),
-        format: z
-          .enum(["json", "tsv", "columnar", "bare"])
-          .optional()
-          .describe("Text block only (default tsv)"),
-        fields: z
-          .array(z.string())
-          .optional()
-          .describe("Text-block columns only"),
       },
       outputSchema: {
         // [name, size, permissions, modified] rows, [name] under nameOnly:
@@ -66,8 +57,8 @@ export function registerLsTool(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     // Empty fallback for a `required` argument — see the note in batch.ts.
-    async ({ path = "", all, recursive, nameOnly, format, fields }) => {
-      const fmt = (format ?? "tsv") as ListFormat;
+    async ({ path = "", all, recursive, nameOnly }) => {
+      const fmt = "tsv";
       // One column layout on both platforms (see #platform): `perms links
       // owner group size YYYY-MM-DD HH:MM name`.
       const args = ["-lh", ...lsTimeArgs];
@@ -110,9 +101,7 @@ export function registerLsTool(server: McpServer) {
           "size" in e ? [e.name, e.size, e.permissions, e.modified] : [e.name],
         ),
       };
-      return okList(structured, entries, { total: entries.length, path }, fmt, {
-        fields,
-      });
+      return okList(structured, entries, { total: entries.length, path }, fmt);
     },
   );
 }

@@ -7,7 +7,7 @@ Read when deciding what a tool returns, or why its text block differs from its
 
 **Before you optimise anything here:** `structuredContent` is what the agent is charged
 tokens for — a client that understands it renders it and ignores the text block
-([ADR-0009](../adr/0009-structuredcontent-is-what-the-agent-reads.md)). `format`, `fields`,
+([ADR-0009](../adr/0009-structuredcontent-is-what-the-agent-reads.md)). The text format
 and row curation shape the **text block only** and save the model nothing. To cut tokens,
 shrink the payload: fewer fields, shorter values, and payload-shrinking parameters
 (`maxResults`, `maxLineLength`, `only`, `filesOnly`, the `budgetSchema` params).
@@ -43,12 +43,13 @@ calls are byte-identical to before it existed.
 
 ## Formats
 
-List tools accept `format`: `json` | `tsv` | `columnar` | `bare` | `grouped` (`ListFormat`
-from `#format`).
+Each list tool passes one `ListFormat` (`json` | `tsv` | `columnar` | `bare` | `grouped`,
+from `#format`) to `okList`. The caller does not choose it
+([ADR-0018](../adr/0018-text-block-format-is-fixed-per-tool.md)).
 
-- `bare` — headerless TSV, single-column, ≈ raw. Default for `tree`, `glob`, `tf_state_list`.
-- `tsv` — default for multi-column: `ls`, `du`, `git_log`, `git_branches`, `tf_outputs`, `kube_contexts`.
-- `grouped` — group rows by first column, header printed once (ripgrep style). Default for `rg` and the diagnostic tools.
+- `bare` — headerless TSV, single-column, ≈ raw. Used by `tree`, `glob`, `tf_state_list`.
+- `tsv` — multi-column: `ls`, `du`, `git_log`, `git_branches`, `tf_outputs`, `kube_contexts`.
+- `grouped` — group rows by first column, header printed once (ripgrep style). Used by `rg` and the diagnostic tools.
 
 `formatList` uses the union of keys across ragged rows and omits low-signal meta
 (`false` / `null` / `undefined` / `""`). Meta values that are objects or arrays are
@@ -132,10 +133,10 @@ says to narrow the call.
 
 ## Diagnostics
 
-Spread `...diagnosticInputSchema` (`format`, `fields`, `detailLevel`, `maxItems`) into
+Spread `...diagnosticInputSchema` (`detailLevel`, `maxItems`) into
 `inputSchema` and `...diagnosticOutputSchema` (`errors`, `total`, `truncated`) into
 `outputSchema`, then pass the counts plus
-`{ format, fields, budget: { detailLevel, maxItems }, meta: { errorCount, ... } }`.
+`{ budget: { detailLevel, maxItems }, meta: { errorCount, ... } }`.
 
 `diagnosticsResponse` owns the diagnostics list in **both** slots: it writes the grouped,
 budget-capped findings into the payload under `key` (default `errors`; `dotnet_build` passes

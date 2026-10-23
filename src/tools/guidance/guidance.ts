@@ -111,9 +111,9 @@ export const INTENTS = [
     intent: "keep a broad search from flooding the context",
     preferredTool: "rg",
     category: "search",
-    avoid: ["format/fields (text block only)", "run: rg | head"],
+    avoid: ["run: rg | head"],
     reason:
-      "maxResults, maxLineLength, filesOnly, and countPerFile shrink the returned payload; output formats do not.",
+      "maxResults, maxLineLength, filesOnly, and countPerFile shrink the returned payload.",
   },
   {
     intent: "search for exact code references or symbols",

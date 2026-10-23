@@ -1,7 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
-import type { ListFormat } from "#format";
 import { statArgs } from "#platform";
 import { err, okList } from "#response";
 import { defineTool } from "#tool";
@@ -73,10 +72,6 @@ export function registerFindTool(server: McpServer) {
           .describe(
             "Include size (bytes) and mtime (unix timestamp) for each file",
           ),
-        format: z
-          .enum(["json", "tsv", "columnar"])
-          .optional()
-          .describe("Text block only (default tsv)"),
       },
       outputSchema: {
         files: z.array(z.string()),
@@ -102,9 +97,8 @@ export function registerFindTool(server: McpServer) {
       maxDepth,
       modifiedWithin,
       withMetadata,
-      format,
     }) => {
-      const fmt = (format ?? "tsv") as ListFormat;
+      const fmt = "tsv";
       const single = name ?? pattern;
       const allNames = names ?? (single ? [single] : []);
       const args = [path];

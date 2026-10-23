@@ -43,6 +43,11 @@ breaking change did.
 - **Diagnostic lists drop exact repeats.** Identical file/line/column/severity/rule/message
   findings appear once. When a budget cuts the list, errors are kept ahead of warnings;
   the kept findings stay in CLI order.
+- **`format` and `fields` are gone from every tool's input schema.** They shaped only the
+  text block, which a `structuredContent` client discards, and cost 1,084 schema tokens.
+  Each tool keeps its old default rendering. Until 6.0.0 a call that still sends them has
+  them dropped, not refused. See
+  [ADR-0018](docs/adr/0018-text-block-format-is-fixed-per-tool.md).
 - **An unknown `BASH_MCP_PROFILE` or `BASH_MCP_RESPONSE_MODE` fails at startup** with
   the reason on stderr, instead of being ignored.
 
@@ -94,6 +99,7 @@ breaking change did.
 - Treat `retained` as "there is more"; call `result_get` with its `id` to read the rest,
   or set `BASH_MCP_RESPONSE_MODE=full`.
 - Read `rg`'s `truncated` as optional.
+- Stop sending `format`/`fields`; 6.0.0 refuses them.
 - If a client lists too many tools, set `BASH_MCP_PROFILE`.
 
 ## 4.0.0 — 2026-10-22

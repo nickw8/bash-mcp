@@ -37,7 +37,7 @@ export function registerNpmTypecheckTool(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     // Empty fallback for a `required` argument — see the note in batch.ts.
-    async ({ cwd = "", project, format, fields, detailLevel, maxItems }) => {
+    async ({ cwd = "", project, detailLevel, maxItems }) => {
       // Try tsgo first (faster), fall back to tsc
       const compiler = await detectCompiler(cwd);
       const args = [compiler, "--noEmit", "--pretty", "false"];
@@ -56,8 +56,6 @@ export function registerNpmTypecheckTool(server: McpServer) {
           errorCount: found,
           success: r?.exitCode === 0,
         }),
-        format,
-        textFields: fields,
         detailLevel,
         maxItems,
       });

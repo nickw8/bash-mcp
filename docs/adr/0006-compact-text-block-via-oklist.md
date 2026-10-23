@@ -1,6 +1,7 @@
 # ADR-0006: Flat lists return a compact text block; `structuredContent` stays complete
 
-- **Status:** Superseded by [ADR-0009](0009-structuredcontent-is-what-the-agent-reads.md)
+- **Status:** Superseded by [ADR-0009](0009-structuredcontent-is-what-the-agent-reads.md);
+  the caller-chosen `format`/`fields` by [ADR-0018](0018-text-block-format-is-fixed-per-tool.md)
 - **Date:** 2026-05-31
 
 > **Superseded 2026-08-03.** The premise below — that the text block is what the model is

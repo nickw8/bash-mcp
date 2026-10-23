@@ -1,7 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec } from "#exec";
-import type { ListFormat } from "#format";
 import { okList } from "#response";
 import { defineTool } from "#tool";
 
@@ -41,16 +40,6 @@ export function registerGitLogTool(server: McpServer) {
           .boolean()
           .optional()
           .describe("Include list of files changed per commit"),
-        format: z
-          .enum(["json", "tsv", "columnar", "bare"])
-          .optional()
-          .describe("Text block only (default tsv)"),
-        fields: z
-          .array(z.string())
-          .optional()
-          .describe(
-            "Limit the text view to these columns, e.g. ['shortHash','message'] (text block only, not the returned payload)",
-          ),
       },
       outputSchema: {
         // Abbreviated hash only — the full 40-char hash is a prefix-equal
@@ -68,19 +57,8 @@ export function registerGitLogTool(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({
-      cwd,
-      count,
-      author,
-      since,
-      path,
-      range,
-      exclude,
-      withFiles,
-      format,
-      fields,
-    }) => {
-      const fmt = (format ?? "tsv") as ListFormat;
+    async ({ cwd, count, author, since, path, range, exclude, withFiles }) => {
+      const fmt = "tsv";
       // Unicode separator avoids collisions with commit message content
       const sep = "\u2016";
       const args = [
@@ -161,7 +139,6 @@ export function registerGitLogTool(server: McpServer) {
           count: commits.length,
         },
         fmt,
-        { fields },
       );
     },
   );

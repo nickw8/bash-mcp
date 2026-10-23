@@ -108,8 +108,6 @@ export function registerDotnetBuildTool(server: McpServer) {
       project,
       configuration,
       includeWarnings,
-      format,
-      fields,
       detailLevel,
       maxItems,
     }) => {
@@ -173,8 +171,6 @@ export function registerDotnetBuildTool(server: McpServer) {
       }
 
       return diagnosticsResponse(structured, diagnostics, {
-        format,
-        fields,
         meta,
         key: "diagnostics",
       });

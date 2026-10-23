@@ -12,7 +12,6 @@ import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execJson, TIMEOUT } from "#exec";
-import type { ListFormat } from "#format";
 import { err, ok, okList } from "#response";
 import { defineTool } from "#tool";
 import {
@@ -64,12 +63,6 @@ export function registerTerraformTools(server: McpServer) {
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
         binary: binarySchema,
-        format: z
-          .enum(["json", "tsv", "columnar", "bare"])
-          .optional()
-          .describe(
-            "Text-block format, payload unaffected (default: bare — one address per line)",
-          ),
       },
       outputSchema: {
         // Addresses only: `module.network.aws_subnet.public[0]` already carries
@@ -80,8 +73,8 @@ export function registerTerraformTools(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ cwd, binary, format }) => {
-      const fmt = (format ?? "bare") as ListFormat;
+    async ({ cwd, binary }) => {
+      const fmt = "bare";
       const result = await exec(resolveTfBinary(binary), ["state", "list"], {
         cwd,
         timeout: 30_000,
@@ -328,14 +321,6 @@ export function registerTerraformTools(server: McpServer) {
       inputSchema: {
         cwd: z.string().describe("Terraform project directory"),
         binary: binarySchema,
-        format: z
-          .enum(["json", "tsv", "columnar", "bare"])
-          .optional()
-          .describe("Text block only (default tsv)"),
-        fields: z
-          .array(z.string())
-          .optional()
-          .describe("Text-block columns only"),
       },
       outputSchema: {
         // [name, value] pairs, [name] for a redacted one: no per-row keys,
@@ -347,8 +332,8 @@ export function registerTerraformTools(server: McpServer) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ cwd, binary, format, fields }) => {
-      const fmt = (format ?? "tsv") as ListFormat;
+    async ({ cwd, binary }) => {
+      const fmt = "tsv";
       const res = await execJson<
         Record<string, { value?: unknown; type?: unknown; sensitive?: boolean }>
       >(resolveTfBinary(binary), ["output", "-json"], {
@@ -373,7 +358,6 @@ export function registerTerraformTools(server: McpServer) {
           count: outputs.length,
         },
         fmt,
-        { fields },
       );
     },
   );

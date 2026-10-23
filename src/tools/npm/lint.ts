@@ -47,16 +47,7 @@ export function registerNpmLintTool(server: McpServer) {
         fixedCount: z.number(),
       },
     },
-    async ({
-      cwd,
-      fix,
-      paths,
-      minSeverity,
-      format,
-      fields,
-      detailLevel,
-      maxItems,
-    }) => {
+    async ({ cwd, fix, paths, minSeverity, detailLevel, maxItems }) => {
       const args = ["biome", "check", "--reporter=json"];
       if (fix) args.push("--fix");
       const pathList = toArray(paths);
@@ -75,8 +66,6 @@ export function registerNpmLintTool(server: McpServer) {
           warningCount,
           fixedCount: fix ? biomeChangedCount(r?.stdout || r?.stderr || "") : 0,
         }),
-        format,
-        textFields: fields,
         detailLevel,
         maxItems,
       });

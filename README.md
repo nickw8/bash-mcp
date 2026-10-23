@@ -213,7 +213,7 @@ so agents can self-select without the README.
 | understand the overall state of a repository | `repo_health_summary` | `git status`, `git log --oneline` |
 | read a file's structure without loading the full body | `outline` | `cat (entire file)`, `cat` |
 | read one region of a large file | `cat` | `cat (whole file)`, `sed -n '10,40p'` |
-| keep a broad search from flooding the context | `rg` | `format/fields (text block only)`, `rg \| head` |
+| keep a broad search from flooding the context | `rg` | `rg \| head` |
 | search for exact code references or symbols | `rg` | `grep -r`, `rg` |
 | check whether a pull request's CI checks pass | `gh_pr_checks` | `gh pr checks`, `gh pr view` |
 | find out why a CI / GitHub Actions run failed | `gh_run_failure_summary` | `gh run view --log-failed`, `gh run list` |

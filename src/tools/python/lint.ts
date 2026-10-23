@@ -45,16 +45,7 @@ export function registerPythonLintTool(server: McpServer) {
         fixedCount: z.number(),
       },
     },
-    async ({
-      cwd,
-      fix,
-      paths,
-      minSeverity,
-      format,
-      fields,
-      detailLevel,
-      maxItems,
-    }) => {
+    async ({ cwd, fix, paths, minSeverity, detailLevel, maxItems }) => {
       const args = ["check", "--output-format", "json"];
       if (fix) args.push("--fix");
       const pathList = toArray(paths);
@@ -74,8 +65,6 @@ export function registerPythonLintTool(server: McpServer) {
           // `[]`); it reports no fixed count, so this stays 0.
           fixedCount: 0,
         }),
-        format,
-        textFields: fields,
         detailLevel,
         maxItems,
       });
