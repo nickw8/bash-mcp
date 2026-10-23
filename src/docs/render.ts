@@ -195,6 +195,7 @@ const CATEGORIES = [
   ["Python", "`Bash(ruff/pytest/mypy)`"],
   ["Shell", "`Bash(shellcheck/bats/bash -n)`"],
   ["Execution", "`Bash(cd && cmd)`, sequential one-off calls"],
+  ["Results", "re-running a command to see what a trimmed response cut"],
 ] as const satisfies readonly (readonly [string, string])[];
 
 const CATEGORY_INDEX = new Map<string, number>(

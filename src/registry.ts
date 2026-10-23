@@ -31,6 +31,7 @@ import { registerKubernetesTools } from "./tools/kubernetes/kubernetes.js";
 import { registerLiquibaseTools } from "./tools/liquibase/liquibase.js";
 import { registerNpmTools } from "./tools/npm/npm.js";
 import { registerPythonTools } from "./tools/python/python.js";
+import { registerResultTools } from "./tools/result/result.js";
 import { registerRunTools } from "./tools/run/run.js";
 import { registerRunSeqTools } from "./tools/run/seq.js";
 import { registerSearchTools } from "./tools/search/search.js";
@@ -38,10 +39,28 @@ import { registerShellTools } from "./tools/shell/shell.js";
 import { registerTerraformTools } from "./tools/terraform/terraform.js";
 import { registerYamlTools } from "./tools/yaml/yaml.js";
 
-/** A tool group plus the README category its tools belong to. */
+export const PROFILES = [
+  "core",
+  "development",
+  "infrastructure",
+  "all",
+] as const;
+export type Profile = (typeof PROFILES)[number];
+
+/**
+ * `core` groups load under every profile. The others name the profiles that
+ * add them; `all` loads every group.
+ */
+type GroupProfiles = "core" | readonly ("development" | "infrastructure")[];
+const DEV = ["development"] as const;
+const INFRA = ["infrastructure"] as const;
+const BOTH = ["development", "infrastructure"] as const;
+
+/** A tool group, the README category its tools belong to, and its profiles. */
 interface ToolGroup {
   category: string;
   register: (server: McpServer) => void;
+  profiles: GroupProfiles;
 }
 
 /**
@@ -54,29 +73,42 @@ interface ToolGroup {
  * json.ts + yaml.ts → "Data Processing"); they merge into one README section.
  */
 const GROUPS: readonly ToolGroup[] = [
-  { category: "Filesystem", register: registerFilesystemTools },
-  { category: "Search", register: registerSearchTools },
-  { category: "Git", register: registerGitTools },
-  { category: "Kubernetes", register: registerKubernetesTools },
-  { category: "Terraform", register: registerTerraformTools },
-  { category: "ArgoCD", register: registerArgocdTools },
-  { category: "Helm", register: registerHelmTools },
-  { category: "Data Processing", register: registerJsonTools },
-  { category: "Data Processing", register: registerYamlTools },
-  { category: "File", register: registerFileTools },
-  { category: "Execution", register: registerRunTools },
-  { category: "Execution", register: registerRunSeqTools },
-  { category: "Execution", register: registerBatchTools },
-  { category: "Git", register: registerGitDiffContentTools },
-  { category: "Node.js", register: registerNpmTools },
-  { category: ".NET", register: registerDotnetTools },
-  { category: "Liquibase", register: registerLiquibaseTools },
-  { category: "Python", register: registerPythonTools },
-  { category: "Shell", register: registerShellTools },
-  { category: "Environment", register: registerEnvTools },
-  { category: "Environment", register: registerGuidanceTools },
-  { category: "GitHub", register: registerGithubTools },
-  { category: "GitLab", register: registerGitlabTools },
+  {
+    category: "Filesystem",
+    register: registerFilesystemTools,
+    profiles: "core",
+  },
+  { category: "Search", register: registerSearchTools, profiles: "core" },
+  { category: "Git", register: registerGitTools, profiles: "core" },
+  {
+    category: "Kubernetes",
+    register: registerKubernetesTools,
+    profiles: INFRA,
+  },
+  { category: "Terraform", register: registerTerraformTools, profiles: INFRA },
+  { category: "ArgoCD", register: registerArgocdTools, profiles: INFRA },
+  { category: "Helm", register: registerHelmTools, profiles: INFRA },
+  { category: "Data Processing", register: registerJsonTools, profiles: BOTH },
+  { category: "Data Processing", register: registerYamlTools, profiles: BOTH },
+  { category: "File", register: registerFileTools, profiles: "core" },
+  { category: "Execution", register: registerRunTools, profiles: "core" },
+  { category: "Execution", register: registerRunSeqTools, profiles: "core" },
+  { category: "Execution", register: registerBatchTools, profiles: "core" },
+  { category: "Git", register: registerGitDiffContentTools, profiles: "core" },
+  { category: "Node.js", register: registerNpmTools, profiles: DEV },
+  { category: ".NET", register: registerDotnetTools, profiles: DEV },
+  { category: "Liquibase", register: registerLiquibaseTools, profiles: BOTH },
+  { category: "Python", register: registerPythonTools, profiles: DEV },
+  { category: "Shell", register: registerShellTools, profiles: DEV },
+  { category: "Environment", register: registerEnvTools, profiles: "core" },
+  {
+    category: "Environment",
+    register: registerGuidanceTools,
+    profiles: "core",
+  },
+  { category: "GitHub", register: registerGithubTools, profiles: BOTH },
+  { category: "GitLab", register: registerGitlabTools, profiles: BOTH },
+  { category: "Results", register: registerResultTools, profiles: "core" },
 ];
 
 /**
@@ -84,8 +116,43 @@ const GROUPS: readonly ToolGroup[] = [
  * entry point (src/index.ts) and `buildRegistry()` so the tool list has one
  * source of truth.
  */
-export function registerAll(server: McpServer): void {
-  for (const { register } of GROUPS) register(server);
+export function registerAll(
+  server: McpServer,
+  profile: Profile = profileFromEnv(),
+): void {
+  for (const group of GROUPS) {
+    if (inProfile(group, profile)) group.register(server);
+  }
+}
+
+function inProfile({ profiles }: ToolGroup, profile: Profile): boolean {
+  if (profile === "all" || profiles === "core") return true;
+  return profile !== "core" && profiles.includes(profile);
+}
+
+/** `BASH_MCP_PROFILE`, or `all`. Throws on an unknown value. */
+export function profileFromEnv(raw = process.env.BASH_MCP_PROFILE): Profile {
+  if (raw === undefined || raw === "") return "all";
+  if ((PROFILES as readonly string[]).includes(raw)) return raw as Profile;
+  throw new Error(
+    `BASH_MCP_PROFILE=${raw} is not one of ${PROFILES.join(", ")}`,
+  );
+}
+
+/** Tool names a profile registers, for docs and tests. */
+export function toolsInProfile(profile: Profile): string[] {
+  const stub = {
+    registerTool() {
+      return undefined;
+    },
+  } as unknown as McpServer;
+  resetRegistry();
+  for (const group of GROUPS) {
+    if (inProfile(group, profile)) group.register(stub);
+  }
+  const names = getRegisteredTools().map((t) => t.name);
+  resetRegistry();
+  return names;
 }
 
 /**

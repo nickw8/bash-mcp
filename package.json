@@ -38,11 +38,13 @@
     "LICENSE"
   ],
   "imports": {
+    "#budget": "./src/budget.ts",
     "#error": "./src/error.ts",
     "#exec": "./src/exec.ts",
     "#format": "./src/format.ts",
     "#logger": "./src/logger.ts",
     "#response": "./src/response.ts",
+    "#result-store": "./src/result-store.ts",
     "#safety": "./src/safety.ts",
     "#tool": "./src/tool.ts",
     "#kube-args": "./src/tools/kube-args.ts",
