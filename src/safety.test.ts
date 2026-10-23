@@ -136,3 +136,52 @@ describe("checkCommandAllowed", () => {
     );
   });
 });
+
+describe("commands run through a shell, wrapper or find", () => {
+  const blocked = (command: string, args: string[]) =>
+    checkCommandAllowed(command, args, "readOnly").reason;
+
+  it("classifies each command in a sh -c script", () => {
+    expect(blocked("sh", ["-c", "kubectl -n prod delete pod x"])).toContain(
+      "'kubectl delete'",
+    );
+    expect(blocked("bash", ["-lc", "git status && git push"])).toContain(
+      "'git push'",
+    );
+    expect(blocked("sh", ["-c", "ls | xargs rm"])).toContain("'rm'");
+    expect(blocked("sh", ["-c", "echo $(rm x)"])).toContain("'rm'");
+    expect(blocked("sh", ["-c", "FOO=1 terraform destroy"])).toContain(
+      "'terraform destroy'",
+    );
+    expect(blocked("sh", ["-c", "sh -c 'rm -rf x'"])).toContain("'rm'");
+  });
+
+  it("allows a read-only script", () => {
+    expect(blocked("sh", ["-c", "git log | head -5; kubectl get pods"])).toBe(
+      undefined,
+    );
+    expect(blocked("sh", ["-c", "echo 'git push'"])).toBe(undefined);
+  });
+
+  it("sees through wrappers", () => {
+    expect(blocked("sudo", ["-u", "root", "rm", "x"])).toContain("'rm'");
+    expect(blocked("env", ["A=1", "kubectl", "apply", "-f", "x"])).toContain(
+      "'kubectl apply'",
+    );
+    expect(blocked("timeout", ["5", "helm", "uninstall", "r"])).toContain(
+      "'helm uninstall'",
+    );
+    expect(blocked("eval", ["rm -rf x"])).toContain("'rm'");
+    expect(blocked("env", ["git", "status"])).toBe(undefined);
+  });
+
+  it("blocks find -delete and a mutating find -exec", () => {
+    expect(blocked("find", [".", "-name", "*.tmp", "-delete"])).toContain(
+      "'find -delete'",
+    );
+    expect(blocked("find", [".", "-exec", "rm", "{}", ";"])).toContain("'rm'");
+    expect(blocked("find", [".", "-exec", "grep", "x", "{}", ";"])).toBe(
+      undefined,
+    );
+  });
+});
