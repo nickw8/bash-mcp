@@ -4,7 +4,7 @@ Notable changes per release. Releases before 2.0.0 are in the git log
 (`git log --oneline --grep '^chore(release)'`); this file starts where the first
 breaking change did.
 
-## 5.0.0 — Unreleased
+## 5.0.0 — 2026-10-23
 
 ### Breaking
 
