@@ -4,10 +4,15 @@
  * `defineTool` runs every result through `fitToBudget` before it leaves the
  * server. A payload under the limit passes through untouched. A payload over it
  * has its arrays cut to an order-preserving prefix until it fits, and every cut
- * is reported in `omitted`, so truncation is never silent. Arrays only: a cut
- * array still matches the tool's `outputSchema`, and a cut string would not mean
- * the same thing. Long strings are capped by the tools that make them (`cat`,
- * `kube_logs`).
+ * is reported in `omitted`, so truncation is never silent. A list whose newest
+ * items are at the end (log lines) is named in `tail` and keeps a suffix
+ * instead. Arrays only: a cut array still matches the tool's `outputSchema`,
+ * and a cut string would not mean the same thing. Long strings are capped by
+ * the tools that make them (`cat`, `kube_logs`).
+ *
+ * A row is atomic: an array that is an element of another array (a positional
+ * row like `du`'s `[path, sizeBytes]`) is never cut, since a shorter tuple no
+ * longer matches the schema. Arrays inside an object row are still cut.
  *
  * Modes (`BASH_MCP_RESPONSE_MODE`), as limits on serialized JSON characters:
  *
@@ -82,6 +87,8 @@ export interface Omission {
   path: string;
   total: number;
   shown: number;
+  /** Present when the newest items were kept: the cut dropped the head. */
+  from?: "tail";
 }
 
 interface ArrayRef {
@@ -103,6 +110,8 @@ function collectArrays(
     : Object.entries(value);
   for (const [key, child] of entries) {
     if (top && typeof key === "string" && PROTECTED.has(key)) continue;
+    // A row inside a list is atomic; see the module comment.
+    if (Array.isArray(value) && Array.isArray(child)) continue;
     const childPath = path === "" ? String(key) : `${path}.${key}`;
     if (Array.isArray(child) && child.length > 1) {
       out.push({
@@ -132,11 +141,12 @@ function resolves(root: unknown, path: string): boolean {
  * the limit the payload is, keeping at least one element so the shape stays
  * visible. Stops when the payload fits or every array is down to one element.
  * Deterministic: the same payload and limit always give the same cut.
- * `payload` itself is not modified.
+ * `payload` itself is not modified. Paths in `tail` keep their last items.
  */
 export function fitToBudget(
   payload: Record<string, unknown>,
   limit: number,
+  { tail = [] }: { tail?: readonly string[] } = {},
 ): {
   payload: Record<string, unknown>;
   omitted: Omission[];
@@ -168,7 +178,7 @@ export function fitToBudget(
     );
     if (!totals.has(biggest.path)) totals.set(biggest.path, arr.length);
     (biggest.holder as Record<string | number, unknown>)[biggest.key] =
-      arr.slice(0, keep);
+      tail.includes(biggest.path) ? arr.slice(-keep) : arr.slice(0, keep);
     size = JSON.stringify(clone).length;
   }
   const omitted: Omission[] = [];
@@ -182,7 +192,12 @@ export function fitToBudget(
           clone,
         ) as unknown[]
     ).length;
-    omitted.push({ path, total, shown });
+    omitted.push({
+      path,
+      total,
+      shown,
+      ...(tail.includes(path) ? { from: "tail" as const } : {}),
+    });
   }
   omitted.sort((a, b) => a.path.localeCompare(b.path));
   return { payload: clone, omitted, size, originalSize };

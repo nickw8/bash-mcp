@@ -94,6 +94,29 @@ describe("fitToBudget", () => {
     expect(JSON.stringify(fit.payload).length).toBeLessThanOrEqual(1_000);
   });
 
+  it("never cuts inside a positional row", () => {
+    const payload = {
+      entries: [
+        ["x".repeat(5_000), 1],
+        ["y".repeat(5_000), 2],
+      ],
+    };
+    const fit = fitToBudget(payload, 1_000);
+    expect(fit.payload.entries).toEqual([["x".repeat(5_000), 1]]);
+    expect(fit.omitted).toEqual([{ path: "entries", total: 2, shown: 1 }]);
+  });
+
+  it("keeps the newest items of a tail list and says so", () => {
+    const lines = Array.from({ length: 400 }, (_, i) => `line ${i}`);
+    const fit = fitToBudget({ lines }, 1_000, { tail: ["lines"] });
+    const kept = fit.payload.lines as string[];
+    expect(kept.at(-1)).toBe("line 399");
+    expect(kept[0]).not.toBe("line 0");
+    expect(fit.omitted).toEqual([
+      { path: "lines", total: 400, shown: kept.length, from: "tail" },
+    ]);
+  });
+
   it("never cuts the triage answer fields", () => {
     const payload = {
       status: "CrashLoopBackOff",

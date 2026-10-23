@@ -44,6 +44,12 @@ describe("applyBudget", () => {
     expect(r.truncated).toBe(true);
   });
 
+  it("tail keeps the last rows", () => {
+    const r = applyBudget(rows, { maxItems: 5 }, { tail: true });
+    expect(r.items).toEqual(rows.slice(-5));
+    expect(r.truncated).toBe(true);
+  });
+
   it("detailLevel full does not cap", () => {
     const r = applyBudget(rows, { detailLevel: "full" });
     expect(r.items).toHaveLength(250);

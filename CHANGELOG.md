@@ -13,8 +13,10 @@ breaking change did.
   result keeps its schema, adds a `retained` record (`omitted: [{ path, total, shown }]`
   and an opaque `id`), and notes the cut in the text block. The full payload is stored for
   the session and paged with `result_get`. Clients that need the v4 shape set
-  `BASH_MCP_RESPONSE_MODE=full`. See
-  [ADR-0015](docs/adr/0015-definetool-fits-every-result-to-a-budget.md).
+  `BASH_MCP_RESPONSE_MODE=full`. A positional row is never cut, and a log's cut keeps
+  its newest lines (`"from": "tail"`). See
+  [ADR-0015](docs/adr/0015-definetool-fits-every-result-to-a-budget.md) and
+  [ADR-0017](docs/adr/0017-budget-rows-are-atomic-and-logs-keep-the-tail.md).
 - **`rg` omits `truncated` unless it is `true`.** Read a missing key as `false`.
 - **Flat-list tools return rows as positional arrays.** Each tool's description names the
   order:

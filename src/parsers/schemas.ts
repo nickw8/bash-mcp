@@ -145,16 +145,18 @@ const DETAIL_CAPS = { summary: 20, normal: 100, full: Infinity } as const;
  * The effective cap is `maxItems` if given, else the detailLevel default
  * (full/unset → no cap). Returns the (possibly) truncated rows plus the
  * original total and a `truncated` flag. Omitting all params returns the list
- * unchanged.
+ * unchanged. `tail` keeps the last rows instead of the first (log lines).
  */
 export function applyBudget<T>(
   rows: T[],
   budget: BudgetParams,
+  { tail = false }: { tail?: boolean } = {},
 ): { items: T[]; truncated: boolean; total: number } {
   const total = rows.length;
   const cap = budget.maxItems ?? DETAIL_CAPS[budget.detailLevel ?? "full"];
   if (total > cap) {
-    return { items: rows.slice(0, cap), truncated: true, total };
+    const items = tail ? rows.slice(-cap) : rows.slice(0, cap);
+    return { items, truncated: true, total };
   }
   return { items: rows, truncated: false, total };
 }

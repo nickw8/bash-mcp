@@ -101,7 +101,11 @@ for an error or a non-Healthy diagnosis), `full` none. A call with
 `detailLevel: "full"` skips it.
 
 Over the limit, the biggest array is cut to a prefix, repeatedly, until it fits;
-`likelyCauses` and `suggestedNextCommands` are never cut. The text block is capped to
+`likelyCauses` and `suggestedNextCommands` are never cut. A list whose newest items
+are last (`kube_logs` `lines`) is declared in `defineTool`'s `budgetTail` and keeps a
+suffix instead; its `omitted` entry carries `"from": "tail"` and the note reads
+`lines last 120/400`. A positional row (an array inside an array) is never cut, so a
+tuple keeps its arity ([ADR-0017](../adr/0017-budget-rows-are-atomic-and-logs-keep-the-tail.md)). The text block is capped to
 the same limit at a line boundary. A cut is never silent: the payload gains
 
 ```json

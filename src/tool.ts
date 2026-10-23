@@ -78,6 +78,11 @@ interface ToolConfig<
    * result, so storing it again would only fill the store with copies.
    */
   retain?: false;
+  /**
+   * Top-level arrays whose newest items are at the end (log lines). A budget
+   * cut keeps their last items instead of their first; see `fitToBudget`.
+   */
+  budgetTail?: string[];
 }
 
 /**
@@ -179,12 +184,13 @@ function budgeted<R extends BudgetResult>(
   args: unknown,
   extra: unknown,
   retain: boolean,
+  tail: readonly string[] = [],
 ): R {
   const payload = result?.structuredContent;
   const mode = modeFor(args);
   if (!payload || mode === "full") return result;
   const limit = limitFor(mode, isUnhealthy(payload, result.isError === true));
-  const fit = fitToBudget(payload, limit);
+  const fit = fitToBudget(payload, limit, { tail });
   // The text block is held to the same limit: a list tool's tsv/bare text
   // restates every row, so a cut payload beside an uncut text saves nothing.
   const [first, ...others] = result.content ?? [];
@@ -203,7 +209,10 @@ function budgeted<R extends BudgetResult>(
     ...(id ? { id, expiresInSec: resultStore.ttlSec } : {}),
   };
   const cuts = fit.omitted
-    .map((o) => `${o.path} ${o.shown}/${o.total}`)
+    .map(
+      (o) =>
+        `${o.path} ${o.from === "tail" ? "last " : ""}${o.shown}/${o.total}`,
+    )
     .join(", ");
   const how = id
     ? `rest: result_get {"id":"${id}"} (${resultStore.ttlSec}s)`
@@ -248,7 +257,14 @@ export function defineTool<
       ? callArgs
       : [undefined, callArgs[0]];
     const withBudget = <R extends BudgetResult>(r: R): R =>
-      budgeted(name, r, args, extra, config.retain !== false);
+      budgeted(
+        name,
+        r,
+        args,
+        extra,
+        config.retain !== false,
+        config.budgetTail,
+      );
     const start = performance.now();
     let outcome: WideEvent["outcome"] = "success";
     let errorKind: string | undefined;
@@ -333,7 +349,14 @@ export function defineTool<
 
   // Fold equivalentCommands into _meta (preserving any caller _meta) and keep it
   // out of the config the SDK sees. Capture a flattened record for doc gen.
-  const { equivalentCommands, required, diagnostic, retain, ...rest } = config;
+  const {
+    equivalentCommands,
+    required,
+    diagnostic,
+    retain,
+    budgetTail,
+    ...rest
+  } = config;
   const meta = equivalentCommands
     ? { ...config._meta, equivalentCommands }
     : config._meta;
