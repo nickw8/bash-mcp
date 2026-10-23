@@ -10,7 +10,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { exec, execJson, TIMEOUT } from "#exec";
 import type { ListFormat } from "#format";
-import { kubectlContext, namespaceSchema } from "#kube-args";
+import {
+  allNamespacesSchema,
+  contextSchema,
+  kubectlContext,
+  namespaceSchema,
+  namespaceScope,
+} from "#kube-args";
 import { applyBudget, budgetSchema, parseJsonishOutput } from "#parsers";
 import { err, ok, okList } from "#response";
 import { defineTool } from "#tool";
@@ -44,13 +50,13 @@ export function registerKubernetesTools(server: McpServer) {
           .string()
           .optional()
           .describe("Namespace (omit for all-namespaces or cluster-scoped)"),
-        allNamespaces: z.boolean().optional().describe("Search all namespaces"),
+        allNamespaces: allNamespacesSchema,
         selector: z
           .string()
           .optional()
           .describe("Label selector (e.g. 'app=nginx')"),
         name: z.string().optional().describe("Specific resource name"),
-        context: z.string().optional().describe("Kubectl context to use"),
+        context: contextSchema,
         jq: z
           .string()
           .optional()
@@ -96,8 +102,7 @@ export function registerKubernetesTools(server: McpServer) {
       const fmt = (format ?? "tsv") as ListFormat;
       const args = ["get", resource, "-o", "json"];
       if (name) args.splice(2, 0, name);
-      if (namespace) args.push("-n", namespace);
-      if (allNamespaces) args.push("--all-namespaces");
+      args.push(...namespaceScope(namespace, allNamespaces));
       if (selector) args.push("-l", selector);
       args.push(...kubectlContext(context));
 
@@ -224,7 +229,7 @@ export function registerKubernetesTools(server: McpServer) {
           .boolean()
           .optional()
           .describe("Case-insensitive grep matching (default: false)"),
-        context: z.string().optional().describe("Kubectl context"),
+        context: contextSchema,
         ...budgetSchema,
       },
       outputSchema: {

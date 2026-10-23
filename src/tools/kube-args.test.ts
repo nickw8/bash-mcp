@@ -8,7 +8,14 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { helmContext, kubectlContext, namespaceSchema } from "#kube-args";
+import {
+  allNamespacesSchema,
+  contextSchema,
+  helmContext,
+  kubectlContext,
+  namespaceSchema,
+  namespaceScope,
+} from "#kube-args";
 
 describe("kubectlContext", () => {
   it("spells the flag --context", () => {
@@ -37,5 +44,34 @@ describe("namespaceSchema", () => {
 
   it("passes an explicit namespace through", () => {
     expect(namespaceSchema.parse("kube-system")).toBe("kube-system");
+  });
+});
+
+describe("namespaceScope", () => {
+  it("scopes to one namespace with -n", () => {
+    expect(namespaceScope("kube-system")).toEqual(["-n", "kube-system"]);
+  });
+
+  it("asks for all namespaces without -n", () => {
+    expect(namespaceScope(undefined, true)).toEqual(["--all-namespaces"]);
+  });
+
+  it("lets allNamespaces win over a namespace, never passing both", () => {
+    expect(namespaceScope("default", true)).toEqual(["--all-namespaces"]);
+  });
+
+  it("emits nothing when neither is given, or allNamespaces is false", () => {
+    expect(namespaceScope()).toEqual([]);
+    expect(namespaceScope(undefined, false)).toEqual([]);
+    expect(namespaceScope("prod", false)).toEqual(["-n", "prod"]);
+  });
+});
+
+describe("contextSchema and allNamespacesSchema", () => {
+  it("are optional with one description each", () => {
+    expect(contextSchema.parse(undefined)).toBeUndefined();
+    expect(contextSchema.description).toBe("Kube context");
+    expect(allNamespacesSchema.parse(undefined)).toBeUndefined();
+    expect(allNamespacesSchema.parse(true)).toBe(true);
   });
 });

@@ -14,7 +14,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
-import { kubectlContext, namespaceSchema } from "#kube-args";
+import {
+  allNamespacesSchema,
+  contextSchema,
+  kubectlContext,
+  namespaceSchema,
+  namespaceScope,
+} from "#kube-args";
 import {
   applyBudget,
   type BudgetParams,
@@ -63,7 +69,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       inputSchema: {
         pod: z.string().describe("Pod name"),
         namespace: namespaceSchema,
-        context: z.string().optional().describe("Kubectl context"),
+        context: contextSchema,
       },
       outputSchema: triageSchema,
       annotations: { readOnlyHint: true },
@@ -103,8 +109,8 @@ export function registerKubeDiagnosticTools(server: McpServer) {
         "List unhealthy pods in a namespace with their failure reason and evidence — one call instead of get + describe per pod.",
       inputSchema: {
         namespace: namespaceSchema,
-        allNamespaces: z.boolean().optional().describe("Search all namespaces"),
-        context: z.string().optional().describe("Kubectl context"),
+        allNamespaces: allNamespacesSchema,
+        context: contextSchema,
         ...budgetSchema,
       },
       outputSchema: {
@@ -123,7 +129,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     async ({ namespace, allNamespaces, context, detailLevel, maxItems }) => {
-      const scope = allNamespaces ? ["--all-namespaces"] : ["-n", namespace];
+      const scope = namespaceScope(namespace, allNamespaces);
       return triageRun({
         probe: () =>
           kubectlJson<KubeList>([
@@ -188,7 +194,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       inputSchema: {
         name: z.string().describe("Deployment name"),
         namespace: namespaceSchema,
-        context: z.string().optional().describe("Kubectl context"),
+        context: contextSchema,
       },
       outputSchema: triageSchema,
       annotations: { readOnlyHint: true },
@@ -224,8 +230,8 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       equivalentCommands: ["kubectl get events -n <ns>"],
       inputSchema: {
         namespace: namespaceSchema,
-        allNamespaces: z.boolean().optional().describe("Search all namespaces"),
-        context: z.string().optional().describe("Kubectl context"),
+        allNamespaces: allNamespacesSchema,
+        context: contextSchema,
         ...budgetSchema,
       },
       outputSchema: {
@@ -236,7 +242,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
       annotations: { readOnlyHint: true },
     },
     async ({ namespace, allNamespaces, context, detailLevel, maxItems }) => {
-      const scope = allNamespaces ? ["--all-namespaces"] : ["-n", namespace];
+      const scope = namespaceScope(namespace, allNamespaces);
       return triageRun({
         probe: () =>
           kubectlJson<{ items?: KubeEvent[] }>([

@@ -8,7 +8,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execJson, TIMEOUT } from "#exec";
-import { helmContext, namespaceSchema } from "#kube-args";
+import {
+  allNamespacesSchema,
+  contextSchema,
+  helmContext,
+  namespaceSchema,
+  namespaceScope,
+} from "#kube-args";
 import { triageRun, triageSchema } from "#parsers";
 import { err, ok } from "#response";
 import { defineTool } from "#tool";
@@ -28,9 +34,9 @@ export function registerHelmTools(server: McpServer) {
       equivalentCommands: ["helm list -A -o json"],
       inputSchema: {
         namespace: z.string().optional().describe("Namespace (omit for all)"),
-        allNamespaces: z.boolean().optional().describe("All namespaces"),
+        allNamespaces: allNamespacesSchema,
         filter: z.string().optional().describe("Filter by release name regex"),
-        context: z.string().optional().describe("Kubectl context"),
+        context: contextSchema,
       },
       outputSchema: {
         releases: z.array(
@@ -50,8 +56,7 @@ export function registerHelmTools(server: McpServer) {
     },
     async ({ namespace, allNamespaces, filter, context }) => {
       const args = ["list", "-o", "json"];
-      if (namespace) args.push("-n", namespace);
-      if (allNamespaces) args.push("--all-namespaces");
+      args.push(...namespaceScope(namespace, allNamespaces));
       if (filter) args.push("--filter", filter);
       args.push(...helmContext(context));
 
@@ -88,7 +93,7 @@ export function registerHelmTools(server: McpServer) {
       inputSchema: {
         release: z.string().describe("Release name"),
         namespace: namespaceSchema,
-        context: z.string().optional().describe("Kubectl context"),
+        context: contextSchema,
       },
       outputSchema: {
         name: z.string(),
@@ -151,7 +156,7 @@ export function registerHelmTools(server: McpServer) {
           .boolean()
           .optional()
           .describe("Include chart defaults (not just user-supplied)"),
-        context: z.string().optional().describe("Kubectl context"),
+        context: contextSchema,
       },
       outputSchema: {
         values: z.record(z.unknown()),
@@ -191,7 +196,7 @@ export function registerHelmTools(server: McpServer) {
       inputSchema: {
         release: z.string().describe("Release name"),
         namespace: namespaceSchema,
-        context: z.string().optional().describe("Kubectl context"),
+        context: contextSchema,
       },
       outputSchema: {
         healthy: z.boolean(),

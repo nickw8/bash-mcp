@@ -558,9 +558,9 @@ List Helm releases with status, chart, and app version. Structured output.
 **Inputs:**
 
 - `namespace`: string _(optional)_ — Namespace (omit for all)
-- `allNamespaces`: boolean _(optional)_ — All namespaces
+- `allNamespaces`: boolean _(optional)_ — Search all namespaces (overrides namespace)
 - `filter`: string _(optional)_ — Filter by release name regex
-- `context`: string _(optional)_ — Kubectl context
+- `context`: string _(optional)_ — Kube context
 
 **Outputs:**
 
@@ -583,7 +583,7 @@ Diagnose a Helm release's health in one call: combines helm status + helm histor
 
 - `release`: string — Release name
 - `namespace`: string _(optional)_ — Namespace
-- `context`: string _(optional)_ — Kubectl context
+- `context`: string _(optional)_ — Kube context
 
 **Outputs:**
 
@@ -612,7 +612,7 @@ Get detailed status of a Helm release.
 
 - `release`: string — Release name
 - `namespace`: string _(optional)_ — Namespace
-- `context`: string _(optional)_ — Kubectl context
+- `context`: string _(optional)_ — Kube context
 
 **Outputs:**
 
@@ -641,7 +641,7 @@ Get the computed values for a Helm release as structured data.
 - `release`: string — Release name
 - `namespace`: string _(optional)_ — Namespace
 - `allValues`: boolean _(optional)_ — Include chart defaults (not just user-supplied)
-- `context`: string _(optional)_ — Kubectl context
+- `context`: string _(optional)_ — Kube context
 
 **Outputs:**
 
@@ -711,7 +711,7 @@ Report a deployment's rollout health (ready/desired replicas, conditions) as a s
 
 - `name`: string — Deployment name
 - `namespace`: string _(optional)_ — Namespace
-- `context`: string _(optional)_ — Kubectl context
+- `context`: string _(optional)_ — Kube context
 
 **Outputs:**
 
@@ -737,7 +737,7 @@ Diagnose why a pod is unhealthy in one call. Returns status, likely causes, sugg
 
 - `pod`: string — Pod name
 - `namespace`: string _(optional)_ — Namespace
-- `context`: string _(optional)_ — Kubectl context
+- `context`: string _(optional)_ — Kube context
 
 **Outputs:**
 
@@ -763,8 +763,8 @@ Summarize Warning events in a namespace (grouped by reason, ordered by count) in
 **Inputs:**
 
 - `namespace`: string _(optional)_ — Namespace
-- `allNamespaces`: boolean _(optional)_ — Search all namespaces
-- `context`: string _(optional)_ — Kubectl context
+- `allNamespaces`: boolean _(optional)_ — Search all namespaces (overrides namespace)
+- `context`: string _(optional)_ — Kube context
 - `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
 - `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
 - `includeRaw`: boolean _(optional)_ — Include raw/verbose fields where supported.
@@ -794,10 +794,10 @@ Get Kubernetes resources as structured data. Wraps kubectl get -o json and retur
 
 - `resource`: string — Resource type (e.g. pods, deployments, services, nodes)
 - `namespace`: string _(optional)_ — Namespace (omit for all-namespaces or cluster-scoped)
-- `allNamespaces`: boolean _(optional)_ — Search all namespaces
+- `allNamespaces`: boolean _(optional)_ — Search all namespaces (overrides namespace)
 - `selector`: string _(optional)_ — Label selector (e.g. 'app=nginx')
 - `name`: string _(optional)_ — Specific resource name
-- `context`: string _(optional)_ — Kubectl context to use
+- `context`: string _(optional)_ — Kube context
 - `jq`: string _(optional)_ — jq filter applied to raw kubectl JSON. Skips the default summary and returns the jq result instead. Example: '.spec.template.spec.containers[].env'
 - `includeLabels`: boolean _(optional)_ — Include each resource's labels (default false — labels are verbose and mostly hashes; use selector to filter or jq to read specific ones)
 - `format`: "json" | "tsv" | "columnar" | "bare" _(optional)_ — Output format for the item list (default: tsv)
@@ -831,7 +831,7 @@ Get pod logs. Returns structured log lines with timestamps when available. Use g
 - `since`: string _(optional)_ — Duration like '1h', '30m'
 - `grep`: string _(optional)_ — Regex pattern to filter log lines (e.g. 'ERROR|WARN', 'timeout'). Only matching lines are returned.
 - `ignoreCase`: boolean _(optional)_ — Case-insensitive grep matching (default: false)
-- `context`: string _(optional)_ — Kubectl context
+- `context`: string _(optional)_ — Kube context
 - `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
 - `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
 - `includeRaw`: boolean _(optional)_ — Include raw/verbose fields where supported.
@@ -859,8 +859,8 @@ List unhealthy pods in a namespace with their failure reason and evidence — on
 **Inputs:**
 
 - `namespace`: string _(optional)_ — Namespace
-- `allNamespaces`: boolean _(optional)_ — Search all namespaces
-- `context`: string _(optional)_ — Kubectl context
+- `allNamespaces`: boolean _(optional)_ — Search all namespaces (overrides namespace)
+- `context`: string _(optional)_ — Kube context
 - `detailLevel`: "summary" | "normal" | "full" _(optional)_ — Output size preset: summary (~20 items), normal (~100), full (uncapped, default).
 - `maxItems`: number _(optional)_ — Explicit cap on returned items; overrides detailLevel.
 - `includeRaw`: boolean _(optional)_ — Include raw/verbose fields where supported.
