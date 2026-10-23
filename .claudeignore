@@ -3,4 +3,4 @@ dist/
 coverage/
 
 # Added by /project:init
-scratch/
+.scratch/
