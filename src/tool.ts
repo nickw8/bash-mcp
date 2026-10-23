@@ -242,11 +242,23 @@ export function defineTool<
   // the question. The advertised JSON Schema already says
   // `additionalProperties: false`; `.strict()` makes the server agree with it
   // and name the keys it refused, which is what lets the agent retry.
+  //
+  // A `required` field is `.optional()` in Zod (ADR-0013), so the advertised
+  // JSON Schema cannot list it as required; its description says so instead,
+  // or the caller learns it only from the failed first call.
+  const inputShape = config.inputSchema
+    ? Object.fromEntries(
+        Object.entries(config.inputSchema).map(([key, field]) => [
+          key,
+          required?.includes(key)
+            ? field.describe(`Required. ${field.description ?? ""}`.trim())
+            : field,
+        ]),
+      )
+    : undefined;
   const registerConfig = {
     ...rest,
-    ...(config.inputSchema
-      ? { inputSchema: z.object(config.inputSchema).strict() }
-      : {}),
+    ...(inputShape ? { inputSchema: z.object(inputShape).strict() } : {}),
     ...(meta ? { _meta: meta } : {}),
   } as unknown as ToolConfig<InputArgs, OutputArgs>;
 

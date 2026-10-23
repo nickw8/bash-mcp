@@ -10,7 +10,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { describe, expect, it } from "vitest";
-import type { ZodObject, ZodRawShape, ZodTypeAny } from "zod";
+import { type ZodObject, type ZodRawShape, type ZodTypeAny, z } from "zod";
 import type { Logger, WideEvent } from "./logger.js";
 import { registerAll } from "./registry.js";
 import { err, ok } from "./response.js";
@@ -182,6 +182,27 @@ describe("defineTool", () => {
     it("keeps required out of the config the SDK sees", () => {
       const { config } = define(["pattern"]);
       expect("required" in (config as object)).toBe(false);
+    });
+
+    it("marks a required argument in its advertised description", () => {
+      const { server, captured } = fakeServer();
+      defineTool(
+        server,
+        "t",
+        {
+          inputSchema: {
+            pattern: z.string().optional().describe("Regex"),
+            path: z.string().optional().describe("Where"),
+          },
+          required: ["pattern"],
+        },
+        async () => ok({ x: 1 }),
+      );
+      const shape = (
+        captured[0]!.config as { inputSchema: ZodObject<ZodRawShape> }
+      ).inputSchema.shape;
+      expect(shape.pattern.description).toBe("Required. Regex");
+      expect(shape.path.description).toBe("Where");
     });
   });
 
