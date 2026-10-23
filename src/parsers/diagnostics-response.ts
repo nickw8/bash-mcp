@@ -35,15 +35,11 @@ export const diagnosticInputSchema = {
   format: z
     .enum(["grouped", "tsv", "json"])
     .optional()
-    .describe(
-      "Text-block format (payload unaffected): grouped (default, file header once then line:col rule message), tsv, or json",
-    ),
+    .describe("Text block only: grouped (default), tsv, json"),
   fields: z
     .array(z.string())
     .optional()
-    .describe(
-      "Limit the text view to these columns (e.g. ['file','loc','message']) — affects the text block only, not the returned payload",
-    ),
+    .describe("Text-block columns only, e.g. ['file','loc']"),
   ...budgetControls,
 };
 
@@ -108,6 +104,8 @@ export function diagnosticRows(diags: Diagnostic[]): Record<string, unknown>[] {
   });
 }
 
+const SEVERITY_RANK = { error: 3, warning: 2, info: 1 } as const;
+
 export interface DiagnosticsResponseOpts {
   format?: ListFormat;
   budget?: BudgetParams;
@@ -116,6 +114,41 @@ export interface DiagnosticsResponseOpts {
   meta?: Record<string, unknown>;
   /** Payload key holding the grouped diagnostics (default `errors`). */
   key?: string;
+}
+
+/** Drop exact repeats: MSBuild reports a warning once per target framework, tsc once per project. */
+export function dedupeDiagnostics(diags: Diagnostic[]): Diagnostic[] {
+  const seen = new Set<string>();
+  return diags.filter((d) => {
+    const key = JSON.stringify([
+      d.file,
+      d.line,
+      d.column,
+      d.severity,
+      d.rule,
+      d.message,
+    ]);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * Keep `count` findings, most severe first, returned in the CLI's order. A cut
+ * keeps errors over warnings; an uncut list reads exactly as the CLI printed
+ * it. Deterministic: ties keep CLI order.
+ */
+function keepMostSevere(diags: Diagnostic[], count: number): Diagnostic[] {
+  const rank = (d: Diagnostic) => SEVERITY_RANK[d.severity] ?? 0;
+  const kept = new Set(
+    diags
+      .map((d, i) => ({ d, i }))
+      .sort((x, y) => rank(y.d) - rank(x.d) || x.i - y.i)
+      .slice(0, count)
+      .map((x) => x.i),
+  );
+  return diags.filter((_, i) => kept.has(i));
 }
 
 /**
@@ -129,10 +162,12 @@ export function diagnosticsResponse<T extends Record<string, unknown>>(
   diagnostics: Diagnostic[],
   opts: DiagnosticsResponseOpts = {},
 ) {
-  const { items, truncated, total } = applyBudget(
-    diagnostics,
-    opts.budget ?? {},
-  );
+  const unique = dedupeDiagnostics(diagnostics);
+  const budgeted = applyBudget(unique, opts.budget ?? {});
+  const { truncated, total } = budgeted;
+  const items = truncated
+    ? keepMostSevere(unique, budgeted.items.length)
+    : budgeted.items;
   const rows = diagnosticRows(items);
   const meta: Record<string, unknown> = { ...opts.meta };
   if (truncated) {
@@ -148,8 +183,6 @@ export function diagnosticsResponse<T extends Record<string, unknown>>(
     fields: opts.fields,
   });
 }
-
-const SEVERITY_RANK = { error: 3, warning: 2, info: 1 } as const;
 
 /** What a run found, counted before any minSeverity filtering. */
 export interface DiagnosticCounts {

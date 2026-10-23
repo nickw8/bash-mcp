@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   compactDiagnostics,
   type DiagnosticCounts,
+  dedupeDiagnostics,
   diagnosticRows,
   diagnosticRun,
   diagnosticsResponse,
@@ -349,5 +350,41 @@ describe("diagnosticRun failure policy", () => {
       command: "ruff",
     });
     expect(r.isError).toBeUndefined();
+  });
+});
+
+describe("dedupeDiagnostics and budget priority", () => {
+  const d = (file: string, line: number, severity: "error" | "warning") => ({
+    file,
+    line,
+    column: 1,
+    severity,
+    message: `m${line}`,
+  });
+
+  it("drops exact repeats and keeps CLI order", () => {
+    const out = dedupeDiagnostics([
+      d("a.ts", 1, "warning"),
+      d("a.ts", 2, "error"),
+      d("a.ts", 1, "warning"),
+    ]);
+    expect(out.map((x) => x.line)).toEqual([1, 2]);
+  });
+
+  it("keeps errors when a budget cuts a warning-heavy list, in CLI order", () => {
+    const many = [
+      ...Array.from({ length: 30 }, (_, i) => d("w.ts", i + 1, "warning")),
+      d("e.ts", 99, "error"),
+    ];
+    const res = diagnosticsResponse({}, many, {
+      budget: { maxItems: 3 },
+    }) as {
+      structuredContent: { errors: { file: string; items: string[] }[] };
+    };
+    expect(res.structuredContent.errors.map((f) => f.file)).toEqual([
+      "w.ts",
+      "e.ts",
+    ]);
+    expect(res.structuredContent.errors[0]?.items).toHaveLength(2);
   });
 });
