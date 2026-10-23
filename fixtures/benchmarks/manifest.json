@@ -153,7 +153,7 @@
     "id": "check_environment",
     "command": "which + version probes (→ check_environment)",
     "weight": 1,
-    "budget": 100
+    "budget": 118
   },
   {
     "id": "npm_lint",
@@ -220,5 +220,11 @@
     "command": "gh run view --json jobs + --log-failed (→ gh_run_failure_summary)",
     "weight": 2,
     "budget": 175
+  },
+  {
+    "id": "glab_pipeline_failure_summary",
+    "command": "glab ci get --output json + glab ci trace (→ glab_pipeline_failure_summary)",
+    "weight": 2,
+    "budget": 275
   }
 ]

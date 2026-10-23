@@ -76,6 +76,19 @@ describe("triagePipeline", () => {
     );
   });
 
+  it("emits exactly the benchmark fixture's payload", () => {
+    const expected = readFileSync(
+      join(
+        FIXTURES,
+        "../benchmarks/glab_pipeline_failure_summary/expected.txt",
+      ),
+      "utf8",
+    );
+    expect(
+      JSON.stringify(triagePipeline(PIPELINE, new Map([[5003, TRACE]]))),
+    ).toBe(expected);
+  });
+
   it("reports a green pipeline as Healthy and a running one as InProgress", () => {
     expect(triagePipeline({ status: "success" }).status).toBe("Healthy");
     expect(triagePipeline({ status: "running" }).status).toBe(
