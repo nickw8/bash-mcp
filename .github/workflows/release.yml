@@ -1,0 +1,191 @@
+name: Release
+
+# Publishes one version to npm and the MCP Registry. Every publish step checks
+# whether that version is already out and skips if so, so a rerun after a
+# partial failure picks up where it stopped.
+#
+# Trigger: push a `v<version>` tag that matches package.json and server.json.
+# workflow_dispatch runs the gates only unless `publish` is ticked.
+#
+# One-time setup, outside this file:
+#   - npmjs.com → @nickw8/bash-mcp → Settings → Trusted publishing:
+#     GitHub Actions, repo nickw8/bash-mcp, workflow release.yml,
+#     environment release.
+#   - GitHub → Settings → Environments → `release`, with required reviewers.
+#     Publishing waits there for a person to approve it.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish after the gates pass (otherwise gates only)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  MCP_PUBLISHER_VERSION: v1.8.2
+  PACKAGE: "@nickw8/bash-mcp"
+  SERVER: io.github.nickw8/bash-mcp
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Versions agree
+        id: version
+        run: |
+          pkg=$(node -p 'require("./package.json").version')
+          srv=$(node -p 'require("./server.json").version')
+          srvpkg=$(node -p 'require("./server.json").packages[0].version')
+          echo "package.json=$pkg server.json=$srv packages[0]=$srvpkg"
+          [ "$pkg" = "$srv" ] && [ "$pkg" = "$srvpkg" ] || { echo "::error::versions differ"; exit 1; }
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "$GITHUB_REF_NAME" != "v$pkg" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match package.json $pkg"; exit 1
+          fi
+          echo "version=$pkg" >> "$GITHUB_OUTPUT"
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+      - run: npm run docs:tools -- --check
+      - run: npm pack --dry-run
+
+      - name: Install mcp-publisher
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz" \
+            | tar xz mcp-publisher
+          ./mcp-publisher --version || true
+
+      - run: ./mcp-publisher validate server.json
+
+  npm:
+    needs: gates
+    if: github.event_name == 'push' || inputs.publish
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing (OIDC); provenance is automatic
+    outputs:
+      result: ${{ steps.publish.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs npm >= 11.5.1; Node 22 ships npm 10.
+      - run: npm install -g npm@^11.5.1
+
+      - run: npm ci
+
+      - name: Publish
+        id: publish
+        env:
+          VERSION: ${{ needs.gates.outputs.version }}
+        run: |
+          if npm view "$PACKAGE@$VERSION" version >/dev/null 2>&1; then
+            echo "$PACKAGE@$VERSION is already on npm; skipping"
+            echo "result=skipped (already published)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          npm publish --access public
+          echo "result=published" >> "$GITHUB_OUTPUT"
+
+  registry:
+    needs: [gates, npm]
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write # mcp-publisher login github-oidc
+    outputs:
+      result: ${{ steps.publish.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install mcp-publisher
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz" \
+            | tar xz mcp-publisher
+
+      # The registry checks that the npm package's mcpName matches server.json,
+      # so it must see the new version first.
+      - name: Wait for npm
+        env:
+          VERSION: ${{ needs.gates.outputs.version }}
+        run: |
+          for i in $(seq 1 30); do
+            npm view "$PACKAGE@$VERSION" mcpName 2>/dev/null | grep -qx "$SERVER" && exit 0
+            sleep 10
+          done
+          echo "::error::$PACKAGE@$VERSION with mcpName $SERVER not visible on npm"; exit 1
+
+      - run: ./mcp-publisher login github-oidc
+
+      - name: Publish
+        id: publish
+        run: |
+          set +e
+          out=$(./mcp-publisher publish server.json 2>&1); code=$?
+          echo "$out"
+          if [ $code -eq 0 ]; then
+            echo "result=published" >> "$GITHUB_OUTPUT"
+          elif echo "$out" | grep -qi "duplicate version"; then
+            echo "result=skipped (already published)" >> "$GITHUB_OUTPUT"
+          else
+            exit $code
+          fi
+
+  verify:
+    needs: [gates, npm, registry]
+    if: always() && needs.gates.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check both registries and write the summary
+        env:
+          VERSION: ${{ needs.gates.outputs.version }}
+          NPM_RESULT: ${{ needs.npm.outputs.result || needs.npm.result }}
+          REGISTRY_RESULT: ${{ needs.registry.outputs.result || needs.registry.result }}
+        run: |
+          npm_seen=$(npm view "$PACKAGE@$VERSION" version 2>/dev/null || echo "not found")
+          reg_seen=$(curl -fsSL "https://registry.modelcontextprotocol.io/v0/servers?search=$SERVER" \
+            | jq -r --arg v "$VERSION" '[.servers[] | (.server // .) | select(.version == $v)] | if length > 0 then $v else "not found" end' \
+            2>/dev/null || echo "lookup failed")
+          {
+            echo "## Release $VERSION"
+            echo
+            echo "| Target | Job | Seen |"
+            echo "|---|---|---|"
+            echo "| npm \`$PACKAGE\` | $NPM_RESULT | $npm_seen |"
+            echo "| MCP Registry \`$SERVER\` | $REGISTRY_RESULT | $reg_seen |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat "$GITHUB_STEP_SUMMARY"
+          if [ "${{ needs.npm.result }}" = "success" ]; then
+            [ "$npm_seen" = "$VERSION" ] || { echo "::error::npm does not show $VERSION"; exit 1; }
+          fi
+          if [ "${{ needs.registry.result }}" = "success" ]; then
+            [ "$reg_seen" = "$VERSION" ] || { echo "::error::registry does not show $VERSION"; exit 1; }
+          fi

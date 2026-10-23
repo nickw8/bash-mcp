@@ -23,6 +23,7 @@ const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const distPath = join(repoRoot, "dist", "index.js");
 
 interface Frame {
+  jsonrpc?: string;
   id?: number;
   result?: { content?: { text?: string }[]; structuredContent?: unknown };
   error?: unknown;
@@ -46,11 +47,12 @@ interface SessionResult {
 async function rpcSession(
   requests: Record<string, unknown>[],
   timeoutMs = 20_000,
+  env: Record<string, string> = { BASH_MCP_LOG: "off" },
 ): Promise<SessionResult> {
   const child = spawn(process.execPath, [distPath], {
     cwd: repoRoot,
     stdio: ["pipe", "pipe", "pipe"],
-    env: { ...process.env, BASH_MCP_LOG: "off" },
+    env: { ...process.env, ...env },
   });
 
   const frames: Frame[] = [];
@@ -254,6 +256,23 @@ describe.skipIf(!existsSync(distPath))("stdio transport round-trip", () => {
     ]);
 
     expect(frames[1]?.result?.structuredContent).toMatchObject({ count: 1 });
+  });
+
+  it("writes only JSON-RPC frames to stdout while logging is on", async () => {
+    // Wide events and errors go to stderr (ADR-0004). Any stray console.log
+    // would land in `malformed` or as a frame without `jsonrpc`.
+    const { frames, malformed, stderr } = await rpcSession(
+      [
+        callTool("ls", { path: "." }),
+        callTool("cat", { path: "no/such/file" }),
+      ],
+      20_000,
+      { BASH_MCP_LOG: "info" },
+    );
+
+    expect(malformed).toEqual([]);
+    expect(frames.every((f) => f.jsonrpc === "2.0")).toBe(true);
+    expect(stderr).toContain('"tool":"ls"');
   });
 
   it("reads the whole corpus in one session without desyncing the framer", async () => {

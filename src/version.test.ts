@@ -33,4 +33,21 @@ describe("version single-source", () => {
       expect(p.version).toBe(pkg.version);
     }
   });
+
+  // The MCP Registry verifies npm ownership by matching package.json
+  // `mcpName` against server.json `name`; the npm identifier must be this
+  // package (the unscoped `bash-mcp` belongs to someone else).
+  it("server.json identity matches package.json", () => {
+    const server = readJson("server.json") as {
+      name: string;
+      description: string;
+      packages: { identifier: string; registryType: string }[];
+    };
+    expect(server.name).toBe(pkg.mcpName);
+    expect(server.name).toMatch(/^io\.github\.nickw8\//);
+    expect(server.description.length).toBeLessThanOrEqual(100);
+    expect(server.packages).toEqual([
+      expect.objectContaining({ registryType: "npm", identifier: pkg.name }),
+    ]);
+  });
 });

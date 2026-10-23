@@ -1,7 +1,8 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "bash-mcp",
-  "description": "MCP server wrapping CLI tools with structured JSON output instead of raw text.",
+  "name": "io.github.nickw8/bash-mcp",
+  "title": "bash-mcp",
+  "description": "Structured JSON wrappers for git, kubectl, terraform, helm, argocd, gh, glab and other CLIs.",
   "repository": {
     "url": "https://github.com/nickw8/bash-mcp",
     "source": "github"
@@ -10,11 +11,34 @@
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "bash-mcp",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@nickw8/bash-mcp",
       "version": "4.0.0",
-      "transport": {
-        "type": "stdio"
-      }
+      "runtimeHint": "npx",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "BASH_MCP_MODE",
+          "description": "Write gate for run/batch: readOnly (default), confirmWrites, off",
+          "isRequired": false,
+          "default": "readOnly",
+          "choices": ["readOnly", "confirmWrites", "off"]
+        },
+        {
+          "name": "BASH_MCP_PROFILE",
+          "description": "Tool set to register: core, development, infrastructure, all (default)",
+          "isRequired": false,
+          "default": "all",
+          "choices": ["core", "development", "infrastructure", "all"]
+        },
+        {
+          "name": "BASH_MCP_RESPONSE_MODE",
+          "description": "Response budget: auto (default), summary, compact, full",
+          "isRequired": false,
+          "default": "auto",
+          "choices": ["auto", "summary", "compact", "full"]
+        }
+      ]
     }
   ]
 }
