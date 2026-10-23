@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getEncoding } from "js-tiktoken";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { fixturesRoot } from "../scripts/benchmark-core.mjs";
 import { captureHandler, execOk } from "./test-support.js";
 
@@ -169,5 +170,95 @@ describe("benchmark corpus round-trip", () => {
         readFileSync(join(fixturesRoot, c.id, "expected.txt"), "utf8"),
       ),
     );
+  });
+});
+
+/**
+ * Wire-level pricing: the whole serialized CallToolResult (text block plus
+ * structuredContent), from the real handler, not the expected.txt payload.
+ * The fixture benchmark prices only what the agent reads (ADR-0009); this is
+ * what crosses the pipe, which a client that forwards the text block as well
+ * pays for. `BENCH_REPORT=1` prints the table.
+ */
+describe("benchmark corpus wire size", () => {
+  const enc = getEncoding("o200k_base");
+  const tok = (s: string) => enc.encode(s).length;
+  const rows: string[] = [];
+
+  afterAll(() => {
+    if (process.env.BENCH_REPORT) {
+      console.log(["id\traw\tstruct\ttext\twire", ...rows].join("\n"));
+    }
+  });
+
+  it.each(
+    CASES,
+  )("$id text block is no larger than the raw output", async (c) => {
+    const text = handlerStdout(c.id);
+    execMock.mockResolvedValue({
+      ...execOk(c.stream === "stderr" ? "" : text, c.stream ? text : ""),
+      exitCode: c.exitCode ?? 0,
+    });
+    const result = await captureHandler(c.register, c.tool)(c.args);
+    const rawT = tok(readFileSync(join(fixturesRoot, c.id, "raw.txt"), "utf8"));
+    const structT = tok(JSON.stringify(result.structuredContent));
+    const textT = tok((result.content ?? []).map((b) => b.text).join("\n"));
+    const wireT = tok(JSON.stringify(result));
+    rows.push([c.id, rawT, structT, textT, wireT].join("\t"));
+    // The text block restates rows in the tool's list format plus a metadata
+    // line (counts, tf_state_list's byType rollup). Allow that line; a text
+    // block well past the raw output means it is echoing the payload as JSON.
+    expect(textT).toBeLessThanOrEqual(rawT * 1.25 + 40);
+  });
+
+  it("auto budget caps a 2,000-resource state list and keeps the rest", async () => {
+    const addresses = Array.from(
+      { length: 2000 },
+      (_, i) => `module.app.aws_iam_role_policy_attachment.attach[${i}]`,
+    );
+    execMock.mockResolvedValue(execOk(`${addresses.join("\n")}\n`));
+    const result = await captureHandler(
+      registerTerraformTools,
+      "tf_state_list",
+    )({ cwd: "." });
+    const sc = result.structuredContent;
+    const rawT = tok(addresses.join("\n"));
+    const wireT = tok(JSON.stringify(result));
+    rows.push(
+      [
+        "tf_state_list x2000 (auto)",
+        rawT,
+        tok(JSON.stringify(sc)),
+        "-",
+        wireT,
+      ].join("\t"),
+    );
+    expect(sc.count).toBe(2000);
+    expect(sc.retained.omitted).toEqual([
+      { path: "resources", total: 2000, shown: sc.resources.length },
+    ]);
+    expect(sc.retained.id).toMatch(/^r_/);
+    expect(wireT).toBeLessThan(rawT / 3);
+
+    // The same call in full mode is the v4 behaviour: the comparison row.
+    process.env.BASH_MCP_RESPONSE_MODE = "full";
+    try {
+      const full = await captureHandler(
+        registerTerraformTools,
+        "tf_state_list",
+      )({ cwd: "." });
+      rows.push(
+        [
+          "tf_state_list x2000 (full, v4)",
+          rawT,
+          tok(JSON.stringify(full.structuredContent)),
+          "-",
+          tok(JSON.stringify(full)),
+        ].join("\t"),
+      );
+      expect(full.structuredContent.retained).toBeUndefined();
+    } finally {
+      delete process.env.BASH_MCP_RESPONSE_MODE;
+    }
   });
 });

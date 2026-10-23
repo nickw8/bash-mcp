@@ -1,0 +1,58 @@
+[
+  {
+    "id": "k8s-pod-failure",
+    "question": "Why is the worker pod failing?",
+    "raw": ["kube_get", "kube_diagnose_pod", "kube_logs"],
+    "tools": ["kube_diagnose_pod", "kube_logs"],
+    "evidence": [
+      "worker-5d9f7b6c-ghi56",
+      "CrashLoopBackOff",
+      "Exit Code: 1",
+      "connection refused"
+    ]
+  },
+  {
+    "id": "gitlab-ci-failure",
+    "question": "Which job broke the pipeline and why?",
+    "raw": ["glab_pipeline_failure_summary"],
+    "tools": ["glab_pipeline_failure_summary"],
+    "evidence": ["secrets", "script_failure", "leaks found: 18"]
+  },
+  {
+    "id": "dotnet-build-test",
+    "question": "What fails in the .NET build and tests?",
+    "raw": ["dotnet_build", "dotnet_test"],
+    "tools": ["dotnet_build", "dotnet_test"],
+    "evidence": [
+      "CS0103",
+      "UserService.cs",
+      "RejectsExpiredToken",
+      "AuthTests.cs:line 42"
+    ]
+  },
+  {
+    "id": "terraform-plan",
+    "question": "What will this plan destroy?",
+    "raw": ["tf_plan_summary"],
+    "tools": ["tf_plan_summary"],
+    "evidence": [
+      "aws_security_group.old",
+      "aws_instance.web",
+      "aws_s3_bucket.logs"
+    ]
+  },
+  {
+    "id": "git-mr-context",
+    "question": "What is on this branch before I open an MR?",
+    "raw": ["git_status", "git_log", "git_diff"],
+    "tools": ["git_status", "git_log", "git_diff"],
+    "evidence": ["src/auth.ts", "feat: add retry logic", "notes.txt"]
+  },
+  {
+    "id": "source-exploration",
+    "question": "Where is the token checked, and what does UserService expose?",
+    "raw": ["rg", "outline"],
+    "tools": ["rg", "outline"],
+    "evidence": ["src/auth.ts", "missing token", "createUser", "deleteUser"]
+  }
+]
