@@ -6,12 +6,12 @@
     "url": "https://github.com/nickw8/bash-mcp",
     "source": "github"
   },
-  "version": "3.0.0",
+  "version": "4.0.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "bash-mcp",
-      "version": "3.0.0",
+      "version": "4.0.0",
       "transport": {
         "type": "stdio"
       }

@@ -4,6 +4,46 @@ Notable changes per release. Releases before 2.0.0 are in the git log
 (`git log --oneline --grep '^chore(release)'`); this file starts where the first
 breaking change did.
 
+## 4.0.0 — 2026-10-22
+
+### Breaking
+
+- **Commit lists drop the full `hash`.** `git_log`, `git_pr_context` and
+  `repo_health_summary` return `shortHash` only. Pass it to `git_diff_content` as-is.
+- **`npm_lint` answers in the shared diagnostics shape** that `python_lint` and
+  `python_typecheck` use, with `format`, `fields` and the output budget.
+- **Every Diagnostic run has one empty answer and one failure shape**, and the four test
+  tools (`npm_test`, `python_test`, `dotnet_test`, `bash_test`) run through one Test run.
+  Per-tool quirks in the empty and failure payloads are gone.
+- **A CLI that never ran is an error, not a clean result.** A missing binary or a timeout
+  used to come back as zero errors (`python_lint` without ruff) or as a silent exit
+  (`run`, `run_seq`). It now comes back as an error that says the binary is
+  "not installed or not on PATH", or that the command "timed out".
+
+### Security
+
+- `readOnly` classifies the command inside `sh -c`/`bash -c`, `sudo`/`env`/`xargs` and
+  `find -exec`/`-delete`. Before, it only looked at the outer binary, so `sh -c "git push"`
+  ran unblocked.
+
+### Added
+
+- GitHub: `gh_pr_checks` and the `gh_run_failure_summary` diagnostic.
+- GitLab: `glab_ci_status` and the `glab_pipeline_failure_summary` diagnostic.
+- `check_environment` probes `gh`, `glab`, `docker`, `python`, `pnpm`, `yarn`, `go` and
+  `cargo`.
+- `npm_test` runs jest when `package.json` uses it.
+- An argument a tool requires is marked `Required.` in its description, so the
+  advertised schema says so before the first call fails.
+- Diagnostic tools declare `diagnostic: true` in `defineTool`.
+
+### Fixed
+
+- Triage suggestions carry the queried kube context, pod and namespace.
+- `python_test` with `verbose` lists the passed and skipped tests too.
+- `npm_lint` reads biome 2.x's JSON reporter and its count of fixed files.
+- `readOnly` classifies a subcommand that comes after global flags and paths.
+
 ## 3.0.0 — 2026-08-19
 
 ### Breaking
