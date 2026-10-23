@@ -53,6 +53,13 @@ interface ToolConfig<
    * ordinary `invalid_input` result the agent can read and retry from.
    */
   required?: string[];
+  /**
+   * Declares a Diagnostic tool: one whose output carries the Triage envelope
+   * (`triageSchema`). Stripped before the SDK sees it; recorded on the
+   * `ToolRecord` so docs read the declaration instead of sniffing the schema.
+   * A guard test holds the mark and the envelope together.
+   */
+  diagnostic?: true;
 }
 
 /**
@@ -68,6 +75,8 @@ export interface ToolRecord {
   equivalentCommands?: string[];
   /** Arguments enforced by the wrapper rather than by the schema. */
   required?: string[];
+  /** Declared Diagnostic tool — see `ToolConfig.diagnostic`. */
+  diagnostic?: true;
   inputSchema?: ZodRawShape;
   outputSchema?: ZodRawShape;
   /**
@@ -222,7 +231,7 @@ export function defineTool<
 
   // Fold equivalentCommands into _meta (preserving any caller _meta) and keep it
   // out of the config the SDK sees. Capture a flattened record for doc gen.
-  const { equivalentCommands, required, ...rest } = config;
+  const { equivalentCommands, required, diagnostic, ...rest } = config;
   const meta = equivalentCommands
     ? { ...config._meta, equivalentCommands }
     : config._meta;
@@ -248,6 +257,7 @@ export function defineTool<
     readOnlyHint: config.annotations?.readOnlyHint,
     equivalentCommands,
     required,
+    diagnostic,
     inputSchema: config.inputSchema,
     outputSchema: config.outputSchema,
   });

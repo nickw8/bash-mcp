@@ -216,6 +216,7 @@ export function registerArgocdTools(server: McpServer) {
     server,
     "argo_app_health_summary",
     {
+      diagnostic: true,
       title: "ArgoCD app health summary",
       equivalentCommands: ["argocd app get <name> -o json"],
       description:
@@ -241,10 +242,7 @@ export function registerArgocdTools(server: McpServer) {
         empty: { name, syncStatus: "Unknown", healthy: false },
         failure: "argocd app get failed",
         suggestedNextCommands: ["argo_apps"],
-        classify: (app) => {
-          const summary = summarizeAppHealth(app);
-          return { ...summary, name: summary.name || name };
-        },
+        classify: (app) => summarizeAppHealth(app, name),
       });
     },
   );

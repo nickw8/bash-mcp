@@ -326,15 +326,15 @@ export function renderReadme(
 // `CATEGORIES` holds it next to the presentation order, and `categoryTable`
 // THROWS on an unlisted category — so adding a category forces both.
 
-/** A tool is a "diagnostic" tool if its output carries the triage shape. */
+/** A tool is a "diagnostic" tool if it declared itself one (`diagnostic: true`). */
 function isDiagnostic(t: ToolRecord): boolean {
-  return !!t.outputSchema && "likelyCauses" in t.outputSchema;
+  return t.diagnostic === true;
 }
 
 /**
  * Render the agent-facing rules markdown from the registry. Categories appear in
  * `CATEGORIES` order; tools within each keep registration order. The diagnostic
- * callout is derived from the registry (tools whose output has `likelyCauses`).
+ * callout is derived from the registry (tools declared `diagnostic: true`).
  *
  * Throws (via `categoryTable`) if a registry category isn't in `CATEGORIES`, so a
  * new tool group can't ship without a corresponding "use this, not that" row.

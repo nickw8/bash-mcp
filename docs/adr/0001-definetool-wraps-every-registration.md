@@ -25,6 +25,8 @@ Tools call `defineTool`. `server.registerTool` is called in exactly one place �
 - `defineTool` also folds `equivalentCommands` into MCP `_meta` and pushes a `ToolRecord`
   into the registry, which is what makes [ADR-0002](0002-registry-generates-all-docs.md)
   possible — the decorator was the seam that made generated docs cheap.
-- The config object accepts one non-MCP field (`equivalentCommands`), stripped before the
-  SDK sees it.
+- The config object accepts three non-MCP fields — `equivalentCommands`, `required`
+  ([ADR-0013](0013-definetool-owns-required-arg-validation.md)) and `diagnostic` (marks a
+  Diagnostic tool; a guard test holds it to the Triage envelope) — stripped before the SDK
+  sees them. All three are recorded on the `ToolRecord`.
 - Tests that register tools must call `resetRegistry()` to avoid double-counting.

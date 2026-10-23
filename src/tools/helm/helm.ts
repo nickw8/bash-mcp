@@ -185,6 +185,7 @@ export function registerHelmTools(server: McpServer) {
     server,
     "helm_release_triage",
     {
+      diagnostic: true,
       title: "Helm release triage",
       equivalentCommands: [
         "helm status <release> -n <ns>",

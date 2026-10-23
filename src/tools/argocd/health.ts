@@ -9,10 +9,12 @@
 import type { Triage } from "#parsers";
 import type { ArgoApp } from "./payload.js";
 
-/** Summarize an app's health: the shared triage envelope plus argo-specific fields. */
+/** Summarize an app's health (`fallbackName` is the name asked for, if the payload lacks one): the shared triage envelope plus argo-specific fields. */
 export function summarizeAppHealth(
   app: ArgoApp,
+  fallbackName = "",
 ): Triage & { name: string; syncStatus: string; healthy: boolean } {
+  const name = app.metadata?.name || fallbackName;
   const health = app.status?.health?.status ?? "Unknown";
   const sync = app.status?.sync?.status ?? "Unknown";
   const healthy = health === "Healthy" && sync === "Synced";
@@ -24,7 +26,7 @@ export function summarizeAppHealth(
     likelyCauses.push(
       "Application is OutOfSync — live state differs from the desired manifests.",
     );
-    suggestedNextCommands.push("argo_app_diff");
+    suggestedNextCommands.push(`argo_app_diff name=${name}`);
   }
   if (health === "Degraded") {
     likelyCauses.push(
@@ -61,7 +63,7 @@ export function summarizeAppHealth(
   if (opMsg && !healthy) likelyCauses.push(opMsg);
 
   return {
-    name: app.metadata?.name ?? "",
+    name,
     status: health,
     syncStatus: sync,
     healthy,

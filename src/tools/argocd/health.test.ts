@@ -24,7 +24,7 @@ describe("summarizeAppHealth", () => {
     expect(s.status).toBe("Degraded");
     expect(s.syncStatus).toBe("OutOfSync");
     expect(s.healthy).toBe(false);
-    expect(s.suggestedNextCommands).toContain("argo_app_diff");
+    expect(s.suggestedNextCommands).toContain("argo_app_diff name=checkout");
     // the degraded Deployment shows up; the healthy Service does not
     expect(s.evidence.join(" ")).toContain("Deployment/checkout-api");
     expect(s.evidence.join(" ")).not.toContain("Service/checkout-api");

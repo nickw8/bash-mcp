@@ -57,6 +57,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
     server,
     "kube_diagnose_pod",
     {
+      diagnostic: true,
       title: "Diagnose a pod",
       equivalentCommands: [
         "kubectl get pod <pod> -n <ns> -o json",
@@ -100,6 +101,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
     server,
     "kube_pod_failure_summary",
     {
+      diagnostic: true,
       title: "Summarize failing pods",
       equivalentCommands: [
         "kubectl get pods -n <ns> -o json",
@@ -184,6 +186,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
     server,
     "kube_deployment_status",
     {
+      diagnostic: true,
       title: "Deployment rollout status",
       equivalentCommands: [
         "kubectl rollout status deployment/<name> -n <ns>",
@@ -224,6 +227,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
     server,
     "kube_events_summary",
     {
+      diagnostic: true,
       title: "Summarize warning events",
       description:
         "Summarize Warning events in a namespace (grouped by reason, ordered by count) instead of scrolling raw kubectl get events.",
