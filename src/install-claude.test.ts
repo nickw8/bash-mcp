@@ -12,6 +12,7 @@ import {
   type AssetSpec,
   formatInstallReport,
   installClaudeAssets,
+  uninstallClaudeAssets,
 } from "./install-claude.js";
 
 const ASSETS: AssetSpec[] = [
@@ -187,5 +188,26 @@ describe("formatInstallReport", () => {
       missingSource: "/pkg/claude/rules/r.md",
     });
     expect(report).toContain("✗ missing source: /pkg/claude/rules/r.md");
+  });
+});
+
+describe("uninstallClaudeAssets", () => {
+  it("removes installed assets and reports the absent ones", () => {
+    const files: Record<string, string> = {
+      "/home/.claude/rules/r.md": "x",
+      "/home/.claude/other.md": "keep",
+    };
+    const result = uninstallClaudeAssets({
+      assets: ASSETS,
+      fileExists: (p) => p in files,
+      remove: (p) => {
+        delete files[p];
+      },
+    });
+    expect(result).toEqual({
+      removed: ["/home/.claude/rules/r.md"],
+      absent: ["/home/.claude/hooks/h.sh"],
+    });
+    expect(Object.keys(files)).toEqual(["/home/.claude/other.md"]);
   });
 });

@@ -29,10 +29,11 @@ type Decision = {
 } | null;
 
 /** Run the hook with a command and return the parsed decision (null = pass-through). */
-function runHook(command: string): Decision {
+function runHook(command: string, hookMode?: string): Decision {
   const res = spawnSync("bash", [HOOK], {
     input: JSON.stringify({ tool_input: { command } }),
     encoding: "utf8",
+    env: { ...process.env, BASH_MCP_HOOK: hookMode ?? "" },
   });
   const out = res.stdout.trim();
   return out ? (JSON.parse(out) as Decision) : null;
@@ -285,5 +286,43 @@ describe("bash-mcp-redirect: registry parity", () => {
         `exempt tool ${name} now has a hook rule — remove it from EXEMPT`,
       ).toBe(false);
     }
+  });
+});
+
+describe("BASH_MCP_HOOK", () => {
+  it("block (the default) stops a mapped command", () => {
+    expect(runHook("git status")?.decision).toBe("block");
+    expect(runHook("git status", "block")?.decision).toBe("block");
+  });
+
+  it("warn turns a block into a warning", () => {
+    const d = runHook("git status", "warn");
+    expect(d?.decision).toBeUndefined();
+    expect(d?.systemMessage).toContain("git_status");
+  });
+
+  it("off passes everything through", () => {
+    expect(runHook("git status", "off")).toBeNull();
+  });
+});
+
+describe("plugin hooks.json", () => {
+  it("runs the hook in warn mode unless BASH_MCP_HOOK says otherwise", () => {
+    const manifest = JSON.parse(
+      readFileSync(join(HERE, "hooks.json"), "utf8"),
+    ) as {
+      hooks: { PreToolUse: { hooks: { command: string }[] }[] };
+    };
+    const command = manifest.hooks.PreToolUse[0].hooks[0].command;
+    const run = (env: Record<string, string>) => {
+      const res = spawnSync("bash", ["-c", command], {
+        input: JSON.stringify({ tool_input: { command: "git status" } }),
+        encoding: "utf8",
+        env: { ...process.env, CLAUDE_PLUGIN_ROOT: join(HERE, ".."), ...env },
+      });
+      return JSON.parse(res.stdout.trim() || "null") as Decision;
+    };
+    expect(run({ BASH_MCP_HOOK: "" })?.systemMessage).toContain("git_status");
+    expect(run({ BASH_MCP_HOOK: "block" })?.decision).toBe("block");
   });
 });

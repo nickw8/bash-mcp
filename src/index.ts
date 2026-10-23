@@ -10,7 +10,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { responseModeFromEnv } from "./budget.js";
 import { formatReport, runDoctor } from "./doctor.js";
-import { formatInstallReport, installClaudeAssets } from "./install-claude.js";
+import {
+  formatInstallReport,
+  formatUninstallReport,
+  installClaudeAssets,
+  uninstallClaudeAssets,
+} from "./install-claude.js";
 import { logLifecycle, resolveLevel } from "./logger.js";
 import { registerAll } from "./registry.js";
 import { VERSION } from "./version.js";
@@ -88,6 +93,10 @@ async function main() {
     const result = installClaudeAssets({ check: args.includes("--check") });
     console.log(formatInstallReport(result));
     process.exit(result.exitCode);
+  }
+  if (args.includes("--uninstall-claude")) {
+    console.log(formatUninstallReport(uninstallClaudeAssets()));
+    process.exit(0);
   }
 
   // Register here, not at import, so a bad BASH_MCP_PROFILE or

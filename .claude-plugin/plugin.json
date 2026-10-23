@@ -1,0 +1,14 @@
+{
+  "name": "bash-mcp",
+  "description": "Structured JSON wrappers for git, kubectl, terraform, rg and other CLIs, plus a hook that points raw shell calls at them.",
+  "author": { "name": "nickw8" },
+  "homepage": "https://github.com/nickw8/bash-mcp",
+  "repository": "https://github.com/nickw8/bash-mcp",
+  "license": "Apache-2.0",
+  "mcpServers": {
+    "bash-mcp": {
+      "command": "npx",
+      "args": ["-y", "@nickw8/bash-mcp"]
+    }
+  }
+}

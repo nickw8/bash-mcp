@@ -24,6 +24,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  rmSync,
 } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
@@ -146,6 +147,54 @@ export function installClaudeAssets(deps: InstallDeps = {}): InstallResult {
 
   const drift = check && results.some((r) => r.state !== "same");
   return { results, exitCode: drift ? 1 : 0 };
+}
+
+export interface UninstallResult {
+  removed: string[];
+  absent: string[];
+}
+
+/**
+ * Remove what `installClaudeAssets` copied. Both destinations are bash-mcp's
+ * own file names, so nothing else is touched. settings.json is never edited by
+ * the installer, so the hook entry there is the user's to remove.
+ */
+export function uninstallClaudeAssets(
+  deps: Pick<
+    InstallDeps,
+    "repoRoot" | "claudeDir" | "assets" | "fileExists"
+  > & {
+    remove?: (path: string) => void;
+  } = {},
+): UninstallResult {
+  const {
+    repoRoot = defaultRepoRoot(),
+    claudeDir = join(homedir(), ".claude"),
+    fileExists = existsSync,
+    remove = (p) => rmSync(p),
+    assets = defaultAssets(repoRoot, claudeDir),
+  } = deps;
+  const removed: string[] = [];
+  const absent: string[] = [];
+  for (const { dest } of assets) {
+    if (!fileExists(dest)) {
+      absent.push(dest);
+      continue;
+    }
+    remove(dest);
+    removed.push(dest);
+  }
+  return { removed, absent };
+}
+
+/** Render an uninstall result (pure). */
+export function formatUninstallReport(result: UninstallResult): string {
+  return [
+    ...result.removed.map((d) => `✓ removed ${d}`),
+    ...result.absent.map((d) => `- not installed: ${d}`),
+    "",
+    "If ~/.claude/settings.json has a PreToolUse entry for bash-mcp-redirect.sh, remove it too.",
+  ].join("\n");
 }
 
 /** The PreToolUse(Bash) hook block to paste into ~/.claude/settings.json. */

@@ -1,0 +1,17 @@
+{
+  "description": "Point raw shell calls at bash-mcp's structured tools. Warns by default; BASH_MCP_HOOK=block to refuse, off to silence.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "BASH_MCP_HOOK=\"${BASH_MCP_HOOK:-warn}\" bash \"${CLAUDE_PLUGIN_ROOT}/hooks/bash-mcp-redirect.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

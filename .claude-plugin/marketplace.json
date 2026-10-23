@@ -1,0 +1,14 @@
+{
+  "name": "bash-mcp",
+  "description": "bash-mcp: structured CLI wrappers for MCP clients",
+  "owner": {
+    "name": "nickw8"
+  },
+  "plugins": [
+    {
+      "name": "bash-mcp",
+      "source": "./",
+      "description": "bash-mcp server and its redirect hook"
+    }
+  ]
+}

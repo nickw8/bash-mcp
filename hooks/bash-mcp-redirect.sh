@@ -17,6 +17,11 @@
 #     tool may not compose into the user's pipeline.
 #   - Self-contained: no external lib; fails OPEN (allows the command) on any error.
 #
+# BASH_MCP_HOOK sets how hard it pushes:
+#   block (default)  BLOCK rules stop the call, WARN rules warn
+#   warn             every rule only warns; nothing is stopped
+#   off              the hook does nothing
+#
 # Install: see hooks/settings.example.json and hooks/README.md.
 # Requires: jq (already a bash-mcp prerequisite).
 
@@ -122,6 +127,8 @@ RULES=(
 
 # ── Input ─────────────────────────────────────────────────────────────────
 input="$(cat)"
+hook_mode="${BASH_MCP_HOOK:-block}"
+[[ "$hook_mode" == "off" ]] && exit 0
 command -v jq >/dev/null 2>&1 || exit 0   # no jq → fail open
 
 cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)"
@@ -187,12 +194,13 @@ case "$cmd" in
   *'|'* | *'&&'* | *'||'* | *';'* | *'$('* | *'`'* | *'>'* | *'<'*) compound=1 ;;
 esac
 
-emit_block() {
-  printf '{"decision":"block","reason":"%s"}\n' "$1"
-  exit 0
-}
 emit_warn() {
   printf '{"systemMessage":"%s"}\n' "$1"
+  exit 0
+}
+emit_block() {
+  [[ "$hook_mode" == "warn" ]] && emit_warn "$1"
+  printf '{"decision":"block","reason":"%s"}\n' "$1"
   exit 0
 }
 
