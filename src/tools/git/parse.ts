@@ -5,11 +5,14 @@
 
 /** Unicode separator for `git log --format` (avoids commit-message collisions). */
 export const COMMIT_SEP = "‖";
-/** Log format producing hash, shortHash, author, ISO date, subject. */
-export const COMMIT_FORMAT = `%H${COMMIT_SEP}%h${COMMIT_SEP}%an${COMMIT_SEP}%aI${COMMIT_SEP}%s`;
+/**
+ * Log format producing shortHash, author, ISO date, subject. No full hash: it
+ * is a prefix-equal of the short one that every git command resolves, so it
+ * would only repeat ~33 characters per commit (as git_log already decided).
+ */
+export const COMMIT_FORMAT = `%h${COMMIT_SEP}%an${COMMIT_SEP}%aI${COMMIT_SEP}%s`;
 
 export interface GitCommit {
-  hash: string;
   shortHash: string;
   author: string;
   date: string;
@@ -23,9 +26,8 @@ export function parseCommits(stdout: string): GitCommit[] {
     .split("\n")
     .filter(Boolean)
     .map((line) => {
-      const [hash, shortHash, author, date, ...msg] = line.split(COMMIT_SEP);
+      const [shortHash, author, date, ...msg] = line.split(COMMIT_SEP);
       return {
-        hash: hash ?? "",
         shortHash: shortHash ?? "",
         author: author ?? "",
         date: date ?? "",

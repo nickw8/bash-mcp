@@ -50,7 +50,6 @@ export function registerRepoHealthTool(server: McpServer) {
         clean: z.boolean(),
         recentCommits: z.array(
           z.object({
-            hash: z.string(),
             shortHash: z.string(),
             author: z.string(),
             date: z.string(),

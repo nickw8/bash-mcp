@@ -49,7 +49,6 @@ export function registerGitPrContextTool(server: McpServer) {
         head: z.string(),
         commits: z.array(
           z.object({
-            hash: z.string(),
             shortHash: z.string(),
             author: z.string(),
             date: z.string(),

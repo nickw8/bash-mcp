@@ -14,13 +14,12 @@ import {
 describe("parseCommits", () => {
   it("parses formatted log lines (subject may contain the separator-safe text)", () => {
     const line = (h: string, s: string) =>
-      ["aaa", h, "Ada", "2024-01-01T00:00:00Z", s].join(COMMIT_SEP);
+      [h, "Ada", "2024-01-01T00:00:00Z", s].join(COMMIT_SEP);
     const out = parseCommits(
       `${line("a1", "feat: x")}\n${line("b2", "fix: y")}`,
     );
     expect(out).toHaveLength(2);
     expect(out[0]).toEqual({
-      hash: "aaa",
       shortHash: "a1",
       author: "Ada",
       date: "2024-01-01T00:00:00Z",
