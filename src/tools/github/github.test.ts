@@ -64,6 +64,15 @@ describe("triageWorkflowRun", () => {
     ]);
   });
 
+  // The benchmark prices this payload; it must be what the parser emits (ADR-0010).
+  it("emits exactly the benchmark fixture's payload", () => {
+    const expected = readFileSync(
+      join(FIXTURES, "../benchmarks/gh_run_failure_summary/expected.txt"),
+      "utf8",
+    );
+    expect(JSON.stringify(triageWorkflowRun(RUN, LOG))).toBe(expected);
+  });
+
   it("reports a green run as Healthy and one in flight as InProgress", () => {
     expect(
       triageWorkflowRun({ status: "completed", conclusion: "success" }).status,

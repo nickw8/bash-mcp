@@ -214,5 +214,11 @@
     "command": "dotnet test (→ dotnet_test)",
     "weight": 2,
     "budget": 115
+  },
+  {
+    "id": "gh_run_failure_summary",
+    "command": "gh run view --json jobs + --log-failed (→ gh_run_failure_summary)",
+    "weight": 2,
+    "budget": 175
   }
 ]
