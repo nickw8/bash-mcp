@@ -77,6 +77,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
     },
     async ({ pod, namespace, context }) => {
       return triageRun({
+        context,
         probe: () =>
           kubectlJson<KubeResource>([
             "get",
@@ -133,6 +134,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
     async ({ namespace, allNamespaces, context, detailLevel, maxItems }) => {
       const scope = namespaceScope(namespace, allNamespaces);
       return triageRun({
+        context,
         probe: () =>
           kubectlJson<KubeList>([
             "get",
@@ -204,6 +206,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
     },
     async ({ name, namespace, context }) => {
       return triageRun({
+        context,
         probe: () =>
           kubectlJson<KubeResource>([
             "get",
@@ -248,6 +251,7 @@ export function registerKubeDiagnosticTools(server: McpServer) {
     async ({ namespace, allNamespaces, context, detailLevel, maxItems }) => {
       const scope = namespaceScope(namespace, allNamespaces);
       return triageRun({
+        context,
         probe: () =>
           kubectlJson<{ items?: KubeEvent[] }>([
             "get",

@@ -26,6 +26,8 @@ export interface TriageRunOpts<
   failure: string;
   /** Commands to suggest when the probe ran and failed. */
   suggestedNextCommands?: string[];
+  /** The kube context the probe ran against; bound onto every suggestion so a follow-up hits the same cluster. */
+  context?: string;
   /** Turn the probe's data into the tool's whole payload. Not called on failure. */
   classify: (data: T) => P | Promise<P>;
 }
@@ -44,8 +46,22 @@ export async function triageRun<
     const why = res.error ?? "no data";
     return ok({
       ...o.empty,
-      ...unknownTriage(`${o.failure}: ${why}`, o.suggestedNextCommands),
+      ...unknownTriage(
+        `${o.failure}: ${why}`,
+        bindContext(o.suggestedNextCommands, o.context),
+      ),
     });
   }
-  return ok(await o.classify(res.data));
+  const payload = await o.classify(res.data);
+  const next = payload.suggestedNextCommands;
+  return ok(
+    Array.isArray(next)
+      ? { ...payload, suggestedNextCommands: bindContext(next, o.context) }
+      : payload,
+  );
+}
+
+/** Append `context=<ctx>` to each command; unchanged when no context was given. */
+function bindContext(commands: string[] | undefined, context?: string) {
+  return context ? commands?.map((c) => `${c} context=${context}`) : commands;
 }

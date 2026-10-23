@@ -210,6 +210,7 @@ export function registerHelmTools(server: McpServer) {
     async ({ release, namespace, context }) => {
       const ctxArgs = helmContext(context);
       return triageRun({
+        context,
         probe: () =>
           execJson<HelmStatus>(
             "helm",

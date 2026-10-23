@@ -101,11 +101,11 @@ const handlers = new Map([
   ...captureHandlers(registerArgocdTools),
 ]);
 const argsFor: Record<string, unknown> = {
-  kube_diagnose_pod: { pod: "p", namespace: "qa" },
-  kube_pod_failure_summary: { namespace: "qa" },
-  kube_deployment_status: { name: "d", namespace: "qa" },
-  kube_events_summary: { namespace: "qa" },
-  helm_release_triage: { release: "r", namespace: "qa" },
+  kube_diagnose_pod: { pod: "p", namespace: "qa", context: "ctx" },
+  kube_pod_failure_summary: { namespace: "qa", context: "ctx" },
+  kube_deployment_status: { name: "d", namespace: "qa", context: "ctx" },
+  kube_events_summary: { namespace: "qa", context: "ctx" },
+  helm_release_triage: { release: "r", namespace: "qa", context: "ctx" },
   argo_app_health_summary: { name: "a" },
 };
 const failedProbe = {
@@ -134,6 +134,7 @@ describe("suggestedNextCommands", () => {
     } as never);
     const res = await handlers.get("kube_pod_failure_summary")?.({
       namespace: "qa",
+      context: "ctx",
     });
     add(
       "kube_pod_failure_summary (answered)",
@@ -175,7 +176,9 @@ describe("suggestedNextCommands", () => {
   });
 
   // A suggestion is an executable call: an agent that follows it should not
-  // have to guess a pod, or silently fall back to the `default` namespace.
+  // have to guess a pod, or silently fall back to the `default` namespace or
+  // the current kube context. Handlers are called with a context; the pure
+  // classifiers never see one.
   it("binds every required argument, and the namespace scope", () => {
     for (const { source, commands } of collected) {
       for (const cmd of commands) {
@@ -195,6 +198,11 @@ describe("suggestedNextCommands", () => {
             given.has("namespace") || given.has("allNamespaces"),
             `${source}: "${cmd}" drops the namespace`,
           ).toBe(true);
+        }
+        if ("context" in shape && source.includes("(")) {
+          expect(rest, `${source}: "${cmd}" drops the context`).toContain(
+            "context=ctx",
+          );
         }
       }
     }
